@@ -5,6 +5,8 @@ import {
   MINE_SPAWN_POS,
   MINE_ZONE_PORTALS,
   getMineCollisionCircles,
+  isMineFloorCell,
+  mineWorldToCell,
 } from '../js/scene/MineLayout.js';
 import { CONFIG } from '../js/config.js';
 
@@ -77,6 +79,33 @@ test('saved mine speed-track corridor remains walkable', () => {
         `saved mine track at (${p.x}, ${p.z}) overlaps ${c.kind || 'collision'} at (${c.x}, ${c.z})`
       );
     }
+  }
+});
+
+test('every mine gate is reachable on foot from the spawn', () => {
+  const start = mineWorldToCell(MINE_SPAWN_POS.x, MINE_SPAWN_POS.z);
+  assert.ok(isMineFloorCell(start.c, start.r), 'spawn cell must be open floor');
+
+  // Flood-fill open floor cells (ore blocks count as blocked until mined)
+  const seen = new Set([`${start.c},${start.r}`]);
+  const queue = [start];
+  while (queue.length) {
+    const { c, r } = queue.pop();
+    for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nc = c + dc, nr = r + dr;
+      if (!seen.has(`${nc},${nr}`) && isMineFloorCell(nc, nr)) {
+        seen.add(`${nc},${nr}`);
+        queue.push({ c: nc, r: nr });
+      }
+    }
+  }
+
+  for (const [zone, pos] of Object.entries(MINE_ZONE_PORTALS)) {
+    const cell = mineWorldToCell(pos.x, pos.z);
+    assert.ok(
+      seen.has(`${cell.c},${cell.r}`),
+      `${zone} gate at (${pos.x}, ${pos.z}) is not reachable from the spawn`
+    );
   }
 });
 

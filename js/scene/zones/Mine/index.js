@@ -1,7 +1,11 @@
 import * as THREE from 'three';
-import { createToonMaterial, addOutline, createRevealToonMaterial } from '../../ToonMaterials.js';
+import { createToonMaterial, addOutline, addOutlineToGroup, createRevealToonMaterial } from '../../ToonMaterials.js';
 import { CONFIG } from '../../../config.js';
-import { MINE_ZONE_PORTALS, getMineableWallBlocks } from './layout.js';
+import {
+  MINE_MAP, mineCellToWorld, isMineFloorCell,
+  MINE_ZONE_PORTALS, MINE_DRILL_POS,
+  getMineableWallBlocks, getMineWallRuns, getMineFloorRuns,
+} from './layout.js';
 
 function seededRandom(seed) {
   let s = seed | 0;
@@ -13,43 +17,138 @@ function seededRandom(seed) {
   };
 }
 
+// Solid walls share one immortal "rock" so getCollisionBoxes() keeps them forever.
+const SOLID = { alive: true };
+
 /**
- * The Mine zone — ore wall grid, tunnels, portals, and the central drill rig.
+ * The Mine — a Shadows-of-Brimstone-style descent.
+ *
+ * Timbered entrance → lantern-lit main shaft → working cavern (drill rig,
+ * ore veins, the shaft down to The Depths) → winding passage → the Breach:
+ * an ancient chamber whose stone gates lead to other worlds.
  *
  * ── Connections ───────────────────────────────────────────────────────────────
- *   landingSite  →  south hub gate    always unlocked
- *   depths       →  north-left gate   CONFIG.ENV_UNLOCK.depths
- *   frozenTundra →  north-right gate  CONFIG.ENV_UNLOCK.frozenTundra
- *   verdantMaw   →  east gate         CONFIG.ENV_UNLOCK.verdantMaw
- *   lagoonCoast  →  west gate         CONFIG.ENV_UNLOCK.lagoonCoast
+ *   landingSite  →  entrance adit      always unlocked
+ *   depths       →  cavern shaft       CONFIG.ENV_UNLOCK.depths
+ *   verdantMaw   →  Breach west gate   CONFIG.ENV_UNLOCK.verdantMaw
+ *   frozenTundra →  Breach east gate   CONFIG.ENV_UNLOCK.frozenTundra
+ *   lagoonCoast  →  Breach far gate    CONFIG.ENV_UNLOCK.lagoonCoast
  */
 export function build(env) {
-  env._addGround(0x120d09); // cavern floor
-  _buildPortalHubBackdrop(env);
+  env._addGround(0x060504); // void — unbroken mountain rock
   const rng = seededRandom(54321);
 
-  // ── Ore wall blocks with reveal shader ──────────────────────────────────
-  // One reveal material per ore tier colour — shared across all same-colour blocks.
+  _buildFloors(env);
+  _buildWalls(env, rng);
+  _buildOreBlocks(env, rng);
+  _buildEntrance(env);
+  _buildShaftDressing(env);
+  _buildDrillRig(env, MINE_DRILL_POS.x, MINE_DRILL_POS.z);
+  _buildDepthsShaft(env);
+  _buildBreach(env, rng);
+  _scatterCaveDetail(env, rng);
+
+  // ── Zone portals ──────────────────────────────────────────────────────────
+  const mp = MINE_ZONE_PORTALS;
+  env._addPortal(mp.landingSite.x,  mp.landingSite.z,  'landingSite',  0,                              'Landing Site');
+  env._addReturnBeacon(mp.landingSite.x, mp.landingSite.z);
+  env._addPortal(mp.depths.x,       mp.depths.z,       'depths',       CONFIG.ENV_UNLOCK.depths,       'The Depths');
+  env._addPortal(mp.verdantMaw.x,   mp.verdantMaw.z,   'verdantMaw',   CONFIG.ENV_UNLOCK.verdantMaw,   'Verdant Maw');
+  env._addPortal(mp.frozenTundra.x, mp.frozenTundra.z, 'frozenTundra', CONFIG.ENV_UNLOCK.frozenTundra, 'Frozen Tundra');
+  env._addPortal(mp.lagoonCoast.x,  mp.lagoonCoast.z,  'lagoonCoast',  CONFIG.ENV_UNLOCK.lagoonCoast,  'Lagoon Coast');
+}
+
+// ── Floors ───────────────────────────────────────────────────────────────────
+const FLOOR_TINT = {
+  entrance: 0x1e140b, // packed dirt
+  shaft:    0x191009, // dirt + grime
+  cavern:   0x151009, // worked stone
+  passage:  0x140e15, // rock giving way to something else
+  breach:   0x130c1d, // ancient violet-black stone
+};
+
+function _buildFloors(env) {
+  const mats = {};
+  for (const [region, color] of Object.entries(FLOOR_TINT)) {
+    mats[region] = createToonMaterial(color);
+  }
+  for (const run of getMineFloorRuns()) {
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(run.width, run.depth), mats[run.region]);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set(run.cx, 0.015, run.cz);
+    mesh.receiveShadow = true;
+    env.group.add(mesh);
+  }
+}
+
+// ── Solid cave walls (non-mineable) ─────────────────────────────────────────
+function _buildWalls(env, rng) {
+  const rockMat  = createRevealToonMaterial(0x191410, { revealR: 2.4 });
+  const alienMat = createRevealToonMaterial(0x171126, { revealR: 2.4 });
+  env._revealMaterials.push(rockMat, alienMat);
+
+  for (const run of getMineWallRuns()) {
+    const alien = run.kind === 'alien';
+    const h = alien ? 5.2 + rng() * 1.6 : 3.8 + rng() * 1.9;
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(run.width, h, run.depth),
+      alien ? alienMat : rockMat
+    );
+    mesh.position.set(run.cx, h / 2, run.cz);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    addOutline(mesh, 0.03);
+    env.group.add(mesh);
+
+    env._collisionBoxes.push({
+      minX: run.cx - run.width / 2, maxX: run.cx + run.width / 2,
+      minZ: run.cz - run.depth / 2, maxZ: run.cz + run.depth / 2,
+      rock: SOLID,
+    });
+  }
+}
+
+// ── Mineable ore blocks with glowing veins ──────────────────────────────────
+function _buildOreBlocks(env, rng) {
   const blocks = getMineableWallBlocks();
-  const _tierMats = {};
+  const tierMats = {};
+  const veinMats = {};
   for (const b of blocks) {
-    if (!_tierMats[b.props.color]) {
-      const m = createRevealToonMaterial(b.props.color);
-      _tierMats[b.props.color] = m;
+    if (!tierMats[b.props.color]) {
+      const m = createRevealToonMaterial(b.props.color, { revealR: 1.8 });
+      tierMats[b.props.color] = m;
       env._revealMaterials.push(m);
+    }
+    if (!veinMats[b.props.veinColor]) {
+      veinMats[b.props.veinColor] = new THREE.MeshBasicMaterial({ color: b.props.veinColor });
     }
   }
 
   for (const b of blocks) {
     const bw = 3.2;
-    const bh = 3.5 + rng() * 4.0; // 3.5–7.5m — dramatic height variance
+    const bh = 3.2 + rng() * 1.6; // shorter than the cave walls — reads as a workable seam
     const bd = 3.2;
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), _tierMats[b.props.color]);
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), tierMats[b.props.color]);
     mesh.position.set(b.x, bh / 2, b.z);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     addOutline(mesh, 0.04);
     env.group.add(mesh);
+
+    // Glowing vein studs — the "there's ore in that rock" sparkle
+    const veinMat = veinMats[b.props.veinColor];
+    const studCount = 2 + Math.floor(rng() * 2);
+    for (let i = 0; i < studCount; i++) {
+      const stud = new THREE.Mesh(new THREE.OctahedronGeometry(0.14 + rng() * 0.1, 0), veinMat);
+      const face = Math.floor(rng() * 4);
+      const along = (rng() - 0.5) * (bw * 0.7);
+      const up = 0.5 + rng() * (bh * 0.55) - bh / 2;
+      if (face === 0)      stud.position.set(along, up,  bd / 2 + 0.02);
+      else if (face === 1) stud.position.set(along, up, -bd / 2 - 0.02);
+      else if (face === 2) stud.position.set( bw / 2 + 0.02, up, along);
+      else                 stud.position.set(-bw / 2 - 0.02, up, along);
+      mesh.add(stud);
+    }
 
     const { crack1, crack2 } = env._makeCrackStages(mesh, bw, bh, bd);
     const rock = { mesh, x: b.x, z: b.z, alive: true, props: b.props, richness: 3, maxRichness: 3, crack1, crack2 };
@@ -60,130 +159,133 @@ export function build(env) {
       rock,
     });
   }
-
-  _buildMineTunnels(env);
-
-  // ── Zone portals ──────────────────────────────────────────────────────────
-  const mp = MINE_ZONE_PORTALS;
-  env._addPortal(mp.landingSite.x,  mp.landingSite.z,  'landingSite',  0,                              'Landing Site');
-  env._addReturnBeacon(mp.landingSite.x, mp.landingSite.z);
-  env._addPortal(mp.depths.x,       mp.depths.z,       'depths',       CONFIG.ENV_UNLOCK.depths,       'The Depths');
-  env._addPortal(mp.frozenTundra.x, mp.frozenTundra.z, 'frozenTundra', CONFIG.ENV_UNLOCK.frozenTundra, 'Frozen Tundra');
-  env._addPortal(mp.verdantMaw.x,   mp.verdantMaw.z,   'verdantMaw',   CONFIG.ENV_UNLOCK.verdantMaw,   'Verdant Maw');
-  env._addPortal(mp.lagoonCoast.x,  mp.lagoonCoast.z,  'lagoonCoast',  CONFIG.ENV_UNLOCK.lagoonCoast,  'Lagoon Coast');
-
-  _buildDrillRig(env, 0, 0);
 }
 
-// ── Mine tunnel corridors ────────────────────────────────────────────────────
-function _buildPortalHubBackdrop(env) {
-  const hubMat = createToonMaterial(0x24180f);
-  const laneMat = createToonMaterial(0x1b130d);
-  const padMat = createToonMaterial(0x2b1d13);
-  const trimMat = new THREE.MeshBasicMaterial({ color: 0xaa7733, transparent: true, opacity: 0.75 });
+// ── Entrance: adit frame, rails, cart ────────────────────────────────────────
+const WOOD = 0x4a3524;
+const WOOD_DARK = 0x3a2a1c;
 
-  const addPlane = (w, d, x, z, mat, y = 0.018) => {
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, d), mat);
-    mesh.rotation.x = -Math.PI / 2;
-    mesh.position.set(x, y, z);
-    mesh.receiveShadow = true;
-    env.group.add(mesh);
-    return mesh;
-  };
-
-  const addTrim = (w, d, x, z) => {
-    addPlane(w, d, x, z, trimMat, 0.026);
-  };
-
-  const hub = new THREE.Mesh(new THREE.CircleGeometry(12.5, 48), hubMat);
-  hub.rotation.x = -Math.PI / 2;
-  hub.position.y = 0.02;
-  hub.receiveShadow = true;
-  env.group.add(hub);
-
-  const hubRing = new THREE.Mesh(new THREE.TorusGeometry(12.5, 0.08, 8, 48), trimMat);
-  hubRing.rotation.x = Math.PI / 2;
-  hubRing.position.y = 0.04;
-  env.group.add(hubRing);
-
-  addPlane(8.0, 14.0, 0, -11.0, laneMat);
-  addPlane(16.0, 14.0, 0, 11.0, laneMat);
-  addPlane(14.0, 8.0, 11.0, 0, laneMat);
-  addPlane(14.0, 8.0, -11.0, 0, laneMat);
-
-  addTrim(0.22, 16.0, -4.2, -10.0);
-  addTrim(0.22, 16.0, 4.2, -10.0);
-  addTrim(0.22, 16.0, -8.2, 10.0);
-  addTrim(0.22, 16.0, 8.2, 10.0);
-  addTrim(16.0, 0.22, 10.0, -4.2);
-  addTrim(16.0, 0.22, 10.0, 4.2);
-  addTrim(16.0, 0.22, -10.0, -4.2);
-  addTrim(16.0, 0.22, -10.0, 4.2);
-
-  for (const pos of Object.values(MINE_ZONE_PORTALS)) {
-    const pad = new THREE.Mesh(new THREE.CylinderGeometry(2.25, 2.55, 0.12, 12), padMat);
-    pad.position.set(pos.x, 0.06, pos.z);
-    pad.receiveShadow = true;
-    env.group.add(pad);
-
-    const padRing = new THREE.Mesh(new THREE.TorusGeometry(2.35, 0.08, 8, 24), trimMat);
-    padRing.rotation.x = Math.PI / 2;
-    padRing.position.set(pos.x, 0.14, pos.z);
-    env.group.add(padRing);
+function _addLantern(env, x, z, { color = 0xffa94d, intensity = 3.2, distance = 13, post = true } = {}) {
+  const g = new THREE.Group();
+  if (post) {
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 1.7, 6), createToonMaterial(WOOD_DARK));
+    pole.position.y = 0.85;
+    g.add(pole);
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.07, 0.07), createToonMaterial(WOOD_DARK));
+    arm.position.set(0.2, 1.66, 0);
+    g.add(arm);
   }
+  const bulb = new THREE.Mesh(
+    new THREE.SphereGeometry(0.16, 8, 6),
+    new THREE.MeshBasicMaterial({ color })
+  );
+  bulb.position.set(post ? 0.42 : 0, post ? 1.5 : 2.4, 0);
+  g.add(bulb);
+
+  const light = new THREE.PointLight(color, intensity, distance, 1);
+  light.position.copy(bulb.position);
+  g.add(light);
+
+  g.position.set(x, 0, z);
+  env.group.add(g);
+  if (post) env._collisionCircles.push({ x, z, r: 0.28 });
+  return g;
 }
 
-function _buildMineTunnels(env) {
-  const S         = 3.2;
-  const EDGE      = 16;
-  const STEPS     = 7;
-  const FLOOR_LEN = STEPS * S + 14;
+function _buildEntrance(env) {
+  const portal = MINE_ZONE_PORTALS.landingSite;
 
-  const wallMat  = createToonMaterial(0x181410);
-  const floorMat = createToonMaterial(0x0d0b09);
-  const rng      = seededRandom(77777);
+  // Adit frame — chunky timber portal around the surface lift
+  const frame = new THREE.Group();
+  const postMat = createToonMaterial(WOOD);
+  for (const px of [-2.4, 2.4]) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.55, 3.6, 0.55), postMat);
+    post.position.set(px, 1.8, 0);
+    post.castShadow = true;
+    frame.add(post);
+  }
+  const lintel = new THREE.Mesh(new THREE.BoxGeometry(5.9, 0.55, 0.65), postMat);
+  lintel.position.set(0, 3.6, 0);
+  lintel.castShadow = true;
+  frame.add(lintel);
+  const lintel2 = new THREE.Mesh(new THREE.BoxGeometry(5.3, 0.35, 0.5), createToonMaterial(WOOD_DARK));
+  lintel2.position.set(0, 2.95, 0.1);
+  frame.add(lintel2);
+  addOutlineToGroup(frame, 0.03);
+  frame.position.set(portal.x, 0, portal.z);
+  env.group.add(frame);
+  env._collisionCircles.push({ x: portal.x - 2.4, z: portal.z, r: 0.45 });
+  env._collisionCircles.push({ x: portal.x + 2.4, z: portal.z, r: 0.45 });
 
-  // Four tunnels: south (→ Landing Site), north (→ Depths + Frozen Tundra),
-  // east (→ Verdant Maw), west (→ Lagoon Coast).
-  const tunnels = [
-    { axis: 'z', sign: -1, halfW: 6.4 },
-    { axis: 'z', sign: +1, halfW: 9.6 },
-    { axis: 'x', sign: +1, halfW: 6.4 },
-    { axis: 'x', sign: -1, halfW: 6.4 },
-  ];
+  // Hanging lamp under the lintel — the warm "you are safe here" glow
+  _addLantern(env, portal.x, portal.z + 1.1, { post: false, intensity: 3.6, distance: 15 });
 
-  for (const { axis, sign, halfW } of tunnels) {
-    const isZ     = axis === 'z';
-    const floorW  = halfW * 2 + S;
-    const floorCx = isZ ? 0                         : sign * (EDGE + FLOOR_LEN / 2);
-    const floorCz = isZ ? sign * (EDGE + FLOOR_LEN / 2) : 0;
+  // Rails from the entrance down the main shaft
+  const railMat = createToonMaterial(0x3c3c40);
+  const tieMat  = createToonMaterial(WOOD_DARK);
+  const railLen = 18;
+  const railCz  = -22; // spans z=-31 … -13
+  for (const rx of [-0.55, 0.55]) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.07, railLen), railMat);
+    rail.position.set(rx, 0.07, railCz);
+    env.group.add(rail);
+  }
+  for (let i = 0; i < 13; i++) {
+    const tie = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.06, 0.32), tieMat);
+    tie.position.set(0, 0.035, -30.5 + i * 1.4);
+    env.group.add(tie);
+  }
 
-    const floorGeo = isZ
-      ? new THREE.PlaneGeometry(floorW, FLOOR_LEN)
-      : new THREE.PlaneGeometry(FLOOR_LEN, floorW);
-    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
-    floorMesh.rotation.x = -Math.PI / 2;
-    floorMesh.position.set(floorCx, 0.01, floorCz);
-    env.group.add(floorMesh);
+  // Abandoned ore cart beside the rails
+  const cart = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.75, 0.95), createToonMaterial(0x51555e));
+  body.position.y = 0.75;
+  body.castShadow = true;
+  cart.add(body);
+  const mound = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.5, 7), createToonMaterial(0x2a1a08));
+  mound.position.y = 1.3;
+  cart.add(mound);
+  for (const [wx, wz] of [[-0.45, 0.5], [0.45, 0.5], [-0.45, -0.5], [0.45, -0.5]]) {
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.1, 10), createToonMaterial(0x26262a));
+    wheel.rotation.x = Math.PI / 2;
+    wheel.position.set(wx, 0.2, wz);
+    cart.add(wheel);
+  }
+  addOutlineToGroup(cart, 0.035);
+  cart.position.set(1.6, 0, -17.5);
+  cart.rotation.y = 0.12;
+  env.group.add(cart);
+  env._collisionCircles.push({ x: 1.6, z: -17.5, r: 0.6 });
+}
 
-    // Wall blocks flanking the corridor
-    for (let i = 1; i <= STEPS; i++) {
-      const mainCoord = sign * (EDGE + i * S);
-      for (const side of [-halfW, +halfW]) {
-        const h  = 3.5 + rng() * 4.0;
-        const bx = isZ ? side      : mainCoord;
-        const bz = isZ ? mainCoord : side;
-        const mesh = new THREE.Mesh(new THREE.BoxGeometry(3.2, h, 3.2), wallMat);
-        mesh.position.set(bx, h / 2, bz);
-        addOutline(mesh, 0.04);
-        env.group.add(mesh);
-        env._collisionCircles.push({ x: bx, z: bz, r: 2.0 });
-      }
+// ── Shaft + cavern dressing: timber supports and lanterns ───────────────────
+function _buildShaftDressing(env) {
+  const postMat = createToonMaterial(WOOD);
+  // Support frames across the main shaft
+  for (const fz of [-25.6, -19.2]) {
+    const set = new THREE.Group();
+    for (const px of [-4.4, 4.4]) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.32, 3.1, 0.32), postMat);
+      post.position.set(px, 1.55, 0);
+      post.castShadow = true;
+      set.add(post);
     }
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(9.3, 0.32, 0.4), postMat);
+    beam.position.set(0, 3.05, 0);
+    set.add(beam);
+    addOutlineToGroup(set, 0.03);
+    set.position.set(0, 0, fz);
+    env.group.add(set);
   }
+
+  // Lanterns marking the route: shaft → cavern → passage
+  _addLantern(env, -3.6, -22.6);
+  _addLantern(env, -12.8, -1.8);                                 // beside the drill rig
+  _addLantern(env,  9.6, -3.2);                                  // mid-cavern
+  _addLantern(env,  5.6, 16.0, { intensity: 2.4, distance: 10 }); // passage mouth — the light thins out
 }
 
-// ── Central drill rig ────────────────────────────────────────────────────────
+// ── Central drill rig (unchanged silhouette, relocated) ──────────────────────
 function _buildDrillRig(env, x, z) {
   env._drillPos = { x, z };
   const rigGroup = new THREE.Group();
@@ -278,4 +380,223 @@ function _buildDrillRig(env, x, z) {
 
   env.group.add(rigGroup);
   env._collisionCircles.push({ x, z, r: 1.2 });
+}
+
+// ── The Depths shaft: headframe over a hole that keeps going down ───────────
+function _buildDepthsShaft(env) {
+  const p = MINE_ZONE_PORTALS.depths;
+  const g = new THREE.Group();
+
+  // Dark pit under the portal ring
+  const pit = new THREE.Mesh(
+    new THREE.CircleGeometry(1.7, 20),
+    new THREE.MeshBasicMaterial({ color: 0x000000 })
+  );
+  pit.rotation.x = -Math.PI / 2;
+  pit.position.y = 0.03;
+  g.add(pit);
+
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(1.75, 0.09, 6, 20), createToonMaterial(0x3a3a3e));
+  rim.rotation.x = Math.PI / 2;
+  rim.position.y = 0.1;
+  g.add(rim);
+
+  // A-frame headframe legs meeting above the pit
+  const legMat = createToonMaterial(WOOD);
+  const up = new THREE.Vector3(0, 1, 0);
+  for (const [lx, lz] of [[-1.5, -1.5], [1.5, -1.5], [-1.5, 1.5], [1.5, 1.5]]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.28, 4.9, 0.28), legMat);
+    const dir = new THREE.Vector3(-lx, 4.4, -lz).normalize();
+    leg.quaternion.setFromUnitVectors(up, dir);
+    leg.position.set(lx / 2, 2.2, lz / 2); // midpoint of base (lx,0,lz) → apex (0,4.4,0)
+    leg.castShadow = true;
+    g.add(leg);
+    env._collisionCircles.push({ x: p.x + lx, z: p.z + lz, r: 0.3 });
+  }
+  const apex = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.7), createToonMaterial(WOOD_DARK));
+  apex.position.y = 4.45;
+  g.add(apex);
+  const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.08, 6, 14), createToonMaterial(0x2c2c30));
+  wheel.position.y = 5.05;
+  g.add(wheel);
+  addOutlineToGroup(g, 0.03);
+
+  g.position.set(p.x, 0, p.z);
+  env.group.add(g);
+}
+
+// ── The Breach — ancient portal chamber ──────────────────────────────────────
+const ALIEN_STONE = 0x241a38;
+const RUNE_VIOLET = 0x8a5cff;
+
+function _buildBreach(env, rng) {
+  const cx = 0, cz = 28.8; // chamber centre / ancient ring
+
+  // Dais with a glowing rune ring
+  const dais = new THREE.Mesh(new THREE.CylinderGeometry(2.7, 3.0, 0.35, 12), createToonMaterial(ALIEN_STONE));
+  dais.position.set(cx, 0.175, cz);
+  dais.receiveShadow = true;
+  addOutline(dais, 0.03);
+  env.group.add(dais);
+
+  const daisRing = new THREE.Mesh(
+    new THREE.TorusGeometry(2.75, 0.07, 6, 40),
+    new THREE.MeshBasicMaterial({ color: RUNE_VIOLET })
+  );
+  daisRing.rotation.x = Math.PI / 2;
+  daisRing.position.set(cx, 0.4, cz);
+  env.group.add(daisRing);
+
+  // The Great Ring — a standing gate the miners uncovered, slowly turning
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(2.0, 0.22, 10, 36), createToonMaterial(0x35284f));
+  ring.position.set(cx, 2.45, cz);
+  addOutline(ring, 0.03);
+  env.group.add(ring);
+  env._spinners.push({ mesh: ring, axis: 'z', speed: 0.22 });
+
+  const rift = new THREE.Mesh(
+    new THREE.CircleGeometry(1.72, 28),
+    new THREE.MeshBasicMaterial({ color: 0x7733cc, transparent: true, opacity: 0.38, side: THREE.DoubleSide })
+  );
+  rift.position.set(cx, 2.45, cz);
+  env.group.add(rift);
+
+  const shard = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.3, 0),
+    new THREE.MeshBasicMaterial({ color: 0xbb88ff })
+  );
+  shard.position.set(cx, 5.3, cz);
+  env.group.add(shard);
+  env._spinners.push({ mesh: shard, axis: 'y', speed: 0.9 });
+
+  // Block the whole dais — the player walks at y=0 and would clip into it
+  env._collisionCircles.push({ x: cx, z: cz, r: 2.9 });
+
+  // Chamber light — cold violet, nothing like the lanterns behind you
+  const glow = new THREE.PointLight(RUNE_VIOLET, 4.2, 22, 1);
+  glow.position.set(cx, 4.2, cz);
+  env.group.add(glow);
+  const gateGlow = new THREE.PointLight(0x33ccbb, 2.0, 11, 1);
+  gateGlow.position.set(0, 3, 34.4);
+  env.group.add(gateGlow);
+
+  // Standing stones around the chamber
+  const stoneMat = createToonMaterial(ALIEN_STONE);
+  const glyphMat = new THREE.MeshBasicMaterial({ color: RUNE_VIOLET });
+  const stones = [
+    [-11.5, 24.5], [11.5, 24.5],
+    [-13.5, 29.5], [13.5, 29.5],
+    [-6.0, 34.2],  [6.0, 34.2],
+  ];
+  for (const [sx, sz] of stones) {
+    const h = 3.0 + rng() * 1.3;
+    const stone = new THREE.Mesh(new THREE.BoxGeometry(0.95, h, 0.7), stoneMat);
+    stone.position.set(sx, h / 2, sz);
+    stone.rotation.y = rng() * Math.PI * 2;
+    stone.rotation.z = (rng() - 0.5) * 0.1;
+    stone.castShadow = true;
+    addOutline(stone, 0.035);
+    env.group.add(stone);
+    const glyph = new THREE.Mesh(new THREE.OctahedronGeometry(0.12, 0), glyphMat);
+    glyph.position.set(sx, h * 0.72, sz);
+    env.group.add(glyph);
+    env._collisionCircles.push({ x: sx, z: sz, r: 0.55 });
+  }
+
+  // Rune decals circling the dais
+  const runeMat = new THREE.MeshBasicMaterial({ color: RUNE_VIOLET, transparent: true, opacity: 0.45 });
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    const rune = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.5), runeMat);
+    rune.rotation.x = -Math.PI / 2;
+    rune.rotation.z = a + rng();
+    rune.position.set(cx + Math.cos(a) * 4.3, 0.025, cz + Math.sin(a) * 4.3);
+    env.group.add(rune);
+  }
+
+  // World gates — stone arches facing the Great Ring
+  _buildWorldGate(env, MINE_ZONE_PORTALS.verdantMaw,   Math.PI / 2);  // west gate faces +x
+  _buildWorldGate(env, MINE_ZONE_PORTALS.frozenTundra, -Math.PI / 2); // east gate faces -x
+  _buildWorldGate(env, MINE_ZONE_PORTALS.lagoonCoast,  0);            // far gate faces -z
+}
+
+// A rough-hewn arch around a world portal. rotY orients the opening.
+function _buildWorldGate(env, pos, rotY) {
+  const g = new THREE.Group();
+  const stoneMat = createToonMaterial(ALIEN_STONE);
+
+  for (const px of [-1.7, 1.7]) {
+    const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.8, 3.5, 0.8), stoneMat);
+    pillar.position.set(px, 1.75, 0);
+    pillar.castShadow = true;
+    g.add(pillar);
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.4, 1.0), stoneMat);
+    cap.position.set(px, 3.65, 0);
+    g.add(cap);
+  }
+  const lintel = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.65, 0.9), stoneMat);
+  lintel.position.set(0, 4.1, 0);
+  lintel.castShadow = true;
+  g.add(lintel);
+  const keyGlyph = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.16, 0),
+    new THREE.MeshBasicMaterial({ color: RUNE_VIOLET })
+  );
+  keyGlyph.position.set(0, 4.75, 0);
+  g.add(keyGlyph);
+  addOutlineToGroup(g, 0.035);
+
+  g.position.set(pos.x, 0, pos.z);
+  g.rotation.y = rotY;
+  env.group.add(g);
+
+  // Pillar collision (rotate the offsets with the arch)
+  const cos = Math.cos(rotY), sin = Math.sin(rotY);
+  for (const px of [-1.7, 1.7]) {
+    env._collisionCircles.push({ x: pos.x + px * cos, z: pos.z - px * sin, r: 0.55 });
+  }
+}
+
+// ── Scattered stalagmites and glow crystals ──────────────────────────────────
+function _scatterCaveDetail(env, rng) {
+  const stalMat = { rock: createToonMaterial(0x201812), breach: createToonMaterial(0x2a2040) };
+  const crysMat = { rock: new THREE.MeshBasicMaterial({ color: 0x55e0c8 }), breach: new THREE.MeshBasicMaterial({ color: 0xbb88ff }) };
+  const portals = Object.values(MINE_ZONE_PORTALS);
+
+  for (let r = 0; r < MINE_MAP.length; r++) {
+    for (let c = 0; c < MINE_MAP[r].length; c++) {
+      if (!isMineFloorCell(c, r)) continue;
+      const { x, z } = mineCellToWorld(c, r);
+
+      // Keep the travelled routes and POIs clean
+      if (Math.abs(x) < 4.5 && z < -8) continue;                                  // entrance + shaft spine
+      if (portals.some(p => Math.hypot(x - p.x, z - p.z) < 4.2)) continue;
+      if (Math.hypot(x - MINE_DRILL_POS.x, z - MINE_DRILL_POS.z) < 4.2) continue;
+      if (Math.hypot(x, z - 28.8) < 5.5) continue;                                // dais clearing
+
+      const roll = rng();
+      const breachy = r >= 17;
+      const ox = (rng() - 0.5) * 2.0;
+      const oz = (rng() - 0.5) * 2.0;
+      if (roll < 0.30) {
+        const h = 0.5 + rng() * 0.9;
+        const stal = new THREE.Mesh(
+          new THREE.ConeGeometry(0.16 + rng() * 0.22, h, 6),
+          stalMat[breachy ? 'breach' : 'rock']
+        );
+        stal.position.set(x + ox, h / 2, z + oz);
+        stal.castShadow = true;
+        addOutline(stal, 0.03);
+        env.group.add(stal);
+      } else if (roll < 0.42) {
+        const crys = new THREE.Mesh(
+          new THREE.OctahedronGeometry(0.16 + rng() * 0.14, 0),
+          crysMat[breachy ? 'breach' : 'rock']
+        );
+        crys.position.set(x + ox, 0.22, z + oz);
+        crys.rotation.y = rng() * Math.PI;
+        env.group.add(crys);
+      }
+    }
+  }
 }

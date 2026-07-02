@@ -37,12 +37,16 @@ export const ZONE_ASSETS = {
   ],
 
   // ── The Mine ────────────────────────────────────────────────────────────────
+  // Entrance chamber sits around (0,-30); working cavern spans z≈-10…13.
+  // Keep the x=0 spine (entrance → shaft → cavern) clear of collision props.
   mine: [
-    { model: 'barrel',  x: 3,    z: -14, scale: 0.6,  rotY: 0.3,  r: 0.35 },
-    { model: 'barrel',  x: -3,   z: -15, scale: 0.55, rotY: 1.8,  r: 0.35 },
-    { model: 'barrel',  x: 5,    z: -13, scale: 0.5,  rotY: 0.9,  r: 0.35 },
-    { model: 'rock',    x: 11,   z: 5,   scale: 0.7,  rotY: 0.2,  r: 0.75 },
-    { model: 'rock',    x: -11,  z: 3,   scale: 0.65, rotY: 1.5,  r: 0.75 },
+    { model: 'barrel',  x: 3.4,   z: -30.5, scale: 0.6,  rotY: 0.3,  r: 0.35 },
+    { model: 'barrel',  x: -3.8,  z: -31,   scale: 0.55, rotY: 1.8,  r: 0.35 },
+    { model: 'crate',   x: -4.6,  z: -29,   scale: 0.5,  rotY: 0.9,  r: 0.5  },
+    { model: 'barrel',  x: -12.6, z: 1.2,   scale: 0.5,  rotY: 0.9,  r: 0.35 },
+    { model: 'rock',    x: 19.2,  z: 0,     scale: 0.7,  rotY: 0.2,  r: 0.75 },
+    { model: 'rock',    x: -16,   z: 3.2,   scale: 0.65, rotY: 1.5,  r: 0.75 },
+    { model: 'boulder', x: -6.4,  z: -8,    scale: 0.8,  rotY: 0.6,  r: 0.75 },
   ],
 
   // ── Verdant Maw ─────────────────────────────────────────────────────────────

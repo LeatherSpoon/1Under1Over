@@ -66,18 +66,21 @@ export function addOutlineToGroup(group, thickness = 0.04) {
 
 /**
  * MeshToonMaterial variant that discards fragments within a world-space XZ
- * circle centred on uPlayerPos. Radius is uRevealR (metres). Used by the
- * mine for fog-of-war reveal — unrelated to player-visibility occlusion.
+ * circle centred on uPlayerPos. Radius is uRevealR (metres, override via
+ * options.revealR). Used by the mine so tall cave walls open up around the
+ * player — unrelated to player-visibility occlusion.
  *
  * After the material compiles, update the player position each frame via:
  *   mat.userData.shader.uniforms.uPlayerPos.value.copy(playerPos)
+ * (main.js does this for every material in env._revealMaterials.)
  */
 export function createRevealToonMaterial(color, options = {}) {
-  const mat = new THREE.MeshToonMaterial({ color, gradientMap, ...options });
+  const { revealR = 1.5, ...matOptions } = options;
+  const mat = new THREE.MeshToonMaterial({ color, gradientMap, ...matOptions });
 
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uPlayerPos = { value: new THREE.Vector3(0, 0, 1e6) };
-    shader.uniforms.uRevealR   = { value: 1.5 };
+    shader.uniforms.uRevealR   = { value: revealR };
     mat.userData.shader = shader;
 
     shader.vertexShader = 'varying vec3 vWorldPos;\n' + shader.vertexShader;

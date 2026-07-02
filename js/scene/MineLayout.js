@@ -1,15 +1,23 @@
 import {
+  MINE_MAP,
+  MINE_CELL,
   MINE_PORTAL_POS,
   MINE_SPAWN_POS,
   MINE_ZONE_PORTALS,
   getMineableWallBlocks,
+  isMineFloorCell,
+  mineWorldToCell,
 } from './zones/Mine/layout.js';
 
 export {
+  MINE_MAP,
+  MINE_CELL,
   MINE_PORTAL_POS,
   MINE_SPAWN_POS,
   MINE_ZONE_PORTALS,
   getMineableWallBlocks,
+  isMineFloorCell,
+  mineWorldToCell,
 };
 
 const PLAYER_R = 0.35;

@@ -31,6 +31,7 @@ export function createSwitchZone({
     gameStats.recordZoneVisit(zoneName);
     sceneManager.scene.remove(player.group);
     env.switchZone(zoneName);
+    sceneManager.setZoneAmbience(zoneName);
     sceneManager.scene.add(player.group);
 
     const spawnPos = ZONE_SPAWN_POS[zoneName] || [0, 0];

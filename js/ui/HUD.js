@@ -144,6 +144,13 @@ export class HUD {
     this._toastActive = false;
     this._lastCraftingLevel = 1;
 
+    // Session "number go up" tracking — PP earned since page load + cap-decile pulses
+    this._sessionStart = Date.now();
+    this._sessionPP = 0;
+    this._lastPPTotal = null;
+    this._lastPPDecile = -1;
+    this._ppPulseTimer = null;
+
     this._constructAddMode = true;
 
     this._buildStatList();
@@ -2004,6 +2011,44 @@ export class HUD {
 
 
   // ── Frame update ───────────────────────────────────────────────────────────
+  // ── Session stats + PP milestone pulse (number-go-up feedback) ────────────
+  _updateSessionStats(pp) {
+    // Accumulate only gains — offloads/spends reset the baseline without deducting
+    if (this._lastPPTotal !== null && pp > this._lastPPTotal) {
+      this._sessionPP += pp - this._lastPPTotal;
+    }
+    this._lastPPTotal = pp;
+
+    if (this._sessionPP >= 1) {
+      const el = document.getElementById('session-stats');
+      if (el) {
+        el.hidden = false;
+        const ppEl = document.getElementById('session-pp');
+        const timeEl = document.getElementById('session-time');
+        if (ppEl) ppEl.textContent = `${abbrevNum(Math.floor(this._sessionPP))} PP`;
+        if (timeEl) {
+          const mins = Math.floor((Date.now() - this._sessionStart) / 60000);
+          timeEl.textContent = mins < 60 ? `· ${mins}m` : `· ${Math.floor(mins / 60)}h ${mins % 60}m`;
+        }
+      }
+    }
+
+    // Pulse the counter each time PP crosses another 10% of cap; gold when full
+    const cap = this.pp.ppCap || 1;
+    const decile = Math.min(10, Math.floor((pp / cap) * 10));
+    if (this.ppDisplay) {
+      if (decile > this._lastPPDecile && this._lastPPDecile >= 0) {
+        this.ppDisplay.classList.remove('pp-pulse');
+        void this.ppDisplay.offsetWidth; // restart the CSS animation
+        this.ppDisplay.classList.add('pp-pulse');
+        clearTimeout(this._ppPulseTimer);
+        this._ppPulseTimer = setTimeout(() => this.ppDisplay.classList.remove('pp-pulse'), 800);
+      }
+      this.ppDisplay.classList.toggle('pp-capped', pp >= cap);
+    }
+    this._lastPPDecile = decile;
+  }
+
   update(now) {
     if (now - this._lastUpdate < this._throttleMs) return;
     this._lastUpdate = now;
@@ -2016,6 +2061,7 @@ export class HUD {
     const effRate = this.pp.effectiveRate ?? this.pp.ppRate;
     if (this.ppAmount) this.ppAmount.textContent = `${abbrevNum(pp)} / ${abbrevNum(this.pp.ppCap)}`;
     this.ppRate.textContent = `(+${effRate.toFixed(1)}/s)`;
+    this._updateSessionStats(pp);
 
     // Rate tooltip — per-min / per-hour Achievement Counter (IIC §2)
     const rateSec = document.getElementById('rate-sec');

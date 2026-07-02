@@ -77,6 +77,13 @@ This keeps the player center outside the block at all approach angles without th
 2. `main.js` — `ZONE_TERRAIN`, `ZONE_SPAWN_POS`
 3. `js/config.js` — `ENV_UNLOCK` PP threshold
 4. `js/systems/GameStatistics.js` — increment `TOTAL_WORLDS`
+5. (optional) `js/scene/SceneManager.js` — `ZONE_AMBIENCE` preset if the zone needs non-default sky/fog/light levels. Cave zones (mine, depths) go dark and rely on point lights added by their zone builders; `switchZone` applies presets via `sceneManager.setZoneAmbience(zoneName)`.
+
+**The Mine is tile-map-driven**: `js/scene/zones/Mine/layout.js` holds a 25×25 ASCII map (`.` floor, `1`-`5` ore tiers, space = solid rock). Non-mineable cave walls are auto-generated around carved cells and merged into per-row runs; `tests/mineLayout.test.js` flood-fills the map to prove every gate stays reachable, so layout edits are test-checked. Narrative flow: entrance adit → main shaft → working cavern (drill rig + Depths shaft) → winding passage → the Breach (ancient portal chamber holding the world gates).
+
+Environment also supports:
+- `env._spinners` — `{ mesh, axis, speed }` entries rotated each frame by `env.update()`, cleared on zone switch (Breach ring, floating shard).
+- `env._revealMaterials` — materials from `createRevealToonMaterial(color, { revealR })`; `main.js` feeds them the player position each frame so tall cave walls open up around the player.
 
 ### Save system
 
@@ -115,7 +122,8 @@ All three serialize/deserialize via `SaveSystem` (version 4+).
 | Game constants | `js/config.js` |
 | All systems bootstrap + game loop | `js/main.js` |
 | Zone generation, collision, portals | `js/scene/Environment.js` |
-| Mine grid layout (procedural) | `js/scene/MineLayout.js` |
+| Mine cave layout (25×25 tile map) | `js/scene/zones/Mine/layout.js` (re-exported by `js/scene/MineLayout.js`) |
+| Per-zone sky/fog/light presets | `ZONE_AMBIENCE` in `js/scene/SceneManager.js` |
 | Save/load serialization | `js/systems/SaveSystem.js` |
 | Character stats + derived values | `js/systems/StatsSystem.js` |
 | Crafting recipes + queue | `js/systems/CraftingSystem.js` |

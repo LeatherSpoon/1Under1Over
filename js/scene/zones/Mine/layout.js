@@ -1,30 +1,78 @@
-const _S    = 3.2;   // block spacing
-const _EDGE = 5 * _S; // grid edge = 16
-const _HUB_PORTAL_DIST = 18;
-const _HUB_SPLIT = 6;
+/**
+ * The Mine layout — tile-map-driven cave.
+ *
+ * The mine is a journey, not a hub (Shadows of Brimstone style): you descend
+ * through a timbered entrance, follow the main shaft into a working cavern,
+ * and deep at the far end the miners broke through into something older —
+ * the Breach, an ancient chamber whose stone gates lead to other worlds.
+ *
+ * ── Map legend ────────────────────────────────────────────────────────────────
+ *   ' '  void (solid mountain — walls are auto-generated around open space)
+ *   '.'  open cave floor
+ *   1-5  mineable ore block, tier 1 (copper) … tier 5 (gold)
+ *
+ * Each cell is MINE_CELL (3.2 m). Column c → x = (c-12)*3.2, row r → z = (r-12)*3.2.
+ * Row 0 is the surface end (entrance, −z); row 24 is deepest (the Breach, +z).
+ */
 
-// South portal in the Mine hub (Landing Site return portal)
-export const MINE_PORTAL_POS = { x: 0, z: -_HUB_PORTAL_DIST };
+export const MINE_CELL = 3.2;
+const HALF = 12; // 25×25 grid centre index
 
-export const MINE_SPAWN_POS  = { x: 0, z: -12 };
+//                       1111111111222222
+//             0123456789012345678901234
+export const MINE_MAP = [
+  '                         ', // r0   z=-38.4
+  '          .....          ', // r1   entrance chamber
+  '         .......         ', // r2   ← return portal (0,-32)
+  '         .......         ', // r3   ← spawn (0,-28.8)
+  '           ...           ', // r4   shaft mouth
+  '          1...1          ', // r5   main shaft + copper alcoves
+  '           ...           ', // r6
+  '          1...1          ', // r7
+  '        2.......2        ', // r8   cavern throat
+  '      1..1.....2..2      ', // r9   working cavern
+  '     1..2........2.2     ', // r10
+  '    2.........2.....3    ', // r11
+  '    ........3........    ', // r12  ← drill rig (-9.6, 0)
+  '     3....2....3.....    ', // r13
+  '     ..3.....3.....3     ', // r14  ← Depths shaft (16, 6.4)
+  '      3..3.........      ', // r15
+  '        3.......4        ', // r16  passage mouth (SE)
+  '             4..4        ', // r17  winding passage
+  '           4...4         ', // r18
+  '          4..4           ', // r19
+  '        5.......5        ', // r20  the Breach
+  '       5.........5       ', // r21  ← ancient ring (0,28.8), world gates (±9.6,28.8)
+  '        .........        ', // r22
+  '          .....          ', // r23  ← Lagoon gate (0,35.2)
+  '                         ', // r24  z=+38.4
+];
 
-// The Mine is the portal hub: all realm gates stay inside the visible mine floor.
-export const MINE_ZONE_PORTALS = {
-  landingSite:  { x: 0,            z: -_HUB_PORTAL_DIST }, // south
-  depths:       { x: -_HUB_SPLIT,  z:  _HUB_PORTAL_DIST }, // north-left
-  frozenTundra: { x:  _HUB_SPLIT,  z:  _HUB_PORTAL_DIST }, // north-right
-  verdantMaw:   { x:  _HUB_PORTAL_DIST, z: 0            }, // east
-  lagoonCoast:  { x: -_HUB_PORTAL_DIST, z: 0            }, // west
-};
-
-function seededRandom(seed) {
-  let s = seed | 0;
-  return function () {
-    s = Math.imul(s ^ (s >>> 15), s | 1);
-    s ^= s + Math.imul(s ^ (s >>> 7), s | 61);
-    return ((s ^ (s >>> 14)) >>> 0) / 4294967296;
-  };
+export function mineCellToWorld(c, r) {
+  return { x: (c - HALF) * MINE_CELL, z: (r - HALF) * MINE_CELL };
 }
+
+export function mineWorldToCell(x, z) {
+  return { c: Math.round(x / MINE_CELL) + HALF, r: Math.round(z / MINE_CELL) + HALF };
+}
+
+// Fixed points of interest
+export const MINE_PORTAL_POS = { x: 0, z: -32 };      // return portal (entrance)
+export const MINE_SPAWN_POS  = { x: 0, z: -28.8 };
+export const MINE_DRILL_POS  = { x: -9.6, z: 0 };
+// Crossing this z inside the mine means the player has broken into the Breach passage
+export const MINE_BREACH_Z   = 14;
+
+// All zone gates. The return portal sits at the entrance; the Depths shaft is
+// in the working cavern (the mine keeps going down); the three world gates
+// stand inside the Breach chamber.
+export const MINE_ZONE_PORTALS = {
+  landingSite:  { x: 0,    z: -32   }, // entrance (surface lift)
+  depths:       { x: 16,   z: 6.4   }, // cavern — descending shaft
+  verdantMaw:   { x: -9.6, z: 28.8  }, // Breach — west gate
+  frozenTundra: { x: 9.6,  z: 28.8  }, // Breach — east gate
+  lagoonCoast:  { x: 0,    z: 35.2  }, // Breach — far gate
+};
 
 // 5-tier ore properties, indexed by tier
 const TIER_PROPS = [
@@ -35,44 +83,106 @@ const TIER_PROPS = [
   { tier: 4, ore: 'gold',   chance: 0.35, cost: 25, duration: 9.0, color: 0x1c1500, veinColor: 0xffcc00 },
 ];
 
-// Grid layout: 9×9 positions at 4m spacing, range ±16m
+function cellAt(c, r) {
+  if (r < 0 || r >= MINE_MAP.length || c < 0 || c >= MINE_MAP[r].length) return ' ';
+  return MINE_MAP[r][c];
+}
+
+function isOpenCell(ch) { return ch === '.'; }
+function isOreCell(ch)  { return ch >= '1' && ch <= '5'; }
+function isCarved(ch)   { return isOpenCell(ch) || isOreCell(ch); }
+
+export function isMineFloorCell(c, r) {
+  return isOpenCell(cellAt(c, r));
+}
+
+/** Mineable ore blocks parsed from the map. Same shape the old generator produced. */
 export function getMineableWallBlocks() {
-  const rng = seededRandom(11111);
   const blocks = [];
-  const spacing = 3.2; // matches block width so blocks touch
-  const half = 5;     // grid: gi/gj from -5 to +5 (range ±16m)
-
-  for (let gi = -half; gi <= half; gi++) {
-    for (let gj = -half; gj <= half; gj++) {
-      const x = gi * spacing;
-      const z = gj * spacing;
-
-      // Clear cardinal tunnel approach corridors (creates + shaped paths to tunnel mouths)
-      if (z < -6 && Math.abs(x) < 7) continue; // south → Landing Site
-      if (z >  6 && Math.abs(x) < 7) continue; // north → Depths / Frozen Tundra
-      if (x >  6 && Math.abs(z) < 7) continue; // east  → Verdant Maw
-      if (x < -6 && Math.abs(z) < 7) continue; // west  → Lagoon Coast
-
-      // Clear centre area for drill rig
-      if (Math.abs(gi) <= 1 && Math.abs(gj) <= 1) continue;
-
-      const isBorder = (Math.abs(gi) === half || Math.abs(gj) === half);
-
-      // Interior blocks placed with ~55% density to create navigable corridors
-      if (!isBorder && rng() > 0.55) continue;
-
-      // Tier by Chebyshev distance from centre
-      const cheb = Math.max(Math.abs(gi), Math.abs(gj));
-      const tierIdx = Math.min(4, Math.max(0, cheb - 1));
-
+  for (let r = 0; r < MINE_MAP.length; r++) {
+    for (let c = 0; c < MINE_MAP[r].length; c++) {
+      const ch = cellAt(c, r);
+      if (!isOreCell(ch)) continue;
+      const { x, z } = mineCellToWorld(c, r);
       blocks.push({
         x: Number(x.toFixed(2)),
         z: Number(z.toFixed(2)),
         r: 1.6,
-        isBorder,
-        props: TIER_PROPS[tierIdx],
+        isBorder: false,
+        props: TIER_PROPS[ch.charCodeAt(0) - 49], // '1' → tier 0
       });
     }
   }
   return blocks;
+}
+
+/**
+ * Solid (non-mineable) cave walls: any void cell touching carved space,
+ * merged into horizontal runs so the builder can draw fewer meshes.
+ * kind: 'rock' near the surface, 'alien' once the passage breaks through (r ≥ 17).
+ */
+export function getMineWallRuns() {
+  const isWall = (c, r) => {
+    if (isCarved(cellAt(c, r))) return false;
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if ((dr || dc) && isCarved(cellAt(c + dc, r + dr))) return true;
+      }
+    }
+    return false;
+  };
+
+  const runs = [];
+  for (let r = 0; r < MINE_MAP.length; r++) {
+    let start = -1;
+    for (let c = 0; c <= MINE_MAP[r].length; c++) {
+      if (c < MINE_MAP[r].length && isWall(c, r)) {
+        if (start === -1) start = c;
+      } else if (start !== -1) {
+        const a = mineCellToWorld(start, r);
+        const b = mineCellToWorld(c - 1, r);
+        runs.push({
+          cx: (a.x + b.x) / 2,
+          cz: a.z,
+          width: (c - start) * MINE_CELL,
+          depth: MINE_CELL,
+          kind: r >= 17 ? 'alien' : 'rock',
+          row: r,
+        });
+        start = -1;
+      }
+    }
+  }
+  return runs;
+}
+
+/**
+ * Floor runs (open + ore cells — ore blocks stand on floor so mining reveals it),
+ * merged per row. region drives the floor tint in the builder.
+ */
+export function getMineFloorRuns() {
+  const regionOf = (r) =>
+    r <= 4 ? 'entrance' : r <= 7 ? 'shaft' : r <= 16 ? 'cavern' : r <= 19 ? 'passage' : 'breach';
+
+  const runs = [];
+  for (let r = 0; r < MINE_MAP.length; r++) {
+    let start = -1;
+    for (let c = 0; c <= MINE_MAP[r].length; c++) {
+      if (c < MINE_MAP[r].length && isCarved(cellAt(c, r))) {
+        if (start === -1) start = c;
+      } else if (start !== -1) {
+        const a = mineCellToWorld(start, r);
+        const b = mineCellToWorld(c - 1, r);
+        runs.push({
+          cx: (a.x + b.x) / 2,
+          cz: a.z,
+          width: (c - start) * MINE_CELL,
+          depth: MINE_CELL,
+          region: regionOf(r),
+        });
+        start = -1;
+      }
+    }
+  }
+  return runs;
 }
