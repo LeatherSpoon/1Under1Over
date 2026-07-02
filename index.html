@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#000000" />
+  <title>Processing Power</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/combat.css" />
+  <link rel="stylesheet" href="css/menu.css" />
+  <link rel="stylesheet" href="css/mobile.css" />
+
+  <!-- ── file:// protocol guard ── runs sync before any module loads ── -->
+  <script>
+    if (window.location.protocol === 'file:') {
+      document.addEventListener('DOMContentLoaded', function () {
+        // Freeze the page — modules won't load anyway
+        document.body.style.cssText = 'margin:0;background:#0a0f0a;overflow:hidden;';
+
+        var overlay = document.createElement('div');
+        overlay.style.cssText = [
+          'position:fixed;inset:0;display:flex;flex-direction:column',
+          'align-items:center;justify-content:center;background:#0a0f0a',
+          'font-family:monospace;color:#00ffcc;padding:32px;box-sizing:border-box',
+          'z-index:99999;text-align:center'
+        ].join(';');
+
+        overlay.innerHTML = [
+          '<div style="font-size:2rem;font-weight:bold;letter-spacing:4px;margin-bottom:8px">⚡ PROCESSING POWER</div>',
+          '<div style="color:#558866;margin-bottom:32px;font-size:0.85rem;letter-spacing:2px">SCI-FI IDLE RPG</div>',
+
+          '<div style="background:#0f1f14;border:1px solid #00ffcc44;border-radius:8px;padding:24px 32px;max-width:560px;width:100%;margin-bottom:24px">',
+          '<div style="color:#ff6644;font-size:1rem;margin-bottom:16px;font-weight:bold">',
+          '⚠ Cannot run from file://</div>',
+          '<div style="color:#aaccbb;font-size:0.875rem;line-height:1.7">',
+          'This game uses ES6 modules which browsers block when opened directly from disk.',
+          '<br>It must be served via a local web server.</div>',
+          '</div>',
+
+          '<div style="background:#0f1f14;border:1px solid #00ffcc44;border-radius:8px;padding:24px 32px;max-width:560px;width:100%;text-align:left">',
+          '<div style="color:#00ffcc;font-weight:bold;margin-bottom:14px;letter-spacing:1px">HOW TO PLAY</div>',
+
+          '<div style="color:#aaccbb;font-size:0.875rem;line-height:2">',
+          '<span style="color:#00ffcc">1.</span> Find <strong style="color:#fff">start.bat</strong> in the game folder<br>',
+          '<span style="color:#00ffcc">2.</span> Double-click it — a terminal window will open<br>',
+          '<span style="color:#00ffcc">3.</span> Open your browser and go to:<br>',
+          '</div>',
+
+          '<div style="background:#000;border:1px solid #00ffcc66;border-radius:4px;padding:10px 16px;margin:10px 0;font-size:1.1rem;letter-spacing:2px;color:#00ffff;text-align:center">',
+          'http://localhost:8080',
+          '</div>',
+
+          '<div style="color:#558866;font-size:0.8rem;margin-top:10px">',
+          'Requires Python (pre-installed on Windows 10/11).<br>',
+          'No Python? Double-click <strong style="color:#aaa">start-node.bat</strong> instead (needs Node.js).',
+          '</div>',
+          '</div>'
+        ].join('');
+
+        document.body.appendChild(overlay);
+      });
+    }
+  </script>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./js/vendor/three.module.js",
+      "three/addons/loaders/GLTFLoader.js": "./js/vendor/GLTFLoader.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="game-canvas"></canvas>
+
+  <!-- HUD overlay -->
+  <div id="hud">
+    <div id="hud-topleft">
+      <div id="zone-label">Landing Site</div>
+      <div id="hp-display">HP: 100 / 100</div>
+      <div id="energy-display">Energy: 100 / 100</div>
+    </div>
+
+    <!-- Top-center currency stack: PP large, Steps small below -->
+    <div id="hud-topcenter">
+      <div id="pp-display" title="Processing Power">
+        <span id="pp-amount">0 / 150</span>
+        <span id="pp-rate">(+1.0/s)</span>
+      </div>
+      <div id="steps-display" title="Steps">
+        <span class="steps-icon">⌁</span>
+        <span id="steps-amount">0</span>
+      </div>
+      <div id="crystal-display" title="Quantum Crystals — premium currency" hidden>
+        <span class="crystal-icon">◈</span>
+        <span id="crystal-amount">0</span>
+      </div>
+      <div id="pp-rate-tooltip" hidden>
+        <div class="rate-row"><span>per sec</span><span id="rate-sec">0</span></div>
+        <div class="rate-row"><span>per min</span><span id="rate-min">0</span></div>
+        <div class="rate-row"><span>per hour</span><span id="rate-hr">0</span></div>
+      </div>
+    </div>
+
+    <!-- Mission Tracker (top-right): Main objective (story) + Side objective (codex) + Activities -->
+    <div id="mission-tracker">
+      <div id="mission-main" class="mission-card mission-main" title="Main Objective (story)">
+        <div class="mission-label">MAIN</div>
+        <div class="mission-text" id="mission-main-text">Awaiting transmission…</div>
+      </div>
+      <div id="mission-side" class="mission-card mission-side" title="Side Objective (Codex)">
+        <div class="mission-label">SIDE</div>
+        <div class="mission-text" id="mission-side-text">No side objective</div>
+        <button id="mission-side-pick" class="mission-pick-btn" title="Choose from Codex">✎</button>
+      </div>
+      <!-- Existing activity timers slot, repurposed -->
+      <div id="activity-timers"></div>
+    </div>
+
+    <!-- Drone mission completion toast -->
+    <div id="drone-toast" hidden>
+      <div id="drone-toast-title"></div>
+      <div id="drone-toast-loot"></div>
+    </div>
+
+    <!-- Interact hint + gather bar -->
+    <div id="interact-hint" hidden>[E] Gather</div>
+    <div id="gather-bar" hidden>
+      <div id="gather-fill"></div>
+      <div id="gather-text">Gathering...</div>
+    </div>
+
+    <!-- Menu toggle (always visible) -->
+    <button id="menu-toggle-btn" class="panel-toggle-btn" title="Menu">☰</button>
+
+    <!-- Construction mode button -->
+    <button id="btn-construct" title="Construction Mode">BUILD</button>
+
+    <!-- Construction panel — right-side dock, world remains visible -->
+    <div id="construct-panel" hidden>
+      <div class="panel-header">
+        CONSTRUCTION
+        <button class="panel-close" id="btn-construct-return">↩ RETURN</button>
+      </div>
+      <div class="construct-mode-section">
+        <button id="btn-construct-mode" class="construct-mode-toggle mode-add">＋ PLACING</button>
+      </div>
+      <div class="panel-body" id="construct-contents"></div>
+    </div>
+
+    <!-- Unified Menu Screen — backdrop + bottom tab bar; panels render above it -->
+    <div id="menu-screen" hidden>
+      <div id="menu-backdrop"></div>
+      <nav id="menu-tabbar" role="tablist" aria-label="Main menu">
+        <button class="menu-tab" data-tab="stat-sidebar" role="tab">STATS</button>
+        <button class="menu-tab" data-tab="inventory-panel" role="tab">INV</button>
+        <button class="menu-tab" data-tab="equipment-panel" role="tab">EQUIP</button>
+        <button class="menu-tab" data-tab="tech-panel" role="tab">TECH</button>
+        <button class="menu-tab" data-tab="codex-panel" role="tab">CODEX</button>
+        <button class="menu-tab" data-tab="quest-panel" role="tab">QUESTS</button>
+        <button class="menu-tab" data-tab="optimization-panel" role="tab">OPT</button>
+        <button class="menu-tab" data-tab="allocation-panel" role="tab">ALLOC</button>
+        <button class="menu-tab" data-tab="settings-panel" role="tab">⚙</button>
+      </nav>
+    </div>
+
+    <!-- Allocation Console — Tripartite PP investment sliders -->
+    <div id="allocation-panel" class="panel-overlay" hidden>
+      <div class="panel-window" style="border-color:#44ffcc55;">
+        <div class="panel-header" style="color:#44ffcc;border-color:#44ffcc44;background:rgba(0,18,16,0.88);">
+          ALLOCATION
+          <button class="panel-close" style="border-color:#44ffcc44;color:#44ffcc;" onclick="document.getElementById('allocation-panel').hidden=true">X</button>
+        </div>
+        <div class="panel-body" id="allocation-contents">
+          <div class="alloc-row">
+            <label>CAPACITY</label>
+            <input type="range" id="alloc-capacity" min="0" max="100" value="34">
+            <span id="alloc-capacity-val">34%</span>
+          </div>
+          <div class="alloc-row">
+            <label>POWER</label>
+            <input type="range" id="alloc-power" min="0" max="100" value="33">
+            <span id="alloc-power-val">33%</span>
+          </div>
+          <div class="alloc-row">
+            <label>RATE</label>
+            <input type="range" id="alloc-rate" min="0" max="100" value="33">
+            <span id="alloc-rate-val">33%</span>
+          </div>
+          <div id="alloc-readouts" style="margin-top:1em;font-size:0.85em;opacity:0.85;">
+            <div>Capacity bonus &nbsp;<span id="alloc-cap-bonus">×1.00</span> &nbsp;(invested <span id="alloc-cap-invested">0</span>)</div>
+            <div>Power bonus &nbsp;<span id="alloc-power-bonus">+0.00 PP/s</span> &nbsp;(invested <span id="alloc-power-invested">0</span>)</div>
+            <div>Rate bonus &nbsp;<span id="alloc-rate-bonus">×1.00</span> &nbsp;(invested <span id="alloc-rate-invested">0</span>)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Optimization Console — ROI / Trade-offs / Time-Warps (IIC framework) -->
+    <div id="optimization-panel" class="panel-overlay" hidden>
+      <div class="panel-window" style="border-color:#ffaa44aa;">
+        <div class="panel-header" style="color:#ffaa44;border-color:#ffaa4444;background:rgba(20,15,5,0.85);">
+          OPTIMIZATION CONSOLE
+          <button class="panel-close" style="border-color:#ffaa4444;color:#ffaa44;" onclick="document.getElementById('optimization-panel').hidden=true">X</button>
+        </div>
+        <div class="panel-body" id="optimization-contents"></div>
+      </div>
+    </div>
+
+    <!-- Quest Hub panel -->
+    <div id="quest-panel" class="panel-overlay" hidden>
+      <div class="panel-window" style="border-color:#44aaff55;">
+        <div class="panel-header" style="color:#44ffcc;border-color:#44aaff33;background:rgba(0,12,20,0.88);">
+          QUEST HUB
+          <button class="panel-close" style="border-color:#44aaff44;color:#44aaff;" onclick="document.getElementById('quest-panel').hidden=true">X</button>
+        </div>
+        <!-- Tab bar: CHAINS | SIDE QUESTS -->
+        <div class="quest-hub-tabs" id="quest-hub-tabs">
+          <button class="quest-hub-tab active" data-qhtab="chains">STORY CHAINS</button>
+          <button class="quest-hub-tab" data-qhtab="side">SIDE QUESTS</button>
+        </div>
+        <div class="quest-hub-body" id="quest-hub-body">
+          <!-- Populated by HUD._refreshQuestHub() -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings panel (Save/Load + future Restore Purchases) -->
+    <div id="settings-panel" class="panel-overlay" hidden>
+      <div class="panel-window">
+        <div class="panel-header">SETTINGS <button class="panel-close" onclick="document.getElementById('settings-panel').hidden=true">X</button></div>
+        <div class="panel-body" id="settings-contents">
+          <div class="settings-row">
+            <button id="btn-settings-save" class="stat-up-btn settings-btn">SAVE SESSION</button>
+            <button id="btn-settings-load" class="stat-up-btn settings-btn">LOAD SESSION</button>
+          </div>
+          <div class="settings-row">
+            <button id="btn-settings-achievements" class="stat-up-btn settings-btn">ACHIEVEMENTS</button>
+            <button id="btn-settings-augmentations" class="stat-up-btn settings-btn">AUGMENTATIONS</button>
+          </div>
+          <div class="settings-row">
+            <button id="btn-settings-pedometer" class="stat-up-btn settings-btn">STEPS SHOP</button>
+            <button id="btn-settings-minigame" class="stat-up-btn settings-btn">PP MINIGAME</button>
+          </div>
+          <div class="settings-note">Inventory page expansions are a future premium feature.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel toggle buttons (legacy popup menu — kept for hotkey targets, hidden from view) -->
+    <div id="panel-buttons" hidden>
+      <button id="btn-toggle-inventory-panel" class="panel-toggle-btn" title="Inventory (I)">INV</button>
+      <button id="btn-toggle-equipment-panel" class="panel-toggle-btn" title="Equipment (L)">EQUIP</button>
+      <button id="btn-toggle-pedometer-panel" class="panel-toggle-btn" title="Steps Shop (P)">STEPS</button>
+      <button id="btn-toggle-tech-panel" class="panel-toggle-btn" title="Tech Tree">TECH</button>
+      <button id="btn-toggle-stat-sidebar" class="panel-toggle-btn" title="Stats (S)">STATS</button>
+      <button id="btn-toggle-achievements" class="panel-toggle-btn" title="Achievements" style="background:rgba(20,15,0,0.85);border-color:#ffcc00;color:#ffcc00;">ACH</button>
+      <button id="btn-toggle-codex-panel" class="panel-toggle-btn" title="Codex" style="background:rgba(0,10,20,0.85);border-color:#44aaff;color:#88ccff;">CDX</button>
+      <button id="btn-toggle-augmentations-panel" class="panel-toggle-btn" title="Augmentations" style="background:rgba(15,0,25,0.85);border-color:#cc88ff;color:#cc88ff;">AUG</button>
+      <button id="btn-toggle-minigame" class="panel-toggle-btn" title="PP Minigame" style="background:rgba(20,15,0,0.85);border-color:#ffcc00;color:#ffcc00;">GAME</button>
+      <button id="btn-save" class="panel-toggle-btn" title="Save Session" style="background:rgba(20,10,0,0.85);border-color:#ff8800;color:#ffaa44;">SAVE</button>
+      <button id="btn-load" class="panel-toggle-btn" title="Load Session" style="background:rgba(0,10,20,0.85);border-color:#4488ff;color:#66aaff;">LOAD</button>
+      <div id="sync-status" class="sync-status" style="font-size:0.58rem;color:#9ad7ff;text-align:center;margin-top:2px;">Local</div>
+      <input type="file" id="session-file-input" accept=".json" hidden />
+    </div>
+
+    <!-- Stat sidebar — toggled by STATS button -->
+    <div id="stat-sidebar" class="panel-overlay" hidden>
+      <div class="panel-window">
+        <div class="panel-header">STATS <button class="panel-close" onclick="document.getElementById('stat-sidebar').hidden=true">X</button></div>
+        <div class="panel-body">
+          <div id="stat-list"></div>
+          <div class="sidebar-title" style="margin-top:12px;">PP CAPACITY</div>
+          <div id="prestige-display" style="font-size:0.7rem;color:#00ffcc;text-align:center;margin-bottom:8px;">150 max</div>
+          <button id="btn-statistics" class="stat-up-btn" style="width:100%;padding:6px;font-size:0.75rem;letter-spacing:0.1em;">STATISTICS</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistics panel -->
+    <div id="statistics-panel" class="panel-overlay" hidden>
+      <div class="panel-window" style="width:min(400px,calc(100vw - 32px));height:auto;max-height:calc(100dvh - 96px);">
+        <div class="panel-header">STATISTICS <button class="panel-close" onclick="document.getElementById('statistics-panel').hidden=true">X</button></div>
+        <div id="statistics-contents" class="panel-body"></div>
+      </div>
+    </div>
+
+    <!-- Inventory modal (centered overlay) -->
+    <div id="inventory-panel" hidden>
+      <div id="inventory-modal">
+        <div class="panel-header">INVENTORY <button class="panel-close" onclick="document.getElementById('inventory-panel').hidden=true">X</button></div>
+        <div id="inventory-contents" class="panel-body"></div>
+      </div>
+    </div>
+
+    <!-- Crafting modal (centered overlay) -->
+    <div id="crafting-panel" hidden>
+      <div id="crafting-modal">
+        <div class="panel-header">CRAFTING <button class="panel-close" onclick="document.getElementById('crafting-panel').hidden=true">X</button></div>
+        <div id="crafting-panel-body">
+          <div id="crafting-inv-panel">
+            <div class="panel-subtitle crafting-inv-title">INVENTORY</div>
+            <div id="crafting-inv-contents"></div>
+          </div>
+          <div id="crafting-recipes-panel">
+            <div id="crafting-contents" class="panel-body"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drone panel (centered modal) -->
+    <div id="drone-panel" hidden>
+      <div id="drone-modal">
+        <div class="panel-header">DRONES <button class="panel-close" onclick="document.getElementById('drone-panel').hidden=true">X</button></div>
+        <div id="drone-contents" class="panel-body"></div>
+      </div>
+    </div>
+
+    <!-- Equipment panel -->
+    <div id="equipment-panel" class="panel-overlay" hidden>
+      <div class="equip-svg-panel">
+
+        <!-- Close (over SVG X at x=697,y=13,w=21,h=21 in 735×505) -->
+        <button class="equip-svg-close" onclick="document.getElementById('equipment-panel').hidden=true" aria-label="Close"></button>
+
+        <!-- Left: Inventory column (SVG region x=25,y=78,w=160 in 735×505) -->
+        <div class="equip-fn-inv">
+          <div id="equip-inv-list" class="equip-inv-list"></div>
+        </div>
+
+        <!-- Equipment slot overlays (over SVG slot rects, 38×38 each in 735×505) -->
+        <div id="equip-slot-head"      class="equip-slot-box" data-slot="head"></div>
+        <div id="equip-slot-deploy1"   class="equip-slot-box" data-slot="deploy1"></div>
+        <div id="equip-slot-accessory" class="equip-slot-box" data-slot="accessory"></div>
+        <div id="equip-slot-body"      class="equip-slot-box" data-slot="body"></div>
+        <div id="equip-slot-weapon"    class="equip-slot-box" data-slot="weapon"></div>
+        <div id="equip-slot-legs"      class="equip-slot-box" data-slot="legs"></div>
+        <div id="equip-slot-offhand"   class="equip-slot-box" data-slot="offhand"></div>
+        <div id="equip-slot-deploy2"   class="equip-slot-box" data-slot="deploy2"></div>
+
+        <!-- Stat value overlays (over SVG stat bar text at y≈472 in 735×505) -->
+        <span id="equip-stat-hp"      class="equip-fn-stat">60</span>
+        <span id="equip-stat-energy"  class="equip-fn-stat equip-fn-stat-en">115</span>
+        <span id="equip-stat-defense" class="equip-fn-stat equip-fn-stat-def">0</span>
+        <span id="equip-stat-weight"  class="equip-fn-stat equip-fn-stat-wt">0/--</span>
+
+        <!-- Right: Item details column (SVG region x=543,y=78 in 735×505) -->
+        <div class="equip-fn-details">
+          <div id="equip-detail-content" class="equip-detail-content"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Pedometer / Steps shop panel -->
+    <div id="pedometer-panel" class="panel-overlay" hidden>
+      <div class="panel-window">
+        <div class="panel-header">STEPS SHOP <button class="panel-close" onclick="document.getElementById('pedometer-panel').hidden=true">X</button></div>
+        <div id="pedometer-contents" class="panel-body"></div>
+      </div>
+    </div>
+
+    <!-- Tech Tree panel -->
+    <div id="tech-panel" class="panel-overlay" hidden>
+      <div class="panel-window">
+        <div class="panel-header">TECH TREE <button class="panel-close" onclick="document.getElementById('tech-panel').hidden=true">X</button></div>
+        <div id="tech-contents" class="panel-body"></div>
+      </div>
+    </div>
+
+    <!-- Workshop station (Arc Smelter) -->
+    <div id="workshop-panel" class="panel-overlay" hidden>
+      <div class="panel-window">
+        <div class="panel-header">WORKSHOP <button class="panel-close" onclick="document.getElementById('workshop-panel').hidden=true">X</button></div>
+        <div id="workshop-contents" class="panel-body"></div>
+      </div>
+    </div>
+
+    <!-- Constructor station (component fabrication) -->
+    <div id="constructor-panel" class="panel-overlay" hidden>
+      <div class="panel-window">
+        <div class="panel-header">CONSTRUCTOR <button class="panel-close" onclick="document.getElementById('constructor-panel').hidden=true">X</button></div>
+        <div id="constructor-contents" class="panel-body"></div>
+      </div>
+    </div>
+
+    <!-- Fabrication Bay (advanced module fabrication — the Factory fabricator) -->
+    <div id="fabrication-panel" class="panel-overlay" hidden>
+      <div class="panel-window">
+        <div class="panel-header">FABRICATION BAY <button class="panel-close" onclick="document.getElementById('fabrication-panel').hidden=true">X</button></div>
+        <div id="fabrication-contents" class="panel-body"></div>
+      </div>
+    </div>
+
+    <!-- Assembly Matrix (5x5 spatial schematic assembly) -->
+    <div id="assembly-matrix-panel" class="panel-overlay" hidden>
+      <div class="panel-window">
+        <div class="panel-header">ASSEMBLY MATRIX <button class="panel-close" onclick="document.getElementById('assembly-matrix-panel').hidden=true">X</button></div>
+        <div id="assembly-matrix-contents" class="panel-body"></div>
+      </div>
+    </div>
+
+    <!-- Refinery Station (passive extraction + processing-node chain) -->
+    <div id="refinery-panel" class="panel-overlay" hidden>
+      <div class="panel-window">
+        <div class="panel-header">REFINERY <button class="panel-close" onclick="document.getElementById('refinery-panel').hidden=true">X</button></div>
+        <div id="refinery-contents" class="panel-body"></div>
+      </div>
+    </div>
+
+    <!-- Crafting Mastery panel -->
+    <div id="mastery-panel" class="panel-overlay" hidden>
+      <div class="panel-window">
+        <div class="panel-header">CRAFTING MASTERY <button class="panel-close" onclick="document.getElementById('mastery-panel').hidden=true">X</button></div>
+        <div id="mastery-contents" class="panel-body"></div>
+      </div>
+    </div>
+
+    <!-- Achievements panel -->
+    <div id="achievements-panel" class="panel-overlay" hidden>
+      <div class="panel-window" style="border-color:#ffcc0044;">
+        <div class="panel-header" style="color:#ffcc00;border-color:#ffcc0044;background:rgba(20,15,0,0.85);">ACHIEVEMENTS <button class="panel-close" style="border-color:#ffcc0044;color:#ffcc00;" onclick="document.getElementById('achievements-panel').hidden=true">X</button></div>
+        <div id="achievements-contents" class="panel-body"></div>
+      </div>
+    </div>
+
+    <!-- Augmentations panel -->
+    <div id="augmentations-panel" class="panel-overlay" hidden>
+      <div class="panel-window" style="border-color:#cc88ff44;">
+        <div class="panel-header" style="color:#cc88ff;border-color:#cc88ff44;background:rgba(15,0,25,0.85);">AUGMENTATIONS <button class="panel-close" style="border-color:#cc88ff44;color:#cc88ff;" onclick="document.getElementById('augmentations-panel').hidden=true">X</button></div>
+        <div id="augmentations-contents" class="panel-body"></div>
+      </div>
+    </div>
+
+    <!-- Codex panel -->
+    <div id="codex-panel" class="panel-overlay" hidden>
+      <div class="panel-window" style="border-color:#44aaff44;">
+        <div class="panel-header" style="color:#88ccff;border-color:#44aaff44;background:rgba(0,10,20,0.85);">CODEX <button class="panel-close" style="border-color:#44aaff44;color:#88ccff;" onclick="document.getElementById('codex-panel').hidden=true">X</button></div>
+        <div id="codex-contents" class="panel-body"></div>
+      </div>
+    </div>
+
+    <!-- Ascension panel (centered modal) -->
+    <div id="ascension-panel" hidden>
+      <div id="ascension-modal">
+        <div class="panel-header" style="background:rgba(40,0,60,0.7);border-color:#cc88ff44;color:#cc88ff;">ASCENSION <button class="panel-close" style="border-color:#cc88ff44;color:#cc88ff;" onclick="document.getElementById('ascension-panel').hidden=true">X</button></div>
+        <div id="ascension-contents" class="panel-body"></div>
+      </div>
+    </div>
+
+    <!-- Drill panel -->
+    <div id="drill-panel" class="panel-overlay" hidden>
+      <div class="panel-window" style="width:min(340px,calc(100vw - 32px));height:auto;border-color:#ffaa4488;box-shadow:0 0 40px rgba(255,170,68,0.15);">
+        <div class="panel-header" style="color:#ffaa44;border-color:#ffaa4444;background:rgba(30,20,10,0.9);">DEEP CORE DRILL <button class="panel-close" onclick="document.getElementById('drill-panel').hidden=true">X</button></div>
+        <div id="drill-contents" class="panel-body">
+          <div style="text-align:center;margin-bottom:10px;">
+            <div id="drill-stratum" style="font-size:0.9rem;color:#ffaa44;font-weight:bold;letter-spacing:2px;">STRATUM 1</div>
+          </div>
+          <div id="drill-hp-wrap" style="margin-bottom:10px;">
+            <div class="hp-track" style="height:10px;background:#1a1510;border:1px solid #ffaa4444;border-radius:5px;overflow:hidden;">
+              <div id="drill-hp-fill" style="height:100%;width:100%;background:#ffaa44;transition:width 0.1s ease-out;"></div>
+            </div>
+            <div id="drill-hp-text" style="font-size:0.65rem;color:#aaa;text-align:center;margin-top:3px;font-family:monospace;">100 / 100 HP</div>
+          </div>
+          <button id="btn-drill-action" class="drill-btn">DRILL</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:rgba(255,170,68,0.05);border:1px solid #ffaa4422;border-radius:4px;margin-top:10px;">
+            <div>
+              <div style="color:#ffaa44;font-size:0.72rem;font-weight:bold;">Lv <span id="drill-power-lv">1</span> &nbsp;<span id="drill-damage-label" style="color:#888;font-weight:normal;">· dmg 5.0</span></div>
+              <div id="drill-upgrade-cost" style="font-size:0.62rem;color:#666;margin-top:2px;">10 Iron, 5 Copper, 2 Carbon</div>
+            </div>
+            <button id="btn-drill-upgrade" class="stat-up-btn" style="border-color:#ffaa44;color:#ffaa44;">UPGRADE</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Achievement Toast -->
+    <div id="achievement-toast" hidden>
+      <span id="ach-toast-icon"></span>
+      <div id="ach-toast-text">
+        <div id="ach-toast-label"></div>
+        <div id="ach-toast-desc"></div>
+      </div>
+      <span id="ach-toast-reward"></span>
+    </div>
+
+    <!-- Offline Welcome Banner -->
+    <div id="offline-banner" hidden>
+      <div id="offline-content"></div>
+      <button class="panel-close" style="position:absolute;top:8px;right:8px;" onclick="this.parentElement.hidden=true">X</button>
+    </div>
+
+    <!-- Auto-Combat Indicator -->
+    <div id="auto-combat-indicator" hidden>AUTO [Q]</div>
+
+    <!-- Minigame timing bar -->
+    <div id="minigame-bar" hidden>
+      <div id="minigame-zones">
+        <div class="mg-zone mg-miss-l"></div>
+        <div class="mg-zone mg-ok-l"></div>
+        <div class="mg-zone mg-good-l"></div>
+        <div class="mg-zone mg-perfect"></div>
+        <div class="mg-zone mg-good-r"></div>
+        <div class="mg-zone mg-ok-r"></div>
+        <div class="mg-zone mg-miss-r"></div>
+      </div>
+      <div id="minigame-cursor"></div>
+    </div>
+    <!-- Virtual joystick (shared for touch and desktop mouse) -->
+    <div id="joystick-zone" hidden>
+      <div id="joystick-base"></div>
+      <div id="joystick-stick"></div>
+    </div>
+  </div>
+
+  <!-- Combat overlay -->
+  <div id="combat-overlay" hidden>
+    <div id="combat-scene">
+      <div id="enemy-panel">
+        <div id="enemy-name">SCRAPPER</div>
+        <div id="enemy-hp-bar-wrap">
+          <div class="hp-label">HP</div>
+          <div class="hp-track"><div id="enemy-hp-fill" class="hp-fill enemy-fill"></div></div>
+          <div id="enemy-hp-text">40 / 40</div>
+        </div>
+        <div id="enemy-sprite"></div>
+      </div>
+
+      <div id="player-combat-panel">
+        <div id="player-combat-name">YOU</div>
+        <div id="player-hp-bar-wrap">
+          <div class="hp-label">HP</div>
+          <div class="hp-track"><div id="player-hp-fill" class="hp-fill player-fill"></div></div>
+          <div id="player-hp-text">100 / 100</div>
+        </div>
+        <div id="status-effects"></div>
+        <div id="player-sprite-wrap">
+          <div id="player-sprite"></div>
+          <div id="fp-ring-wrap">
+            <svg id="fp-ring-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <circle id="fp-ring-bg" cx="50" cy="50" r="40" fill="none" stroke="#1a2a2a" stroke-width="8"/>
+              <circle id="fp-ring-fill" cx="50" cy="50" r="40" fill="none" stroke="#00ffcc" stroke-width="8"
+                stroke-dasharray="251.3" stroke-dashoffset="251.3"
+                transform="rotate(-90 50 50)" stroke-linecap="round"/>
+            </svg>
+            <div id="fp-text">0 FP</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="combat-log-wrap">
+      <div id="combat-log"></div>
+    </div>
+
+    <div id="combat-actions">
+      <button id="btn-fight" class="action-btn" onclick="window.combatUI.onFight()">FIGHT</button>
+      <button id="btn-skills" class="action-btn" onclick="window.combatUI.onSkills()">SKILLS</button>
+      <button id="btn-items" class="action-btn" onclick="window.combatUI.onItems()">ITEMS</button>
+      <button id="btn-run" class="action-btn" onclick="window.combatUI.onRun()">RUN</button>
+    </div>
+
+    <!-- Skills submenu -->
+    <div id="skills-menu" hidden>
+      <div id="skills-list"></div>
+      <button class="action-btn back-btn" onclick="window.combatUI.closeSkills()">BACK</button>
+    </div>
+
+    <!-- Items submenu -->
+    <div id="items-menu" hidden>
+      <div id="items-list"></div>
+      <button class="action-btn back-btn" onclick="window.combatUI.closeItems()">BACK</button>
+    </div>
+  </div>
+
+  <!-- Mobile controls overlay (touch devices only — shown via CSS) -->
+  <div id="mobile-controls">
+    <!-- Action / interact button -->
+    <button id="btn-mobile-action" aria-label="Interact / Gather">
+      <span class="act-label">ACT</span>
+      <span class="act-sub">[E]</span>
+    </button>
+  </div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

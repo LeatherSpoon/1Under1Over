@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="735" height="505" viewBox="0 0 735 505" fill="none">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="45%" r="70%">
+      <stop offset="0" stop-color="#1c5b55" stop-opacity="0.42"/>
+      <stop offset="0.55" stop-color="#0b2b27" stop-opacity="0.86"/>
+      <stop offset="1" stop-color="#061512" stop-opacity="1"/>
+    </radialGradient>
+    <linearGradient id="panelFill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#113b37" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#071c19" stop-opacity="0.72"/>
+    </linearGradient>
+    <filter id="cyanGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="2.2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+    <pattern id="scan" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="4" height="1" fill="#8ffff1" opacity="0.025"/>
+    </pattern>
+    <style>
+      .terminal{font-family:'Courier New',monospace;font-weight:700;letter-spacing:.4px;fill:#77fff0}
+      .small{font-size:7px}.label{font-size:9px}.title{font-size:20px}.head{font-size:11px}
+      .stroke{stroke:#20e7dc;stroke-width:1.15;stroke-opacity:.92}.dim{stroke:#20e7dc;stroke-opacity:.32}.faint{stroke:#8ffff1;stroke-opacity:.18}
+      .fillPanel{fill:url(#panelFill)}.transparent{fill:#08221f;fill-opacity:.48}
+    </style>
+  </defs>
+
+  <!-- Background and subtle scan -->
+  <rect width="735" height="505" fill="url(#bgGlow)"/>
+  <rect width="735" height="505" fill="url(#scan)"/>
+
+  <!-- NESTED SILHOUETTE (background, non-interactive) -->
+  <!--
+    The original silhouette SVG (viewBox 0 0 2184 5173) is embedded here.
+    It's scaled and centered to the panel and given low opacity so it reads as a background motif.
+  -->
+  <g id="silhouette" pointer-events="none" opacity="0.06" transform="translate(0, -60) scale(0.12)">
+    <!-- Begin pasted silhouette paths (from uploaded SVG) -->
+    <svg x="0" y="0" width="2184" height="5173" viewBox="0 0 2184 5173" preserveAspectRatio="xMidYMid meet">

@@ -1,0 +1,499 @@
+::1 - - [18/Apr/2026 20:58:02] "GET /codebase-explainer.html HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:46] "GET / HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:46] "GET /css/main.css HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:46] "GET /css/combat.css HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:46] "GET /js/main.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:46] "GET /css/mobile.css HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/scene/SceneManager.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/entities/Player.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/entities/EntityManager.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/systems/StatsSystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/systems/CombatSystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/systems/PedometerSystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/systems/DroneSystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/scene/Environment.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/systems/PPSystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/systems/InventorySystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/systems/CraftingSystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/systems/DrillSystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/ui/HUD.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/ui/CombatUI.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/input/TouchInput.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/systems/EquipmentSystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/systems/SaveSystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/systems/OfflineSystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/systems/AchievementSystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/systems/GameStatistics.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/systems/AutoCombatSystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/systems/MinigameSystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/systems/AscensionSystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/config.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/TelemetrySystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/scene/ToonMaterials.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/entities/Enemy.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/entities/ResourceNode.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/vendor/three.module.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/vendor/GLTFLoader.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/ui/SkillsMenu.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] "GET /js/vendor/BufferGeometryUtils.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 20:58:47] code 404, message File not found
+::1 - - [18/Apr/2026 20:58:47] code 404, message File not found
+::1 - - [18/Apr/2026 20:58:47] code 404, message File not found
+::1 - - [18/Apr/2026 20:58:47] code 404, message File not found
+::1 - - [18/Apr/2026 20:58:47] code 404, message File not found
+::1 - - [18/Apr/2026 20:58:47] code 404, message File not found
+::1 - - [18/Apr/2026 20:58:47] "GET /models/Supply_Crate.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 20:58:47] "GET /models/Ghibli_Tree.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 20:58:47] "GET /models/Fuel_Barrel.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 20:58:47] "GET /models/Cyborg_PC.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 20:58:47] "GET /models/Watchtower.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 20:58:47] code 404, message File not found
+::1 - - [18/Apr/2026 20:58:47] "GET /models/Rock_Cluster.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 20:58:47] "GET /models/Scrapper.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 20:58:47] code 404, message File not found
+::1 - - [18/Apr/2026 20:58:47] "GET /favicon.ico HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 21:12:18] "GET /codebase-explainer.html HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 21:16:44] "GET / HTTP/1.1" 304 -
+::1 - - [18/Apr/2026 21:16:44] "GET /css/mobile.css HTTP/1.1" 304 -
+::1 - - [18/Apr/2026 21:16:44] "GET /js/main.js HTTP/1.1" 304 -
+::1 - - [18/Apr/2026 21:16:44] "GET /js/scene/Environment.js HTTP/1.1" 304 -
+::1 - - [18/Apr/2026 21:16:44] "GET /js/systems/StatsSystem.js HTTP/1.1" 304 -
+::1 - - [18/Apr/2026 21:16:44] "GET /js/ui/HUD.js HTTP/1.1" 304 -
+::1 - - [18/Apr/2026 21:16:44] "GET /js/input/TouchInput.js HTTP/1.1" 304 -
+::1 - - [18/Apr/2026 21:16:44] "GET /js/systems/SaveSystem.js HTTP/1.1" 304 -
+::1 - - [18/Apr/2026 21:16:44] "GET /js/systems/DrillSystem.js HTTP/1.1" 304 -
+::1 - - [18/Apr/2026 21:16:44] code 404, message File not found
+::1 - - [18/Apr/2026 21:16:44] code 404, message File not found
+::1 - - [18/Apr/2026 21:16:44] code 404, message File not found
+::1 - - [18/Apr/2026 21:16:44] code 404, message File not found
+::1 - - [18/Apr/2026 21:16:44] code 404, message File not found
+::1 - - [18/Apr/2026 21:16:44] code 404, message File not found
+::1 - - [18/Apr/2026 21:16:44] "GET /models/Ghibli_Tree.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 21:16:44] "GET /models/Watchtower.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 21:16:44] "GET /models/Supply_Crate.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 21:16:44] "GET /models/Cyborg_PC.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 21:16:44] "GET /models/Rock_Cluster.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 21:16:44] code 404, message File not found
+::1 - - [18/Apr/2026 21:16:44] "GET /models/Fuel_Barrel.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 21:16:44] "GET /models/Scrapper.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 21:24:46] "GET /index.html HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 21:24:46] "GET /js/scene/MineLayout.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 21:34:38] "GET / HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 21:34:38] "GET /css/main.css HTTP/1.1" 304 -
+::1 - - [18/Apr/2026 21:34:38] "GET /css/mobile.css HTTP/1.1" 304 -
+::1 - - [18/Apr/2026 21:34:38] "GET /js/main.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 21:34:38] "GET /js/scene/Environment.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 21:34:38] "GET /js/entities/Player.js HTTP/1.1" 304 -
+::1 - - [18/Apr/2026 21:34:38] "GET /js/systems/StatsSystem.js HTTP/1.1" 304 -
+::1 - - [18/Apr/2026 21:34:38] "GET /js/systems/InventorySystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 21:34:38] "GET /js/systems/CraftingSystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 21:34:38] "GET /js/systems/CombatSystem.js HTTP/1.1" 304 -
+::1 - - [18/Apr/2026 21:34:38] "GET /js/systems/EquipmentSystem.js HTTP/1.1" 304 -
+::1 - - [18/Apr/2026 21:34:38] "GET /js/ui/HUD.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 21:34:38] "GET /js/scene/MineLayout.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 21:34:38] "GET /js/sync/SyncClient.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 21:34:38] "GET /js/systems/ProgressionDefinitions.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 21:34:38] "GET /js/systems/CraftingMasterySystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 21:34:38] "GET /js/systems/TechTreeSystem.js HTTP/1.1" 200 -
+::1 - - [18/Apr/2026 21:34:38] "GET /js/input/TouchInput.js HTTP/1.1" 304 -
+::1 - - [18/Apr/2026 21:34:38] "GET /js/systems/SaveSystem.js HTTP/1.1" 304 -
+::1 - - [18/Apr/2026 21:34:38] "GET /js/systems/DrillSystem.js HTTP/1.1" 304 -
+::1 - - [18/Apr/2026 21:34:38] code 404, message File not found
+::1 - - [18/Apr/2026 21:34:38] code 404, message File not found
+::1 - - [18/Apr/2026 21:34:38] code 404, message File not found
+::1 - - [18/Apr/2026 21:34:38] "GET /models/Fuel_Barrel.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 21:34:38] code 404, message File not found
+::1 - - [18/Apr/2026 21:34:38] code 404, message File not found
+::1 - - [18/Apr/2026 21:34:38] code 404, message File not found
+::1 - - [18/Apr/2026 21:34:38] "GET /models/Supply_Crate.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 21:34:38] code 404, message File not found
+::1 - - [18/Apr/2026 21:34:38] "GET /models/Watchtower.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 21:34:38] "GET /models/Ghibli_Tree.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 21:34:38] "GET /models/Scrapper.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 21:34:38] "GET /models/Cyborg_PC.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 21:34:38] "GET /models/Rock_Cluster.glb HTTP/1.1" 404 -
+::1 - - [18/Apr/2026 21:44:57] "GET /index.html HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 08:27:38] "GET / HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /css/main.css HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /css/mobile.css HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/main.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/scene/Environment.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/entities/Player.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/entities/EntityManager.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/systems/PPSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/systems/CombatSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/systems/PedometerSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/systems/InventorySystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/systems/CraftingSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/systems/EquipmentSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/ui/HUD.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/input/TouchInput.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/systems/SaveSystem.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/systems/GameStatistics.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/systems/StatsSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/systems/AchievementSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/systems/AutoCombatSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/systems/OfflineSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/systems/MinigameSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/systems/DrillSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/systems/AscensionSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/config.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/TelemetrySystem.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/scene/MineLayout.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/systems/ProgressionDefinitions.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/sync/SyncClient.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/systems/TechTreeSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/systems/CraftingMasterySystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/vendor/GLTFLoader.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/entities/Enemy.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] "GET /js/vendor/BufferGeometryUtils.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:27:38] code 404, message File not found
+::1 - - [19/Apr/2026 08:27:38] code 404, message File not found
+::1 - - [19/Apr/2026 08:27:38] code 404, message File not found
+::1 - - [19/Apr/2026 08:27:38] code 404, message File not found
+::1 - - [19/Apr/2026 08:27:38] code 404, message File not found
+::1 - - [19/Apr/2026 08:27:38] code 404, message File not found
+::1 - - [19/Apr/2026 08:27:38] "GET /models/Rock_Cluster.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 08:27:38] "GET /models/Supply_Crate.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 08:27:38] "GET /models/Ghibli_Tree.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 08:27:38] "GET /models/Cyborg_PC.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 08:27:38] "GET /models/Watchtower.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 08:27:38] "GET /models/Fuel_Barrel.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 08:27:38] code 404, message File not found
+::1 - - [19/Apr/2026 08:27:38] "GET /models/Scrapper.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 08:43:14] "GET / HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:43:14] "GET /js/main.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 08:43:14] "GET /js/scene/Environment.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 08:43:14] code 404, message File not found
+::1 - - [19/Apr/2026 08:43:14] "GET /models/Ghibli_Tree.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 08:43:14] code 404, message File not found
+::1 - - [19/Apr/2026 08:43:14] code 404, message File not found
+::1 - - [19/Apr/2026 08:43:14] code 404, message File not found
+::1 - - [19/Apr/2026 08:43:14] "GET /models/Rock_Cluster.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 08:43:14] "GET /models/Fuel_Barrel.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 08:43:14] code 404, message File not found
+::1 - - [19/Apr/2026 08:43:14] code 404, message File not found
+::1 - - [19/Apr/2026 08:43:14] "GET /models/Supply_Crate.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 08:43:14] code 404, message File not found
+::1 - - [19/Apr/2026 08:43:14] "GET /models/Scrapper.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 08:43:14] "GET /models/Cyborg_PC.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 08:43:14] "GET /models/Watchtower.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:17:18] "GET / HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /css/main.css HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /css/mobile.css HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/main.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/scene/SceneManager.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/scene/Environment.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/entities/Player.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/entities/EntityManager.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/systems/PPSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/systems/StatsSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/systems/PedometerSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/systems/InventorySystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/systems/CombatSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/ui/HUD.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/systems/EquipmentSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/systems/CraftingSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/ui/CombatUI.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/systems/SaveSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/systems/OfflineSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/input/TouchInput.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/systems/GameStatistics.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/systems/AchievementSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/systems/AutoCombatSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/systems/MinigameSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/systems/DrillSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/systems/AscensionSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/config.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/TelemetrySystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/systems/ProgressionDefinitions.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/systems/TechTreeSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/systems/CraftingMasterySystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/vendor/GLTFLoader.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/scene/MineLayout.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/sync/SyncClient.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/entities/Enemy.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/entities/ResourceNode.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] "GET /js/vendor/BufferGeometryUtils.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:17:18] code 404, message File not found
+::1 - - [19/Apr/2026 15:17:18] code 404, message File not found
+::1 - - [19/Apr/2026 15:17:18] "GET /models/Ghibli_Tree.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:17:18] code 404, message File not found
+::1 - - [19/Apr/2026 15:17:18] code 404, message File not found
+::1 - - [19/Apr/2026 15:17:18] code 404, message File not found
+::1 - - [19/Apr/2026 15:17:18] "GET /models/Supply_Crate.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:17:18] "GET /models/Cyborg_PC.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:17:18] code 404, message File not found
+::1 - - [19/Apr/2026 15:17:18] "GET /models/Rock_Cluster.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:17:18] "GET /models/Fuel_Barrel.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:17:18] code 404, message File not found
+::1 - - [19/Apr/2026 15:17:18] "GET /models/Scrapper.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:17:18] "GET /models/Watchtower.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:18:36] "GET / HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:18:36] "GET /js/scene/MineLayout.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:18:36] code 404, message File not found
+::1 - - [19/Apr/2026 15:18:36] code 404, message File not found
+::1 - - [19/Apr/2026 15:18:36] code 404, message File not found
+::1 - - [19/Apr/2026 15:18:36] code 404, message File not found
+::1 - - [19/Apr/2026 15:18:36] code 404, message File not found
+::1 - - [19/Apr/2026 15:18:36] "GET /models/Ghibli_Tree.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:18:36] code 404, message File not found
+::1 - - [19/Apr/2026 15:18:36] "GET /models/Rock_Cluster.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:18:36] "GET /models/Fuel_Barrel.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:18:36] "GET /models/Watchtower.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:18:36] code 404, message File not found
+::1 - - [19/Apr/2026 15:18:36] "GET /models/Cyborg_PC.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:18:36] "GET /models/Scrapper.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:18:36] "GET /models/Supply_Crate.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:51:56] "GET / HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 15:51:56] "GET /js/scene/MineLayout.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:51:56] code 404, message File not found
+::1 - - [19/Apr/2026 15:51:56] code 404, message File not found
+::1 - - [19/Apr/2026 15:51:56] code 404, message File not found
+::1 - - [19/Apr/2026 15:51:56] "GET /models/Fuel_Barrel.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:51:56] code 404, message File not found
+::1 - - [19/Apr/2026 15:51:56] code 404, message File not found
+::1 - - [19/Apr/2026 15:51:56] code 404, message File not found
+::1 - - [19/Apr/2026 15:51:56] "GET /models/Cyborg_PC.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:51:56] "GET /models/Watchtower.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:51:56] "GET /models/Rock_Cluster.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:51:56] code 404, message File not found
+::1 - - [19/Apr/2026 15:51:56] "GET /models/Supply_Crate.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:51:56] "GET /models/Scrapper.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:51:56] "GET /models/Ghibli_Tree.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:52:13] "GET / HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 15:52:13] code 404, message File not found
+::1 - - [19/Apr/2026 15:52:13] code 404, message File not found
+::1 - - [19/Apr/2026 15:52:13] "GET /models/Ghibli_Tree.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:52:13] code 404, message File not found
+::1 - - [19/Apr/2026 15:52:13] code 404, message File not found
+::1 - - [19/Apr/2026 15:52:13] code 404, message File not found
+::1 - - [19/Apr/2026 15:52:13] "GET /models/Supply_Crate.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:52:13] "GET /models/Cyborg_PC.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:52:13] "GET /models/Fuel_Barrel.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:52:13] code 404, message File not found
+::1 - - [19/Apr/2026 15:52:13] "GET /models/Rock_Cluster.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:52:13] "GET /models/Scrapper.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 15:52:13] code 404, message File not found
+::1 - - [19/Apr/2026 15:52:13] "GET /models/Watchtower.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:07:13] "GET / HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:07:13] "GET /js/main.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 16:07:13] "GET /js/scene/Environment.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 16:07:13] "GET /js/scene/MineLayout.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:07:13] code 404, message File not found
+::1 - - [19/Apr/2026 16:07:13] code 404, message File not found
+::1 - - [19/Apr/2026 16:07:13] code 404, message File not found
+::1 - - [19/Apr/2026 16:07:13] code 404, message File not found
+::1 - - [19/Apr/2026 16:07:13] code 404, message File not found
+::1 - - [19/Apr/2026 16:07:13] code 404, message File not found
+::1 - - [19/Apr/2026 16:07:13] "GET /models/Rock_Cluster.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:07:13] "GET /models/Ghibli_Tree.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:07:13] "GET /models/Supply_Crate.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:07:13] "GET /models/Cyborg_PC.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:07:13] "GET /models/Fuel_Barrel.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:07:13] "GET /models/Watchtower.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:07:13] code 404, message File not found
+::1 - - [19/Apr/2026 16:07:13] "GET /models/Scrapper.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:30:34] "GET / HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 16:30:34] "GET /css/combat.css HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:30:34] "GET /js/main.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 16:30:35] "GET /js/scene/Environment.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 16:30:35] "GET /js/systems/DroneSystem.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 16:30:35] "GET /js/scene/MineLayout.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:30:35] "GET /js/vendor/three.module.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:30:35] "GET /js/scene/ToonMaterials.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:30:35] "GET /js/ui/SkillsMenu.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:30:35] code 404, message File not found
+::1 - - [19/Apr/2026 16:30:35] "GET /models/Fuel_Barrel.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:30:35] code 404, message File not found
+::1 - - [19/Apr/2026 16:30:35] code 404, message File not found
+::1 - - [19/Apr/2026 16:30:35] code 404, message File not found
+::1 - - [19/Apr/2026 16:30:35] "GET /models/Supply_Crate.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:30:35] code 404, message File not found
+::1 - - [19/Apr/2026 16:30:35] code 404, message File not found
+::1 - - [19/Apr/2026 16:30:35] code 404, message File not found
+::1 - - [19/Apr/2026 16:30:35] "GET /models/Watchtower.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:30:35] "GET /models/Scrapper.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:30:35] "GET /models/Ghibli_Tree.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:30:35] "GET /models/Rock_Cluster.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:30:35] "GET /models/Cyborg_PC.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:43:00] "GET / HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:43:00] "GET /js/main.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:43:01] "GET /js/scene/Environment.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:43:01] "GET /js/scene/MineLayout.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:43:01] code 404, message File not found
+::1 - - [19/Apr/2026 16:43:01] code 404, message File not found
+::1 - - [19/Apr/2026 16:43:01] code 404, message File not found
+::1 - - [19/Apr/2026 16:43:01] code 404, message File not found
+::1 - - [19/Apr/2026 16:43:01] code 404, message File not found
+::1 - - [19/Apr/2026 16:43:01] code 404, message File not found
+::1 - - [19/Apr/2026 16:43:01] "GET /models/Ghibli_Tree.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:43:01] "GET /models/Fuel_Barrel.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:43:01] "GET /models/Supply_Crate.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:43:01] "GET /models/Cyborg_PC.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:43:01] "GET /models/Watchtower.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:43:01] code 404, message File not found
+::1 - - [19/Apr/2026 16:43:01] "GET /models/Rock_Cluster.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:43:01] "GET /models/Scrapper.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:44:05] "GET / HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:44:05] code 404, message File not found
+::1 - - [19/Apr/2026 16:44:05] code 404, message File not found
+::1 - - [19/Apr/2026 16:44:05] "GET /models/Ghibli_Tree.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:44:05] "GET /models/Rock_Cluster.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:44:05] code 404, message File not found
+::1 - - [19/Apr/2026 16:44:05] code 404, message File not found
+::1 - - [19/Apr/2026 16:44:05] code 404, message File not found
+::1 - - [19/Apr/2026 16:44:05] "GET /models/Supply_Crate.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:44:05] "GET /models/Cyborg_PC.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:44:05] "GET /models/Watchtower.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:44:05] code 404, message File not found
+::1 - - [19/Apr/2026 16:44:05] code 404, message File not found
+::1 - - [19/Apr/2026 16:44:05] "GET /models/Scrapper.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:44:05] "GET /models/Fuel_Barrel.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:49:08] "GET / HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:49:08] "GET /js/main.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 16:49:09] "GET /js/scene/Environment.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:49:09] code 404, message File not found
+::1 - - [19/Apr/2026 16:49:09] "GET /models/Ghibli_Tree.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:49:09] code 404, message File not found
+::1 - - [19/Apr/2026 16:49:09] code 404, message File not found
+::1 - - [19/Apr/2026 16:49:09] code 404, message File not found
+::1 - - [19/Apr/2026 16:49:09] "GET /models/Rock_Cluster.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:49:09] "GET /models/Supply_Crate.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:49:09] "GET /models/Watchtower.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:49:09] code 404, message File not found
+::1 - - [19/Apr/2026 16:49:09] code 404, message File not found
+::1 - - [19/Apr/2026 16:49:09] "GET /models/Scrapper.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:49:09] "GET /models/Fuel_Barrel.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:49:09] code 404, message File not found
+::1 - - [19/Apr/2026 16:49:09] "GET /models/Cyborg_PC.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:53:34] "GET / HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 16:53:34] "GET /js/main.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:53:34] "GET /js/scene/Environment.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:53:34] "GET /js/scene/MineLayout.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:53:34] code 404, message File not found
+::1 - - [19/Apr/2026 16:53:34] code 404, message File not found
+::1 - - [19/Apr/2026 16:53:34] "GET /models/Ghibli_Tree.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:53:34] code 404, message File not found
+::1 - - [19/Apr/2026 16:53:34] code 404, message File not found
+::1 - - [19/Apr/2026 16:53:34] code 404, message File not found
+::1 - - [19/Apr/2026 16:53:34] "GET /models/Supply_Crate.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:53:34] "GET /models/Fuel_Barrel.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:53:34] code 404, message File not found
+::1 - - [19/Apr/2026 16:53:34] code 404, message File not found
+::1 - - [19/Apr/2026 16:53:34] "GET /models/Cyborg_PC.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:53:34] "GET /models/Rock_Cluster.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:53:34] "GET /models/Scrapper.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:53:34] "GET /models/Watchtower.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:54:26] "GET /index.html HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 16:54:26] code 404, message File not found
+::1 - - [19/Apr/2026 16:54:26] "GET /js/systems/TaskSystem.js HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:54:50] "GET /index.html HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 16:54:50] code 404, message File not found
+::1 - - [19/Apr/2026 16:54:50] "GET /js/systems/TaskSystem.js HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:55:00] "GET / HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 16:55:00] "GET / HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 16:55:00] "GET /js/ HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 16:55:07] "GET /js/systems/ HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 16:55:36] "GET /index.html HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 16:55:36] code 404, message File not found
+::1 - - [19/Apr/2026 16:55:36] "GET /js/systems/TaskSystem.js HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:55:43] "GET /js/systems/ HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 16:57:48] "GET / HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:57:48] "GET /js/main.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:57:49] "GET /js/scene/Environment.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 16:57:49] code 404, message File not found
+::1 - - [19/Apr/2026 16:57:49] code 404, message File not found
+::1 - - [19/Apr/2026 16:57:49] "GET /models/Ghibli_Tree.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:57:49] code 404, message File not found
+::1 - - [19/Apr/2026 16:57:49] "GET /models/Rock_Cluster.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:57:49] code 404, message File not found
+::1 - - [19/Apr/2026 16:57:49] "GET /models/Supply_Crate.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:57:49] code 404, message File not found
+::1 - - [19/Apr/2026 16:57:49] "GET /models/Cyborg_PC.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:57:49] code 404, message File not found
+::1 - - [19/Apr/2026 16:57:49] code 404, message File not found
+::1 - - [19/Apr/2026 16:57:49] "GET /models/Watchtower.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:57:49] "GET /models/Fuel_Barrel.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 16:57:49] "GET /models/Scrapper.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 17:09:47] "GET / HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 17:09:47] "GET /js/main.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 17:09:48] "GET /js/scene/Environment.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 17:09:48] "GET /js/systems/StatsSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 17:09:48] "GET /js/systems/InventorySystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 17:09:48] "GET /js/systems/CraftingSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 17:09:48] "GET /js/ui/HUD.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 17:09:48] "GET /js/systems/SaveSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 17:09:48] "GET /js/TelemetrySystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 17:09:48] "GET /js/scene/MineLayout.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 17:09:48] "GET /js/sync/SyncClient.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 17:09:48] "GET /js/systems/TechTreeSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 17:09:48] "GET /js/systems/CraftingMasterySystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 17:09:48] "GET /js/systems/ProgressionDefinitions.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 17:09:48] "GET /server/definitions/seedData.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 17:09:48] code 404, message File not found
+::1 - - [19/Apr/2026 17:09:48] "GET /models/Ghibli_Tree.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 17:09:48] code 404, message File not found
+::1 - - [19/Apr/2026 17:09:48] code 404, message File not found
+::1 - - [19/Apr/2026 17:09:48] "GET /models/Rock_Cluster.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 17:09:48] code 404, message File not found
+::1 - - [19/Apr/2026 17:09:48] code 404, message File not found
+::1 - - [19/Apr/2026 17:09:48] code 404, message File not found
+::1 - - [19/Apr/2026 17:09:48] "GET /models/Watchtower.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 17:09:48] "GET /models/Supply_Crate.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 17:09:48] "GET /models/Scrapper.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 17:09:48] "GET /models/Fuel_Barrel.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 17:09:48] code 404, message File not found
+::1 - - [19/Apr/2026 17:09:48] "GET /models/Cyborg_PC.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 17:10:30] "GET / HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 17:10:31] code 404, message File not found
+::1 - - [19/Apr/2026 17:10:31] code 404, message File not found
+::1 - - [19/Apr/2026 17:10:31] "GET /models/Ghibli_Tree.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 17:10:31] code 404, message File not found
+::1 - - [19/Apr/2026 17:10:31] code 404, message File not found
+::1 - - [19/Apr/2026 17:10:31] "GET /models/Cyborg_PC.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 17:10:31] "GET /models/Watchtower.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 17:10:31] code 404, message File not found
+::1 - - [19/Apr/2026 17:10:31] code 404, message File not found
+::1 - - [19/Apr/2026 17:10:31] "GET /models/Rock_Cluster.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 17:10:31] code 404, message File not found
+::1 - - [19/Apr/2026 17:10:31] "GET /models/Fuel_Barrel.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 17:10:31] "GET /models/Supply_Crate.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 17:10:31] "GET /models/Scrapper.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 19:14:40] "GET / HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 19:14:40] "GET /css/main.css HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 19:14:40] "GET /css/mobile.css HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 19:14:40] "GET /js/main.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 19:14:41] "GET /js/scene/Environment.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 19:14:41] "GET /js/entities/Player.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 19:14:41] "GET /js/systems/StatsSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 19:14:41] "GET /js/systems/CombatSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 19:14:41] "GET /js/systems/InventorySystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 19:14:41] "GET /js/systems/CraftingSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 19:14:41] "GET /js/systems/DroneSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 19:14:41] "GET /js/systems/EquipmentSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 19:14:41] "GET /js/ui/HUD.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 19:14:41] "GET /js/input/TouchInput.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 19:14:41] "GET /js/systems/SaveSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 19:14:41] "GET /js/systems/DrillSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 19:14:41] "GET /js/TelemetrySystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 19:14:41] "GET /js/scene/MineLayout.js HTTP/1.1" 200 -
+::1 - - [19/Apr/2026 19:14:41] "GET /js/sync/SyncClient.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 19:14:41] "GET /js/systems/ProgressionDefinitions.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 19:14:41] "GET /js/systems/CraftingMasterySystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 19:14:41] "GET /js/systems/TechTreeSystem.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 19:14:41] "GET /server/definitions/seedData.js HTTP/1.1" 304 -
+::1 - - [19/Apr/2026 19:14:41] code 404, message File not found
+::1 - - [19/Apr/2026 19:14:41] "GET /models/Ghibli_Tree.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 19:14:41] code 404, message File not found
+::1 - - [19/Apr/2026 19:14:41] code 404, message File not found
+::1 - - [19/Apr/2026 19:14:41] code 404, message File not found
+::1 - - [19/Apr/2026 19:14:41] "GET /models/Rock_Cluster.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 19:14:41] code 404, message File not found
+::1 - - [19/Apr/2026 19:14:41] code 404, message File not found
+::1 - - [19/Apr/2026 19:14:41] code 404, message File not found
+::1 - - [19/Apr/2026 19:14:41] "GET /models/Scrapper.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 19:14:41] "GET /models/Cyborg_PC.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 19:14:41] "GET /models/Watchtower.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 19:14:41] "GET /models/Fuel_Barrel.glb HTTP/1.1" 404 -
+::1 - - [19/Apr/2026 19:14:41] "GET /models/Supply_Crate.glb HTTP/1.1" 404 -

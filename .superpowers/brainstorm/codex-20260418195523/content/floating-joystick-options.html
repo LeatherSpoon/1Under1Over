@@ -1,0 +1,60 @@
+<h2>Floating joystick: what should the tap mean?</h2>
+<p class="subtitle">Each option starts movement from the place your thumb touches, but they assign meaning to that first tap differently.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="height:260px;position:relative;background:linear-gradient(180deg,#07110d,#020504);border-radius:8px;overflow:hidden;border:1px solid #0b3">
+        <div style="position:absolute;inset:12px;border:1px solid rgba(0,255,204,.18);border-radius:8px"></div>
+        <div style="position:absolute;left:50%;top:40%;width:34px;height:34px;transform:translate(-50%,-50%);border-radius:50%;background:#48f;border:2px solid #9cf"></div>
+        <div style="position:absolute;left:28%;bottom:24%;width:118px;height:118px;border-radius:50%;border:2px solid #00ffcc;background:rgba(0,255,204,.07)"></div>
+        <div style="position:absolute;left:calc(28% + 52px);bottom:calc(24% + 34px);width:46px;height:46px;border-radius:50%;background:#00ffcc;box-shadow:0 0 18px #00ffcc"></div>
+        <div style="position:absolute;right:28px;bottom:34px;width:68px;height:68px;border-radius:50%;border:2px solid #0c6;background:rgba(0,150,70,.6);display:flex;align-items:center;justify-content:center;font-weight:700;color:#bff">ACT</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. Tap sets joystick center</h3>
+      <p>Your first touch only creates the joystick. Drag direction controls movement. The ACT button still handles interact/gather.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="height:260px;position:relative;background:linear-gradient(180deg,#07110d,#020504);border-radius:8px;overflow:hidden;border:1px solid #0b3">
+        <div style="position:absolute;inset:12px;border:1px solid rgba(0,255,204,.18);border-radius:8px"></div>
+        <div style="position:absolute;left:50%;top:40%;width:34px;height:34px;transform:translate(-50%,-50%);border-radius:50%;background:#48f;border:2px solid #9cf"></div>
+        <div style="position:absolute;left:28%;bottom:24%;width:118px;height:118px;border-radius:50%;border:2px solid #00ffcc;background:rgba(0,255,204,.07)"></div>
+        <div style="position:absolute;left:calc(28% + 78px);bottom:calc(24% + 48px);width:46px;height:46px;border-radius:50%;background:#00ffcc;box-shadow:0 0 18px #00ffcc"></div>
+        <div style="position:absolute;left:calc(28% + 132px);bottom:calc(24% + 72px);padding:5px 8px;border-radius:4px;border:1px solid #fc0;background:rgba(80,60,0,.7);color:#ffe69a;font-size:12px">tap target</div>
+        <div style="position:absolute;right:28px;bottom:34px;width:68px;height:68px;border-radius:50%;border:2px solid #0c6;background:rgba(0,150,70,.6);display:flex;align-items:center;justify-content:center;font-weight:700;color:#bff">ACT</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. Tap implies intent</h3>
+      <p>Short taps near objects interact with them; holding and dragging turns that same touch into the floating joystick.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="height:260px;position:relative;background:linear-gradient(180deg,#07110d,#020504);border-radius:8px;overflow:hidden;border:1px solid #0b3">
+        <div style="position:absolute;inset:12px;border:1px solid rgba(0,255,204,.18);border-radius:8px"></div>
+        <div style="position:absolute;left:50%;top:40%;width:34px;height:34px;transform:translate(-50%,-50%);border-radius:50%;background:#48f;border:2px solid #9cf"></div>
+        <div style="position:absolute;left:22%;bottom:22%;width:118px;height:118px;border-radius:50%;border:2px solid #00ffcc;background:rgba(0,255,204,.07)"></div>
+        <div style="position:absolute;left:calc(22% + 78px);bottom:calc(22% + 52px);width:46px;height:46px;border-radius:50%;background:#00ffcc;box-shadow:0 0 18px #00ffcc"></div>
+        <div style="position:absolute;right:22%;bottom:22%;width:118px;height:118px;border-radius:50%;border:2px solid #00ffcc;background:rgba(0,255,204,.07)"></div>
+        <div style="position:absolute;right:calc(22% + 18px);bottom:calc(22% + 52px);width:46px;height:46px;border-radius:50%;background:#00ffcc;box-shadow:0 0 18px #00ffcc"></div>
+        <div style="position:absolute;left:20px;top:20px;padding:5px 8px;border-radius:4px;border:1px solid #fc0;background:rgba(80,60,0,.7);color:#ffe69a;font-size:12px">left or right thumb</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. Any-side thumb mode</h3>
+      <p>First touch on either lower side creates movement. A tap-without-drag can act/interact, so one-hand play works from either side.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>My recommendation</h3>
+  <p>Use <strong>B</strong> as the default. It makes the tap location meaningful without turning the game into tap-to-move: quick tap means interact when there is something usable nearby, drag means move. Keep the explicit ACT button for precision and as a fallback.</p>
+</div>

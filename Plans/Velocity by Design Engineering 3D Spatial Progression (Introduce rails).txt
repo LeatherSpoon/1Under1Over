@@ -1,0 +1,11 @@
+our concept of persisting infrastructure perfectly adapts the traditional prestige mechanic into a physical 3D space. Instead of simply receiving an abstract numerical multiplier after resetting their stats, players are building a permanent layout that accelerates their early game on subsequent runs
+.
+Tying a passive gain to movement effectively turns traversal into your core active gameplay. This successfully treats active play as a rewarding accelerant to their baseline progression rather than a strict requirement
+. However, because you want the player to move extremely fast without the game becoming unplayable, you must carefully manage how that speed scales.
+Here is how to balance and structure this high-speed, movement-based system:
+1. Shift from Manual Steering to a "Logistics Puzzle" A common pitfall in 3D incrementals is that navigating a map manually can quickly become a frustrating chore
+. If a player is moving at breakneck speeds, forcing them to manually steer through a fixed-camera view will make the game uncontrollable. Instead, treat the permanent infrastructure like a logistics and flow puzzle
+.
+Allow the placed infrastructure (such as Speed Tracks, rails) to guide or automate the player's high-speed movement. The challenge then shifts away from twitch reflexes and becomes about designing the most efficient, continuous spatial loop to maximize their passive movement gains
+.
+

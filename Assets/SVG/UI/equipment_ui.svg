@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="735" height="505" viewBox="0 0 735 505" fill="none">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="45%" r="70%">
+      <stop offset="0" stop-color="#1c5b55" stop-opacity="0.42"/>
+      <stop offset="0.55" stop-color="#0b2b27" stop-opacity="0.86"/>
+      <stop offset="1" stop-color="#061512" stop-opacity="1"/>
+    </radialGradient>
+    <linearGradient id="panelFill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#113b37" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#071c19" stop-opacity="0.72"/>
+    </linearGradient>
+    <filter id="cyanGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="2.2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+    <pattern id="scan" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="4" height="1" fill="#8ffff1" opacity="0.025"/>
+    </pattern>
+    <style>
+      .terminal{font-family:'Courier New',monospace;font-weight:700;letter-spacing:.4px;fill:#77fff0}
+      .small{font-size:7px}.label{font-size:9px}.title{font-size:20px}.head{font-size:11px}
+      .stroke{stroke:#20e7dc;stroke-width:1.15;stroke-opacity:.92}.dim{stroke:#20e7dc;stroke-opacity:.32}.faint{stroke:#8ffff1;stroke-opacity:.18}
+      .fillPanel{fill:url(#panelFill)}.transparent{fill:#08221f;fill-opacity:.48}
+    </style>
+  </defs>
+
+  <rect width="735" height="505" fill="url(#bgGlow)"/>
+  <rect width="735" height="505" fill="url(#scan)"/>
+
+  <g filter="url(#softShadow)">
+    <rect x="4" y="4" width="727" height="496" rx="6" class="fillPanel stroke"/>
+    <path d="M17 38 H296" class="faint"/>
+    <path d="M504 38 H718" class="faint"/>
+    <text x="18" y="28" class="terminal title">EQUIPMENT</text>
+    <rect x="697" y="13" width="21" height="21" rx="4" class="transparent stroke" filter="url(#cyanGlow)"/>
+    <path d="M704 19 L711 27 M711 19 L704 27" class="stroke"/>
+  </g>
+
+  <!-- Inventory panel -->
+  <g>
+    <rect x="18" y="48" width="174" height="436" rx="5" class="transparent stroke"/>
+    <text x="28" y="66" class="terminal head">INVENTORY</text>
+    <path d="M28 75 H181" class="dim"/>
+    <rect x="25" y="82" width="160" height="16" rx="3" fill="#0b2a27" fill-opacity=".7" class="stroke"/>
+    <text x="32" y="93" class="terminal small" opacity=".85">Search...</text>
+    <path d="M168.5 88.5 A4 4 0 1 0 162.8 94.2 A4 4 0 1 0 168.5 88.5" class="stroke"/>
+    <path d="M167 93 L172 98" class="stroke"/>
+    <rect x="25" y="108" width="160" height="340" rx="4" fill="none" stroke="#78fff3" stroke-opacity=".15" stroke-dasharray="3 3"/>
+    <g transform="translate(105 253)" class="dim">
+      <path d="M-15 3 h30 v14 h-30 z" fill="none" stroke-width="2"/>
+      <path d="M-9 3 l4 -8 h10 l4 8" fill="none" stroke-width="2"/>
+      <path d="M-5 8 h10" fill="none" stroke-width="2"/>
+    </g>
+    <text x="58" y="287" class="terminal small">No items available</text>
+    <rect x="25" y="456" width="160" height="20" rx="3" fill="#0b2a27" fill-opacity=".7" class="stroke"/>
+    <text x="32" y="469" class="terminal small">Sort: Type</text>
+    <path d="M173 464 l4 4 l4 -4" class="stroke"/>
+  </g>
+
+  <!-- Equipped panel -->
+  <g>
+    <rect x="210" y="48" width="307" height="436" rx="5" class="transparent stroke"/>
+    <text x="222" y="66" class="terminal head">EQUIPPED</text>
+    <path d="M222 75 H397" class="dim"/>
+
+    <!-- Silhouette -->
+    <g id="body" stroke="#39dcd2" stroke-opacity=".35" stroke-width="1.35" fill="none">
+      <circle cx="365" cy="116" r="21"/>
+      <path d="M349 138 C348 154 346 173 342 189 C339 201 338 214 339 226 C341 248 342 267 338 286 C335 301 334 315 335 331"/>
+      <path d="M381 138 C382 154 384 173 388 189 C391 201 392 214 391 226 C389 248 388 267 392 286 C395 301 396 315 395 331"/>
+      <path d="M349 137 C356 143 374 143 381 137"/>
+      <path d="M348 139 C339 148 333 169 330 194 C328 217 328 238 331 258 C333 276 332 295 328 315 C326 327 321 352 316 380 C315 386 320 389 327 386 C340 363 350 333 353 308 C356 287 359 262 360 240"/>
+      <path d="M382 139 C391 148 397 169 400 194 C402 217 402 238 399 258 C397 276 398 295 402 315 C404 327 409 352 414 380 C415 386 410 389 403 386 C390 363 380 333 377 308 C374 287 371 262 370 240"/>
+      <path d="M357 240 C354 270 350 298 346 327 C343 350 339 379 335 421 C334 431 327 436 318 432 C316 431 314 429 314 427 C322 419 326 393 330 366"/>
+      <path d="M373 240 C376 270 380 298 384 327 C387 350 391 379 395 421 C396 431 403 436 412 432 C414 431 416 429 416 427 C408 419 404 393 400 366"/>
+      <path d="M342 190 C353 196 377 196 388 190"/>
+    </g>
+
+    <!-- slots and connectors -->
+    <g class="stroke" filter="url(#cyanGlow)">
+      <rect x="346" y="87" width="38" height="38" rx="4" fill="#0d302c" fill-opacity=".45"/>
+      <rect x="246" y="129" width="38" height="38" rx="4" fill="#0d302c" fill-opacity=".45"/>
+      <rect x="429" y="129" width="38" height="38" rx="4" fill="#0d302c" fill-opacity=".45"/>
+      <rect x="246" y="209" width="38" height="38" rx="4" fill="#0d302c" fill-opacity=".45"/>
+      <rect x="450" y="209" width="38" height="38" rx="4" fill="#0d302c" fill-opacity=".45"/>
+      <rect x="246" y="290" width="38" height="38" rx="4" fill="#0d302c" fill-opacity=".45"/>
+      <rect x="450" y="290" width="38" height="38" rx="4" fill="#0d302c" fill-opacity=".45"/>
+      <rect x="346" y="389" width="38" height="38" rx="4" fill="#0d302c" fill-opacity=".45"/>
+    </g>
+    <g class="dim">
+      <path d="M346 106 H332 C326 106 323 119 319 131 C314 144 299 148 284 148"/>
+      <path d="M384 106 H398 C404 106 407 119 411 131 C416 144 431 148 429 148"/>
+      <path d="M284 228 H328"/><circle cx="328" cy="228" r="2" fill="#41fff1"/>
+      <path d="M450 228 H402"/><circle cx="402" cy="228" r="2" fill="#41fff1"/>
+      <path d="M284 309 H326"/><circle cx="326" cy="309" r="2" fill="#41fff1"/>
+      <path d="M450 309 H408"/><circle cx="408" cy="309" r="2" fill="#41fff1"/>
+      <path d="M365 125 V87"/>
+      <path d="M365 389 V360"/>
+      <circle cx="291" cy="148" r="2" fill="#41fff1"/><circle cx="422" cy="148" r="2" fill="#41fff1"/>
+    </g>
+    <g class="terminal small">
+      <text x="356" y="82">Head</text><text x="242" y="124">Shoulders</text><text x="425" y="124">Accessory</text>
+      <text x="249" y="204">Torso</text><text x="459" y="204">Arms</text><text x="252" y="285">Legs</text><text x="459" y="285">Hands</text><text x="355" y="384">Feet</text>
+    </g>
+
+    <!-- stats bar -->
+    <rect x="219" y="419" width="288" height="35" rx="4" fill="#08221f" fill-opacity=".7" class="stroke"/>
+    <g class="terminal small">
+      <path d="M235 432 C232 427 226 430 226 435 C226 441 235 446 235 446 C235 446 244 441 244 435 C244 430 238 427 235 432Z" class="stroke" fill="none"/>
+      <text x="252" y="430">HP</text><text x="252" y="446" font-size="10">60</text>
+      <path d="M309 426 L300 439 H308 L304 449 L315 434 H307 Z" class="stroke" fill="none"/>
+      <text x="330" y="430">Energy</text><text x="330" y="446" font-size="10">115</text>
+      <path d="M397 427 L406 431 V440 C406 444 402 447 397 449 C392 447 388 444 388 440 V431 Z" class="stroke" fill="none"/>
+      <text x="420" y="430">Defense</text><text x="420" y="446" font-size="10">0</text>
+      <path d="M470 432 h14 l3 14 h-20 z M473 432 a4 4 0 0 1 8 0" class="stroke" fill="none"/>
+      <text x="491" y="430">Weight</text><text x="491" y="446" font-size="10">0 / --</text>
+    </g>
+    <g class="faint"><path d="M292 422 V451"/><path d="M379 422 V451"/><path d="M462 422 V451"/></g>
+    <rect x="283" y="461" width="160" height="17" rx="3" fill="#0b2a27" fill-opacity=".75" class="stroke"/>
+    <text x="291" y="473" class="terminal small">EQUIPMENT BONUS</text><path d="M420 467 l4 4 l4 -4" class="stroke"/>
+  </g>
+
+  <!-- Details panel -->
+  <g>
+    <rect x="533" y="48" width="185" height="436" rx="5" class="transparent stroke"/>
+    <text x="546" y="66" class="terminal head">ITEM DETAILS</text>
+    <path d="M546 75 H709" class="dim"/>
+    <g transform="translate(625 246)" class="dim" stroke-width="2.2" fill="none">
+      <path d="M0 -16 l13 8 v16 l-13 8 l-13 -8 v-16 z"/>
+      <path d="M0 -16 v16 l13 -8 M0 0 l-13 -8 M0 0 v16"/>
+    </g>
+    <text x="586" y="281" class="terminal small">Select an item</text>
+    <text x="589" y="295" class="terminal small">to view details</text>
+  </g>
+</svg>

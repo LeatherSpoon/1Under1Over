@@ -1,0 +1,232 @@
+/* ── Top-center currency stack (PP + Steps) ──────────────────────── */
+#hud-topcenter {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  z-index: 11;
+}
+
+#pp-display {
+  background: rgba(0, 12, 6, 0.78);
+  border: 1px solid #00ffcc;
+  border-radius: 8px;
+  padding: 6px 18px;
+  color: #00ffcc;
+  font-weight: bold;
+  font-size: 1.35rem;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 8px rgba(0, 255, 204, 0.45);
+  white-space: nowrap;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+#pp-display #pp-amount { font-size: 1.35rem; }
+#pp-display #pp-rate {
+  color: #66ffcc;
+  font-size: 0.7rem;
+  font-weight: normal;
+  letter-spacing: 0.04em;
+}
+
+#steps-display {
+  background: rgba(0, 8, 14, 0.7);
+  border: 1px solid #44aaff;
+  border-radius: 6px;
+  padding: 2px 10px;
+  color: #aaddff;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#steps-display .steps-icon {
+  color: #66ccff;
+  font-size: 0.85rem;
+}
+
+/* ── Mission Tracker (top-right) ──────────────────────────────────── */
+#mission-tracker {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  pointer-events: none;
+  z-index: 11;
+}
+
+.mission-card {
+  position: relative;
+  background: rgba(0, 12, 8, 0.75);
+  border: 1px solid #00cc66;
+  border-radius: 6px;
+  padding: 6px 10px;
+  pointer-events: auto;
+}
+
+.mission-card.mission-main {
+  border-color: #ffcc00;
+  box-shadow: 0 0 12px rgba(255, 204, 0, 0.18);
+  background: rgba(20, 14, 0, 0.78);
+}
+
+.mission-card.mission-side {
+  border-color: #88ccff;
+  background: rgba(0, 10, 18, 0.78);
+}
+
+.mission-label {
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
+  font-weight: bold;
+  color: inherit;
+  opacity: 0.7;
+  margin-bottom: 2px;
+}
+
+.mission-main .mission-label { color: #ffcc00; }
+.mission-side .mission-label { color: #88ccff; }
+
+.mission-text {
+  font-size: 0.78rem;
+  color: #e0ffe0;
+  line-height: 1.25;
+  padding-right: 18px;
+}
+
+.mission-step {
+  color: #e0ffe0;
+}
+
+.mission-step-done {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+.mission-pick-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  background: transparent;
+  border: 1px solid #88ccff66;
+  border-radius: 4px;
+  color: #88ccff;
+  font-family: inherit;
+  font-size: 0.7rem;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.mission-pick-btn:hover { background: rgba(136, 204, 255, 0.15); }
+
+/* Push existing activity-timers into mission tracker layout */
+#mission-tracker #activity-timers {
+  position: static;
+  top: auto;
+  right: auto;
+  pointer-events: auto;
+}
+
+/* ── Unified Menu Screen ──────────────────────────────────────────── */
+#menu-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 155;
+  pointer-events: none;
+}
+#menu-screen[hidden] { display: none; }
+
+#menu-backdrop {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  pointer-events: auto;
+}
+
+#menu-tabbar {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 6px 8px;
+  background: rgba(0, 14, 10, 0.92);
+  border: 1px solid #00ffcc88;
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  pointer-events: auto;
+  z-index: 200;
+  max-width: calc(100vw - 16px);
+  overflow-x: auto;
+}
+
+.menu-tab {
+  background: rgba(0, 20, 14, 0.6);
+  border: 1px solid #00cc6644;
+  border-radius: 6px;
+  color: #aaffcc;
+  font-family: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  padding: 10px 14px;
+  min-width: 64px;
+  min-height: 44px; /* mobile thumb target */
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.menu-tab:hover { background: rgba(0, 40, 28, 0.8); color: #00ffcc; }
+.menu-tab.active {
+  background: rgba(0, 80, 55, 0.98);
+  border-color: #00ffcc;
+  border-width: 2px;
+  color: #00ffcc;
+  box-shadow: 0 0 14px rgba(0, 255, 204, 0.5), inset 0 0 6px rgba(0, 255, 204, 0.1);
+  text-shadow: 0 0 8px rgba(0, 255, 204, 0.7);
+}
+
+/* Settings panel layout */
+#settings-contents .settings-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+#settings-contents .settings-btn {
+  flex: 1 1 140px;
+  padding: 10px 12px;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+}
+#settings-contents .settings-note {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #00cc6633;
+  font-size: 0.7rem;
+  color: #779988;
+  font-style: italic;
+}
+
+/* Mobile tweaks */
+@media (max-width: 640px) {
+  #mission-tracker { width: 180px; }
+  #pp-display { font-size: 1.1rem; padding: 5px 12px; }
+  #pp-display #pp-amount { font-size: 1.1rem; }
+  .mission-text { font-size: 0.72rem; }
+  #menu-tabbar { width: 100%; max-width: 100%; border-radius: 0; padding: 6px 4px; }
+  .menu-tab { flex: 1 1 0; min-width: 0; padding: 12px 6px; font-size: 0.72rem; }
+}

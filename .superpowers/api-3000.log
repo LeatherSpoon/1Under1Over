@@ -1,0 +1,5 @@
+
+> server
+> node server/start.js
+
+Processing Power API listening on http://localhost:3000

@@ -1,0 +1,68 @@
+<h2>Design: tap implies intent, drag moves</h2>
+<p class="subtitle">This keeps the game one-hand friendly while preserving the current movement/action model.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Touch behavior state flow</div>
+  <div class="mockup-body">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;align-items:stretch">
+      <div style="border:1px solid rgba(0,255,204,.3);border-radius:8px;padding:14px;background:rgba(0,20,12,.55)">
+        <div class="label">1. Touch begins</div>
+        <h3 style="margin-top:6px">Place joystick at thumb</h3>
+        <p>The base appears centered on the first touch position, unless the touch started on an existing UI button or panel.</p>
+      </div>
+      <div style="border:1px solid rgba(0,255,204,.3);border-radius:8px;padding:14px;background:rgba(0,20,12,.55)">
+        <div class="label">2. Movement threshold</div>
+        <h3 style="margin-top:6px">Drag becomes movement</h3>
+        <p>If the thumb moves beyond a small threshold, the touch is treated as joystick input and updates player movement.</p>
+      </div>
+      <div style="border:1px solid rgba(255,204,0,.35);border-radius:8px;padding:14px;background:rgba(40,32,0,.45)">
+        <div class="label">3. Short tap</div>
+        <h3 style="margin-top:6px">Tap means action intent</h3>
+        <p>If the touch ends without enough drag, it sends one action pulse, equivalent to tapping ACT / pressing E.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">What changes</div>
+    <div class="mockup-body">
+      <ul>
+        <li>The fixed bottom-left joystick becomes a floating joystick.</li>
+        <li>The joystick can start wherever the player touches the canvas.</li>
+        <li>A short tap fires one action pulse, so the tap location represents intent.</li>
+        <li>The ACT button stays available for explicit gather/interact timing.</li>
+        <li>Panel buttons, combat buttons, and modals keep their existing tap behavior.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">Guardrails</div>
+    <div class="mockup-body">
+      <ul>
+        <li>Ignore floating joystick starts on buttons, panels, inputs, and combat menus.</li>
+        <li>Use a small movement threshold so ordinary taps do not accidentally move.</li>
+        <li>Hide the joystick immediately after release.</li>
+        <li>Only one active joystick touch at a time.</li>
+        <li>Do not change desktop keyboard controls.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Testing</h3>
+  <p>I’ll verify that mobile CSS no longer pins the joystick to the lower-left, that touch input still feeds player movement, and that quick taps produce a single action pulse without breaking the existing ACT button. If the app can run locally without missing dependencies, I’ll also do a browser smoke test at a phone viewport.</p>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="approved" onclick="toggleSelect(this)">
+    <div class="letter">OK</div>
+    <div class="content">
+      <h3>Approve this design</h3>
+      <p>Proceed with the floating joystick implementation as described.</p>
+    </div>
+  </div>
+</div>

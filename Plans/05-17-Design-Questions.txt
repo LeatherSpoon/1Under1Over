@@ -1,0 +1,10 @@
+---
+
+## Open Design Questions
+
+1. **Drone + biome devices:** Can drones operate devices passively at reduced yield? This determines whether the synergy chain is viable for AFK players.
+2. **Tier 2 zone devices:** What are the interaction mechanics for the Molten Archive and Shattered Lattice devices?
+3. **Enemy roster per zone:** Scrapper exists for the home planet. Each Tier 2 zone needs 2–3 enemy types with distinct behaviors.
+4. **Boss simulation visual language:** How does the combat window communicate that this is a simulation, not a real encounter? (UI framing, Overseer dialogue, color treatment?)
+5. **Computer growth triggers:** Does the computer visually update in real-time, or does it transform at generation milestones?
+6. **Ascension vs. death:** Are these the same reset event, or separate? A player who dies should probably lose less than a player who deliberately ascends.

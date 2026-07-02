@@ -1,0 +1,867 @@
+/**
+ * TelemetrySystem.js
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Drop-in telemetry layer for the game. Tracks every meaningful player action
+ * and game-state metric, then exports a structured JSON report per session.
+ *
+ * USAGE — in main.js after all systems are constructed:
+ *
+ *   import { TelemetrySystem } from './TelemetrySystem.js';
+ *
+ *   const telemetry = new TelemetrySystem();
+ *   telemetry.attach({
+ *     combat:    combatSystem,
+ *     stats:     statsSystem,
+ *     pp:        ppSystem,
+ *     pedometer: pedometerSystem,
+ *     crafting:  craftingSystem,
+ *     inventory: inventorySystem,
+ *     drones:    droneSystem,
+ *     player:    player,
+ *   });
+ *
+ * Data is written to localStorage under key "telemetry_sessions" as a JSON
+ * array of session reports. Call telemetry.exportJSON() to download a .json
+ * file, or telemetry.exportCSV() for a flat .csv of all sessions.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+export class TelemetrySystem {
+
+  // ── Construction ────────────────────────────────────────────────────────────
+
+  constructor() {
+    this._sessionId   = this._makeId();
+    this._sessionStart = Date.now();
+    this._lastTick    = Date.now();
+    this._attached    = false;
+
+    // ── Raw action counters ────────────────────────────────────────────────
+    this.actions = {
+      // Movement
+      move_up:           0,
+      move_down:         0,
+      move_left:         0,
+      move_right:        0,
+      move_diagonal:     0,
+      joystick_active:   0,   // touch joystick frames (sampled per second)
+
+      // Gathering
+      gather_start:      0,
+      gather_cancel:     0,
+      gather_complete:   0,
+
+      // Combat
+      combat_enter:      0,
+      combat_fight:      0,
+      combat_skill_open: 0,
+      combat_skill_use:  0,
+      combat_items_open: 0,
+      combat_item_use:   0,
+      combat_run_attempt:0,
+      combat_run_success:0,
+      combat_victory:    0,
+      combat_defeat:     0,
+
+      // UI panels
+      panel_inventory:   0,
+      panel_drone:       0,
+      panel_equipment:   0,
+      panel_pedometer:   0,
+      panel_stat_sidebar:0,
+      consumable_use_inv:0,
+
+      // Upgrades
+      stat_upgrade:      0,
+      stat_upgrade_fail: 0,
+
+      // Crafting
+      craft_start:       0,
+      craft_complete:    0,
+
+      // Drone
+      drone_buy:         0,
+      drone_assign:      0,
+      drone_unassign:    0,
+      drone_upgrade:     0,
+
+      // Pedometer shop
+      ped_buy_pp_bonus:  0,
+      ped_buy_track:     0,
+      ped_place_track:   0,
+      ped_buy_stat:      0,
+      ped_unlock_zone:   0,
+
+      // Equipment
+      equip_item:        0,
+      unequip_item:      0,
+
+      // Keyboard hotkeys
+      key_E:             0,
+      key_T:             0,
+    };
+
+    // ── Session-level aggregates ───────────────────────────────────────────
+    this.session = {
+      sessionId:              this._sessionId,
+      startTime:              new Date(this._sessionStart).toISOString(),
+      endTime:                null,
+      durationSeconds:        0,
+
+      // Movement
+      totalDistanceTravelled: 0,   // world units (accumulated from Player._totalDist)
+      totalStepsWalked:       0,   // pedometer steps
+
+      // Combat deep stats
+      combatsEntered:         0,
+      combatVictories:        0,
+      combatDefeats:          0,
+      combatFlees:            0,
+      totalDamageDealt:       0,
+      totalDamageTaken:       0,
+      totalSkillsUsed:        0,
+      skillUsageBreakdown:    {},  // { skillKey: count }
+      statusEffectsInflicted: {},  // { type: count }
+      rescueDroneActivations: 0,
+      longestCombat_ms:       0,
+      shortestCombat_ms:      Infinity,
+      averageCombatDuration_ms: 0,
+      _combatTimestamps:      [],  // internal
+
+      // Economy
+      ppEarnedTotal:          0,
+      ppSpentTotal:           0,
+      ppRateAtSessionEnd:     0,
+      ppPerStepBonusPurchases:0,
+      ppBonusPerStepAtEnd:    0,
+      prestigesPerformed:     0,
+
+      // Gathering
+      gatherCompletions:      0,
+      gatherCancels:          0,
+      resourcesCollected:     {},  // { material: count }
+
+      // Crafting
+      craftingCompletions:    0,
+      craftingStarts:         0,
+      recipiesCrafted:        {},  // { recipeKey: count }
+
+      // Pedometer / progression
+      speedTracksBought:      0,
+      speedTracksPlaced:      0,
+      zonesUnlocked:          [],
+      statLevelsBoughtWithSteps: 0,
+
+      // Drone economy
+      dronesBought:           0,
+      droneUpgrades:          0,
+      droneAssignmentChanges: 0,
+
+      // Engagement / abstract
+      uniquePanelsOpened:     new Set(),
+      sessionIdleSeconds:     0,     // seconds where no input was detected
+      peakPPRate:             0,
+      lowestHPReached:        Infinity,
+      timesHPBelow25pct:      0,
+      statUpgradeSequence:    [],    // ordered list of stats upgraded this session
+      firstCombatTime_s:      null,  // seconds from session start to first combat
+      combatToGatherRatio:    0,     // combats / gathers — playstyle fingerprint
+      decisionSpeed_ms:       [],    // ms between entering combat and first action
+    };
+
+    // ── Internal tracking state ────────────────────────────────────────────
+    this._idleThreshold_ms  = 5000;   // 5s no input = idle
+    this._lastInputTime     = Date.now();
+    this._combatEnterTime   = null;
+    this._combatFirstAction = false;
+    this._ppSnapshot        = 0;
+    this._prevDist          = 0;
+    this._prevSteps         = 0;
+    this._inputListeners    = [];
+
+    // ── Keyboard listener ──────────────────────────────────────────────────
+    this._wireKeyboard();
+
+    // ── Heartbeat (every second) ───────────────────────────────────────────
+    this._heartbeat = setInterval(() => this._tick(), 1000);
+
+    console.log(`[Telemetry] Session ${this._sessionId} started.`);
+  }
+
+  // ── Public: attach to game systems ─────────────────────────────────────────
+
+  /**
+   * Wire telemetry hooks into live game system instances.
+   * Call once after all systems are constructed in main.js.
+   *
+   * @param {Object} systems - { combat, stats, pp, pedometer, crafting, inventory, drones, player }
+   */
+  attach(systems) {
+    if (this._attached) return;
+    this._attached = true;
+    this._sys = systems;
+
+    const { combat, crafting, drones, player } = systems;
+
+    // ── CombatSystem hooks ─────────────────────────────────────────────────
+    if (combat) {
+      // Patch startCombat
+      const _origStart = combat.startCombat.bind(combat);
+      combat.startCombat = (enemy) => {
+        this._onCombatStart(enemy);
+        _origStart(enemy);
+      };
+
+      // Patch fight
+      const _origFight = combat.fight.bind(combat);
+      combat.fight = () => {
+        this._onCombatFirstAction();
+        this.track('combat_fight');
+        _origFight();
+      };
+
+      // Patch useSkill
+      const _origSkill = combat.useSkill.bind(combat);
+      combat.useSkill = (key) => {
+        this._onCombatFirstAction();
+        this.track('combat_skill_use');
+        this.session.totalSkillsUsed++;
+        this.session.skillUsageBreakdown[key] = (this.session.skillUsageBreakdown[key] || 0) + 1;
+        _origSkill(key);
+      };
+
+      // Patch useItem
+      const _origItem = combat.useItem.bind(combat);
+      combat.useItem = (key) => {
+        this._onCombatFirstAction();
+        this.track('combat_item_use');
+        _origItem(key);
+      };
+
+      // Patch tryRun
+      const _origRun = combat.tryRun.bind(combat);
+      combat.tryRun = () => {
+        this._onCombatFirstAction();
+        this.track('combat_run_attempt');
+        _origRun();
+      };
+
+      // Patch _endCombat (private — intercept via onCombatEnd callback chain)
+      const _origEnd = combat.onCombatEnd;
+      combat.onCombatEnd = (won, fled) => {
+        this._onCombatEnd(won, fled);
+        if (_origEnd) _origEnd(won, fled);
+      };
+
+      // Damage dealt — patch _dealDamageToEnemy
+      const _origDeal = combat._dealDamageToEnemy.bind(combat);
+      combat._dealDamageToEnemy = (dmg) => {
+        this.session.totalDamageDealt += dmg;
+        _origDeal(dmg);
+      };
+
+      // Damage taken — patch stats.takeDamage
+      if (systems.stats) {
+        const _origTake = systems.stats.takeDamage.bind(systems.stats);
+        systems.stats.takeDamage = (amount) => {
+          const effective = _origTake(amount);
+          this.session.totalDamageTaken += effective;
+          const hp     = systems.stats.currentHP;
+          const maxHp  = systems.stats.maxHP;
+          if (hp < this.session.lowestHPReached) this.session.lowestHPReached = hp;
+          if (hp / maxHp < 0.25) this.session.timesHPBelow25pct++;
+          return effective;
+        };
+      }
+
+      // Rescue drone
+      const _origRescue = combat.onRescue;
+      combat.onRescue = () => {
+        this.session.rescueDroneActivations++;
+        if (_origRescue) _origRescue();
+      };
+
+      // Status effects
+      const _origApply = combat._applyStatus.bind(combat);
+      combat._applyStatus = (type) => {
+        this.session.statusEffectsInflicted[type] = (this.session.statusEffectsInflicted[type] || 0) + 1;
+        _origApply(type);
+      };
+    }
+
+    // ── CraftingSystem hooks ───────────────────────────────────────────────
+    if (crafting) {
+      // Patch startCrafting / craft initiation
+      if (typeof crafting.startCraft === 'function') {
+        const _origCraft = crafting.startCraft.bind(crafting);
+        crafting.startCraft = (recipeKey) => {
+          this.track('craft_start');
+          this.session.craftingStarts++;
+          _origCraft(recipeKey);
+        };
+      }
+      // Listen for completion via onCraftingComplete callback
+      const _origComplete = crafting.onCraftingComplete;
+      crafting.onCraftingComplete = (recipeKey) => {
+        this.track('craft_complete');
+        this.session.craftingCompletions++;
+        if (recipeKey) {
+          this.session.recipiesCrafted[recipeKey] = (this.session.recipiesCrafted[recipeKey] || 0) + 1;
+        }
+        if (_origComplete) _origComplete(recipeKey);
+      };
+    }
+
+    // ── DroneSystem hooks ──────────────────────────────────────────────────
+    if (drones) {
+      const _origBuy = drones.buyNewDrone.bind(drones);
+      drones.buyNewDrone = () => {
+        this.track('drone_buy');
+        this.session.dronesBought++;
+        _origBuy();
+      };
+
+      const _origAssign = drones.assignDrone.bind(drones);
+      drones.assignDrone = (id, mat) => {
+        this.track('drone_assign');
+        this.session.droneAssignmentChanges++;
+        _origAssign(id, mat);
+      };
+
+      const _origUnassign = drones.unassignDrone.bind(drones);
+      drones.unassignDrone = (id) => {
+        this.track('drone_unassign');
+        this.session.droneAssignmentChanges++;
+        _origUnassign(id);
+      };
+
+      const _origUpgrade = drones.upgradeDroneEfficiency.bind(drones);
+      drones.upgradeDroneEfficiency = (id) => {
+        this.track('drone_upgrade');
+        this.session.droneUpgrades++;
+        _origUpgrade(id);
+      };
+    }
+
+    // ── PPSystem hooks ─────────────────────────────────────────────────────
+    if (systems.pp) {
+      const _origSpend = systems.pp.spend.bind(systems.pp);
+      systems.pp.spend = (cost) => {
+        const ok = _origSpend(cost);
+        if (ok) this.session.ppSpentTotal += cost;
+        return ok;
+      };
+
+      const _origPrestige = systems.pp.prestige.bind(systems.pp);
+      systems.pp.prestige = () => {
+        const result = _origPrestige();
+        if (result) this.session.prestigesPerformed++;
+        return result;
+      };
+    }
+
+    // ── PedometerSystem hooks ──────────────────────────────────────────────
+    if (systems.pedometer) {
+      const ped = systems.pedometer;
+
+      const _origBuyBonus = ped.buyPPBonus.bind(ped);
+      ped.buyPPBonus = () => {
+        const ok = _origBuyBonus();
+        if (ok) { this.track('ped_buy_pp_bonus'); this.session.ppPerStepBonusPurchases++; }
+        return ok;
+      };
+
+      const _origBuyTrack = ped.buyTrack.bind(ped);
+      ped.buyTrack = () => {
+        const ok = _origBuyTrack();
+        if (ok) { this.track('ped_buy_track'); this.session.speedTracksBought++; }
+        return ok;
+      };
+
+      const _origBuyStat = ped.buyStatLevel.bind(ped);
+      ped.buyStatLevel = (name, stats) => {
+        const ok = _origBuyStat(name, stats);
+        if (ok) { this.track('ped_buy_stat'); this.session.statLevelsBoughtWithSteps++; }
+        return ok;
+      };
+
+      const _origUnlock = ped.unlockZone.bind(ped);
+      ped.unlockZone = (zone) => {
+        const ok = _origUnlock(zone);
+        if (ok) { this.track('ped_unlock_zone'); this.session.zonesUnlocked.push(zone); }
+        return ok;
+      };
+    }
+
+    // ── StatsSystem hooks ──────────────────────────────────────────────────
+    if (systems.stats) {
+      const _origLevelUp = systems.stats.levelUp.bind(systems.stats);
+      systems.stats.levelUp = (statName, ppSystem) => {
+        const ok = _origLevelUp(statName, ppSystem);
+        if (ok) {
+          this.track('stat_upgrade');
+          this.session.statUpgradeSequence.push({ stat: statName, t: this._elapsed() });
+        } else {
+          this.track('stat_upgrade_fail');
+        }
+        return ok;
+      };
+    }
+
+    console.log('[Telemetry] Attached to game systems.');
+  }
+
+  // ── Public: manual track call ──────────────────────────────────────────────
+
+  /**
+   * Increment a named action counter and reset idle timer.
+   * Safe to call with unknown keys — they are auto-created.
+   */
+  track(actionId) {
+    this._lastInputTime = Date.now();
+    if (this.actions[actionId] !== undefined) {
+      this.actions[actionId]++;
+    } else {
+      this.actions[actionId] = 1;
+      console.warn(`[Telemetry] New action key auto-created: ${actionId}`);
+    }
+  }
+
+  /**
+   * Call from your Player.update() or main loop with:
+   *   telemetry.trackMovement(keysDown, player, touchInput);
+   */
+  trackMovement(keysDown, player, touchInput = null) {
+    this._lastInputTime = Date.now();
+    const up    = keysDown.has('KeyW') || keysDown.has('ArrowUp');
+    const down  = keysDown.has('KeyS') || keysDown.has('ArrowDown');
+    const left  = keysDown.has('KeyA') || keysDown.has('ArrowLeft');
+    const right = keysDown.has('KeyD') || keysDown.has('ArrowRight');
+
+    if (up)    this.actions.move_up++;
+    if (down)  this.actions.move_down++;
+    if (left)  this.actions.move_left++;
+    if (right) this.actions.move_right++;
+    if ((up || down) && (left || right)) this.actions.move_diagonal++;
+    if (touchInput?.isMoving) this.actions.joystick_active++;
+
+    // Accumulate distance from Player._totalDist (Player exposes a running counter)
+    if (player) {
+      const dist  = (player._totalDist || 0);
+      const steps = (player.stepsSinceLast || 0);
+      // Only accumulate deltas, not the raw totals, since they can reset
+      // We track cumulatively in session instead
+    }
+  }
+
+  /**
+   * Call from gather handler in main.js / Player.update:
+   *   telemetry.trackGather('start' | 'cancel' | 'complete', materialKey?)
+   */
+  trackGather(event, materialKey = null) {
+    this._lastInputTime = Date.now();
+    if (event === 'start')    { this.track('gather_start');    this.session.gatherCompletions; }
+    if (event === 'cancel')   { this.track('gather_cancel');   this.session.gatherCancels++; }
+    if (event === 'complete') {
+      this.track('gather_complete');
+      this.session.gatherCompletions++;
+      if (materialKey) {
+        this.session.resourcesCollected[materialKey] =
+          (this.session.resourcesCollected[materialKey] || 0) + 1;
+      }
+    }
+  }
+
+  /**
+   * Call when a HUD panel is toggled open:
+   *   telemetry.trackPanelOpen('inventory' | 'drone' | 'equipment' | 'pedometer' | 'stat_sidebar')
+   */
+  trackPanelOpen(panelName) {
+    this._lastInputTime = Date.now();
+    const key = `panel_${panelName}`;
+    this.track(key);
+    this.session.uniquePanelsOpened.add(panelName);
+  }
+
+  /**
+   * Call every frame from main loop with the current PP total so we can track
+   * earned PP (delta from last frame):
+   *   telemetry.trackPP(pp.ppTotal, pp.ppRate);
+   */
+  trackPP(ppTotal, ppRate) {
+    const delta = ppTotal - this._ppSnapshot;
+    if (delta > 0) this.session.ppEarnedTotal += delta;
+    this._ppSnapshot = ppTotal;
+    if (ppRate > this.session.peakPPRate) this.session.peakPPRate = ppRate;
+  }
+
+  /**
+   * Call from Player.update() once per frame with accumulated distance & steps:
+   *   telemetry.trackPosition(player._totalDist, pedometer.totalSteps);
+   * Note: pass the running totals — TelemetrySystem handles deltas.
+   */
+  trackPosition(totalDist, totalSteps) {
+    const distDelta  = Math.max(0, totalDist  - this._prevDist);
+    const stepsDelta = Math.max(0, totalSteps - this._prevSteps);
+    this.session.totalDistanceTravelled += distDelta;
+    this.session.totalStepsWalked       += stepsDelta;
+    this._prevDist  = totalDist;
+    this._prevSteps = totalSteps;
+  }
+
+  // ── Public: session export ─────────────────────────────────────────────────
+
+  /** Finalise the session and persist to localStorage. Returns the report object. */
+  finalise() {
+    clearInterval(this._heartbeat);
+    this._removeKeyboard();
+
+    const now = Date.now();
+    const dur = Math.round((now - this._sessionStart) / 1000);
+
+    // Snapshot live system state
+    if (this._sys) {
+      const { pp, pedometer, stats } = this._sys;
+      if (pp)        { this.session.ppRateAtSessionEnd       = +pp.ppRate.toFixed(3); }
+      if (pedometer) { this.session.ppBonusPerStepAtEnd      = +pedometer.ppBonusPerStep.toFixed(4); }
+      if (stats)     { this.session.lowestHPReached          = Math.ceil(this.session.lowestHPReached === Infinity ? (stats.currentHP) : this.session.lowestHPReached); }
+    }
+
+    // Compute derived / abstract metrics
+    this.session.endTime         = new Date(now).toISOString();
+    this.session.durationSeconds = dur;
+
+    const combats = this.session.combatsEntered;
+    const gathers = this.session.gatherCompletions;
+    this.session.combatToGatherRatio = gathers > 0 ? +(combats / gathers).toFixed(2) : combats;
+
+    const durations = this.session._combatTimestamps;
+    if (durations.length > 0) {
+      this.session.averageCombatDuration_ms = Math.round(durations.reduce((a,b) => a+b, 0) / durations.length);
+    }
+    if (this.session.shortestCombat_ms === Infinity) this.session.shortestCombat_ms = 0;
+
+    // Serialise Sets to arrays
+    this.session.uniquePanelsOpened = [...this.session.uniquePanelsOpened];
+    delete this.session._combatTimestamps;
+
+    const report = {
+      meta: {
+        version:    '1.0.0',
+        exportedAt: new Date().toISOString(),
+        sessionId:  this._sessionId,
+      },
+      actions: { ...this.actions },
+      session: { ...this.session },
+      derived: this._computeDerived(),
+    };
+
+    this._persist(report);
+    console.log('[Telemetry] Session finalised:', report);
+    return report;
+  }
+
+  /** Download a .json file of all stored sessions. */
+  exportJSON() {
+    const sessions = this._loadAll();
+    const blob = new Blob([JSON.stringify(sessions, null, 2)], { type: 'application/json' });
+    this._download(blob, `telemetry_${Date.now()}.json`);
+  }
+
+  /** Download a flat .csv of all stored sessions (one row per session). */
+  exportCSV() {
+    const sessions = this._loadAll();
+    if (!sessions.length) { alert('No telemetry data yet.'); return; }
+
+    const flatFields = [
+      // meta
+      'meta.sessionId', 'meta.exportedAt',
+      // session core
+      'session.startTime', 'session.endTime', 'session.durationSeconds',
+      'session.totalDistanceTravelled', 'session.totalStepsWalked',
+      'session.combatsEntered', 'session.combatVictories', 'session.combatDefeats', 'session.combatFlees',
+      'session.totalDamageDealt', 'session.totalDamageTaken', 'session.totalSkillsUsed',
+      'session.rescueDroneActivations', 'session.longestCombat_ms', 'session.shortestCombat_ms', 'session.averageCombatDuration_ms',
+      'session.ppEarnedTotal', 'session.ppSpentTotal', 'session.ppRateAtSessionEnd', 'session.peakPPRate',
+      'session.ppPerStepBonusPurchases', 'session.ppBonusPerStepAtEnd', 'session.prestigesPerformed',
+      'session.gatherCompletions', 'session.gatherCancels',
+      'session.craftingStarts', 'session.craftingCompletions',
+      'session.speedTracksBought', 'session.speedTracksPlaced', 'session.statLevelsBoughtWithSteps',
+      'session.dronesBought', 'session.droneUpgrades', 'session.droneAssignmentChanges',
+      'session.sessionIdleSeconds', 'session.lowestHPReached', 'session.timesHPBelow25pct',
+      'session.combatToGatherRatio', 'session.firstCombatTime_s',
+      // derived
+      'derived.playstyle', 'derived.efficiencyScore', 'derived.survivalRate',
+      'derived.skillDependence', 'derived.economyGrade', 'derived.engagementScore',
+    ];
+
+    const get = (obj, path) => {
+      return path.split('.').reduce((o, k) => (o !== undefined ? o[k] : ''), obj) ?? '';
+    };
+
+    const header = flatFields.join(',');
+    const rows   = sessions.map(s => flatFields.map(f => {
+      const v = get(s, f);
+      return typeof v === 'string' && v.includes(',') ? `"${v}"` : v;
+    }).join(','));
+
+    const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv' });
+    this._download(blob, `telemetry_${Date.now()}.csv`);
+  }
+
+  /** Wipe all stored telemetry. */
+  clearAll() {
+    localStorage.removeItem('telemetry_sessions');
+    console.log('[Telemetry] All session data cleared.');
+  }
+
+  // ── Internal: combat event handlers ────────────────────────────────────────
+
+  _onCombatStart(enemy) {
+    this.track('combat_enter');
+    this.session.combatsEntered++;
+    this._combatEnterTime   = Date.now();
+    this._combatFirstAction = false;
+
+    if (this.session.firstCombatTime_s === null) {
+      this.session.firstCombatTime_s = this._elapsed();
+    }
+  }
+
+  _onCombatFirstAction() {
+    if (!this._combatFirstAction && this._combatEnterTime) {
+      const dt = Date.now() - this._combatEnterTime;
+      this.session.decisionSpeed_ms.push(dt);
+      this._combatFirstAction = true;
+    }
+  }
+
+  _onCombatEnd(won, fled) {
+    if (won)  { this.track('combat_victory'); this.session.combatVictories++; }
+    if (fled) { this.track('combat_run_success'); this.session.combatFlees++; }
+    if (!won && !fled) { this.track('combat_defeat'); this.session.combatDefeats++; }
+
+    if (this._combatEnterTime) {
+      const dur = Date.now() - this._combatEnterTime;
+      this.session._combatTimestamps.push(dur);
+      if (dur > this.session.longestCombat_ms)  this.session.longestCombat_ms  = dur;
+      if (dur < this.session.shortestCombat_ms) this.session.shortestCombat_ms = dur;
+      this._combatEnterTime = null;
+    }
+  }
+
+  // ── Internal: derived / abstract metrics ───────────────────────────────────
+
+  _computeDerived() {
+    const s = this.session;
+    const a = this.actions;
+
+    // ── Playstyle fingerprint ──────────────────────────────────────────────
+    const totalCombatActions = a.combat_fight + a.combat_skill_use + a.combat_item_use;
+    const skillRatio   = totalCombatActions > 0 ? a.combat_skill_use / totalCombatActions : 0;
+    const itemRatio    = totalCombatActions > 0 ? a.combat_item_use  / totalCombatActions : 0;
+    const droneRatio   = (a.drone_assign + a.drone_upgrade) / Math.max(1, s.durationSeconds / 60);
+
+    let playstyle = 'Explorer';
+    if (s.combatVictories > 10 && skillRatio > 0.4)   playstyle = 'Tactician';
+    else if (s.combatVictories > 10 && skillRatio < 0.1) playstyle = 'Brawler';
+    else if (s.gatherCompletions > s.combatsEntered * 2) playstyle = 'Gatherer';
+    else if (droneRatio > 2)                           playstyle = 'Industrialist';
+    else if (s.ppSpentTotal > s.ppEarnedTotal * 0.9)   playstyle = 'Optimizer';
+
+    // ── Efficiency score (0–100): PP earned per minute of active play ──────
+    const activeMins = Math.max(1, (s.durationSeconds - s.sessionIdleSeconds) / 60);
+    const efficiencyScore = Math.min(100, Math.round((s.ppEarnedTotal / activeMins) / 10));
+
+    // ── Survival rate ──────────────────────────────────────────────────────
+    const survivalRate = s.combatsEntered > 0
+      ? +(s.combatVictories / s.combatsEntered * 100).toFixed(1)
+      : 100;
+
+    // ── Skill dependence (0–1) ─────────────────────────────────────────────
+    const skillDependence = totalCombatActions > 0
+      ? +skillRatio.toFixed(2)
+      : 0;
+
+    // ── Economy grade: how efficiently they convert steps → PP ────────────
+    const stepsToBonus = s.ppPerStepBonusPurchases;
+    const economyGrade =
+      stepsToBonus >= 5  ? 'S' :
+      stepsToBonus >= 3  ? 'A' :
+      stepsToBonus >= 1  ? 'B' :
+                           'C';
+
+    // ── Engagement score: breadth of systems used ──────────────────────────
+    const systemsUsed = [
+      s.combatsEntered > 0,
+      s.gatherCompletions > 0,
+      s.craftingCompletions > 0,
+      s.dronesBought > 0,
+      s.ppPerStepBonusPurchases > 0,
+      s.statUpgradeSequence.length > 0,
+      s.uniquePanelsOpened?.length > 2,
+      s.prestigesPerformed > 0,
+    ].filter(Boolean).length;
+    const engagementScore = Math.round((systemsUsed / 8) * 100);
+
+    // ── Average decision speed ─────────────────────────────────────────────
+    const speeds = s.decisionSpeed_ms;
+    const avgDecisionSpeed_ms = speeds.length > 0
+      ? Math.round(speeds.reduce((a, b) => a + b, 0) / speeds.length)
+      : null;
+
+    // ── Combat behaviour pattern ───────────────────────────────────────────
+    const combatPattern =
+      s.combatFlees > s.combatVictories    ? 'Avoidant'   :
+      s.combatDefeats > s.combatVictories  ? 'Struggling' :
+      skillRatio > 0.5                     ? 'Calculated' :
+      itemRatio  > 0.3                     ? 'Resourceful':
+                                             'Aggressive';
+
+    return {
+      playstyle,
+      efficiencyScore,
+      survivalRate,
+      skillDependence,
+      economyGrade,
+      engagementScore,
+      avgDecisionSpeed_ms,
+      combatPattern,
+      moveDirectionBias: this._directionBias(),
+      topSkillUsed: this._topSkill(),
+      topResourceGathered: this._topResource(),
+    };
+  }
+
+  _directionBias() {
+    const { move_up, move_down, move_left, move_right } = this.actions;
+    const total = move_up + move_down + move_left + move_right;
+    if (total === 0) return 'none';
+    const dirs = { up: move_up, down: move_down, left: move_left, right: move_right };
+    return Object.entries(dirs).sort((a,b) => b[1]-a[1])[0][0];
+  }
+
+  _topSkill() {
+    const breakdown = this.session.skillUsageBreakdown;
+    if (!Object.keys(breakdown).length) return null;
+    return Object.entries(breakdown).sort((a,b) => b[1]-a[1])[0][0];
+  }
+
+  _topResource() {
+    const rc = this.session.resourcesCollected;
+    if (!Object.keys(rc).length) return null;
+    return Object.entries(rc).sort((a,b) => b[1]-a[1])[0][0];
+  }
+
+  // ── Internal: heartbeat ────────────────────────────────────────────────────
+
+  _tick() {
+    const now = Date.now();
+    if (now - this._lastInputTime > this._idleThreshold_ms) {
+      this.session.sessionIdleSeconds++;
+    }
+    // Snapshot PP earned delta for passive income
+    if (this._sys?.pp) {
+      this.trackPP(this._sys.pp.ppTotal, this._sys.pp.ppRate);
+    }
+  }
+
+  // ── Internal: keyboard wiring ──────────────────────────────────────────────
+
+  _wireKeyboard() {
+    const handler = (e) => {
+      this._lastInputTime = Date.now();
+      if (e.code === 'KeyE') this.track('key_E');
+      if (e.code === 'KeyT') { this.track('key_T'); this.track('ped_place_track'); this.session.speedTracksPlaced++; }
+    };
+    window.addEventListener('keydown', handler);
+    this._keyHandler = handler;
+  }
+
+  _removeKeyboard() {
+    if (this._keyHandler) window.removeEventListener('keydown', this._keyHandler);
+  }
+
+  // ── Internal: persistence ──────────────────────────────────────────────────
+
+  _persist(report) {
+    try {
+      const existing = this._loadAll();
+      existing.push(report);
+      // Keep last 50 sessions to avoid storage bloat
+      const trimmed = existing.slice(-50);
+      localStorage.setItem('telemetry_sessions', JSON.stringify(trimmed));
+    } catch (e) {
+      console.error('[Telemetry] Failed to persist session:', e);
+    }
+  }
+
+  _loadAll() {
+    try {
+      return JSON.parse(localStorage.getItem('telemetry_sessions') || '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  _download(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ── Internal: helpers ──────────────────────────────────────────────────────
+
+  _makeId() {
+    return `sess_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  }
+
+  _elapsed() {
+    return Math.round((Date.now() - this._sessionStart) / 1000);
+  }
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * INTEGRATION CHECKLIST — add these calls in main.js:
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * 1. IMPORT + CONSTRUCT (top of main.js, after other imports):
+ *      import { TelemetrySystem } from './TelemetrySystem.js';
+ *      const telemetry = new TelemetrySystem();
+ *
+ * 2. ATTACH (after all systems are constructed):
+ *      telemetry.attach({ combat, stats, pp, pedometer, crafting, inventory, drones, player });
+ *
+ * 3. GAME LOOP (inside requestAnimationFrame / update function):
+ *      telemetry.trackMovement(keysDown, player, touchInput);
+ *      telemetry.trackPosition(player._totalDist, pedometer.totalSteps);
+ *      telemetry.trackPP(pp.ppTotal, pp.ppRate);
+ *
+ * 4. GATHER EVENTS (in the gather completion / cancel logic):
+ *      telemetry.trackGather('start');
+ *      telemetry.trackGather('cancel');
+ *      telemetry.trackGather('complete', 'copper');  // pass material key
+ *
+ * 5. PANEL TOGGLES (in HUD._wirePanelToggles):
+ *      telemetry.trackPanelOpen('inventory');  // etc.
+ *
+ * 6. COMBAT SKILL MENU OPEN (in CombatUI.onSkills):
+ *      telemetry.track('combat_skill_open');
+ *
+ * 7. COMBAT ITEMS MENU OPEN (in CombatUI.onItems):
+ *      telemetry.track('combat_items_open');
+ *
+ * 8. SESSION END (on page unload or explicit quit):
+ *      window.addEventListener('beforeunload', () => telemetry.finalise());
+ *      // or call manually: const report = telemetry.finalise();
+ *
+ * 9. EXPORT BUTTONS (optional — wire to UI):
+ *      telemetry.exportJSON();
+ *      telemetry.exportCSV();
+ * ─────────────────────────────────────────────────────────────────────────────
+ */

@@ -1,0 +1,119 @@
+{
+  "version": 2,
+  "timestamp": 1744838400000,
+  "sessionName": "Endgame Test",
+  "zone": "landingSite",
+  "playerX": 0,
+  "playerZ": 0,
+  "pp": {
+    "ppTotal": 50000,
+    "prestigeBonus": 2.5,
+    "rateModifiers": {
+      "prestige": 2.5
+    }
+  },
+  "stats": {
+    "levels": {
+      "strength": { "level": 15, "exp": 0 },
+      "health": { "level": 25, "exp": 0 },
+      "defense": { "level": 12, "exp": 0 },
+      "constitution": { "level": 8, "exp": 0 },
+      "dexterity": { "level": 10, "exp": 0 },
+      "agility": { "level": 8, "exp": 0 },
+      "perception": { "level": 6, "exp": 0 },
+      "focusRate": { "level": 10, "exp": 0 },
+      "focus": { "level": 8, "exp": 0 },
+      "crafting": { "level": 5, "exp": 0 },
+      "craftingSpeed": { "level": 5, "exp": 0 },
+      "speed": { "level": 8, "exp": 0 }
+    },
+    "currentHP": 250,
+    "currentFP": 0
+  },
+  "inventory": {
+    "materials": {
+      "copper": 50, "timber": 40, "stone": 30, "iron": 45, "carbon": 20,
+      "quartz": 25, "silica": 15, "fiber": 35, "silver": 10, "gold": 8,
+      "titanium": 5, "tungsten": 3, "resin": 12, "epoxy": 6,
+      "elastomer": 4, "magnet": 3, "glass": 5, "lumber": 10, "seed": 5
+    },
+    "consumables": {
+      "ration": 10, "firstAid": 5, "repairKit": 3, "antidote": 4,
+      "ironPatch": 6, "signalFlare": 3
+    },
+    "tools": {
+      "terrainCutter": true,
+      "chargingStation": true
+    }
+  },
+  "pedometer": {
+    "totalSteps": 25000,
+    "ppBonusPerStep": 0.75,
+    "ppBonusPurchases": 5,
+    "nextBonusCost": 1600,
+    "trackCount": 30,
+    "nextTrackCost": 100,
+    "pendingTracks": 5,
+    "infiniteTracks": true,
+    "placedTracks": [
+      { "zone": "landingSite", "x": -2, "z": 0 },
+      { "zone": "landingSite", "x": 0, "z": 0 },
+      { "zone": "landingSite", "x": 2, "z": 0 },
+      { "zone": "landingSite", "x": 4, "z": 0 },
+      { "zone": "landingSite", "x": 6, "z": 0 },
+      { "zone": "landingSite", "x": 8, "z": 0 },
+      { "zone": "landingSite", "x": 10, "z": 0 },
+      { "zone": "landingSite", "x": -4, "z": -4 },
+      { "zone": "landingSite", "x": -6, "z": -6 },
+      { "zone": "landingSite", "x": -8, "z": -8 },
+      { "zone": "landingSite", "x": -10, "z": -10 },
+      { "zone": "mine", "x": -2, "z": -10 },
+      { "zone": "mine", "x": 0, "z": -10 },
+      { "zone": "mine", "x": 2, "z": -10 },
+      { "zone": "mine", "x": 0, "z": -8 },
+      { "zone": "mine", "x": 0, "z": -6 },
+      { "zone": "mine", "x": 0, "z": -4 },
+      { "zone": "verdantMaw", "x": 0, "z": 12 },
+      { "zone": "verdantMaw", "x": 0, "z": 10 },
+      { "zone": "verdantMaw", "x": 0, "z": 8 },
+      { "zone": "verdantMaw", "x": 0, "z": 6 },
+      { "zone": "lagoonCoast", "x": 12, "z": 0 },
+      { "zone": "lagoonCoast", "x": 10, "z": 0 },
+      { "zone": "lagoonCoast", "x": 8, "z": 0 },
+      { "zone": "frozenTundra", "x": 0, "z": -12 }
+    ],
+    "statStepPurchases": { "strength": 2, "health": 3 },
+    "totalStatPurchases": 5,
+    "nextStatCost": 2300,
+    "unlockedZones": ["verdantMaw", "lagoonCoast", "frozenTundra"]
+  },
+  "drones": {
+    "list": [
+      { "id": 1, "name": "Drone Alpha", "assignedMaterial": "copper", "efficiency": 4, "gatherTimer": 0 },
+      { "id": 2, "name": "Drone Beta", "assignedMaterial": "iron", "efficiency": 3, "gatherTimer": 0 },
+      { "id": 3, "name": "Drone Gamma", "assignedMaterial": "quartz", "efficiency": 2, "gatherTimer": 0 }
+    ],
+    "upgradeCost": 313
+  },
+  "equipment": {
+    "slots": {
+      "weapon": { "label": "Basic Blade", "slot": "weapon", "tier": "Basic", "statBonuses": { "strength": 2 } },
+      "offhand": { "label": "Basic Shield", "slot": "offhand", "tier": "Basic", "statBonuses": { "defense": 2 } },
+      "head": null,
+      "body": { "label": "Basic Armor", "slot": "body", "tier": "Basic", "statBonuses": { "defense": 3, "health": 1 } },
+      "legs": null,
+      "accessory": { "label": "Copper Ring", "slot": "accessory", "tier": "Basic", "statBonuses": { "focusRate": 1 } },
+      "deploy1": null,
+      "deploy2": null,
+      "consumable": null
+    }
+  },
+  "gameStats": {
+    "enemiesDefeated": 87,
+    "defeats": 12,
+    "actionsTaken": 1543,
+    "highestHit": 62,
+    "totalStepsTaken": 25000,
+    "visitedZones": ["landingSite", "mine", "verdantMaw", "lagoonCoast", "frozenTundra", "spaceship"]
+  }
+}

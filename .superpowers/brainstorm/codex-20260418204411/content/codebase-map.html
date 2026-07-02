@@ -1,0 +1,97 @@
+<h2>Processing Power Codebase Map</h2>
+<p class="subtitle">A visual explanation of how this browser 3D idle RPG is wired together.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Runtime Flow</div>
+  <div class="mockup-body">
+    <div style="display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:14px;align-items:stretch">
+      <div style="border:1px solid rgba(0,255,204,.28);border-radius:8px;padding:14px;background:rgba(0,20,12,.55)">
+        <div class="label">HTML Shell</div>
+        <h3>index.html</h3>
+        <p>Defines the canvas, HUD panels, combat overlay, mobile controls, styles, import map, and module entry point.</p>
+      </div>
+      <div style="border:1px solid rgba(255,204,0,.4);border-radius:8px;padding:14px;background:rgba(40,32,0,.42)">
+        <div class="label">Coordinator</div>
+        <h3>js/main.js</h3>
+        <p>Creates every system, wires keyboard/click handlers, switches zones, handles interactions, and runs the animation loop.</p>
+      </div>
+      <div style="border:1px solid rgba(0,255,204,.28);border-radius:8px;padding:14px;background:rgba(0,20,12,.55)">
+        <div class="label">Frame Loop</div>
+        <h3>gameLoop()</h3>
+        <p>Updates player, systems, combat, gathering, portals, HUD, camera, and renderer once per frame.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup">
+  <div class="mockup-header">Main Ownership Boundaries</div>
+  <div class="mockup-body">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+      <div style="border:1px solid rgba(68,136,255,.35);border-radius:8px;padding:12px;background:rgba(8,20,44,.55)">
+        <h3>Scene</h3>
+        <p><strong>SceneManager</strong> owns Three.js scene, renderer, orthographic camera, resize handling, camera follow, and render.</p>
+        <p><strong>Environment</strong> builds zones, terrain, props, portals, stations, collision circles, trees, rocks, and spawn metadata.</p>
+      </div>
+      <div style="border:1px solid rgba(68,255,170,.35);border-radius:8px;padding:12px;background:rgba(8,40,24,.5)">
+        <h3>Entities</h3>
+        <p><strong>Player</strong> owns mesh, position, movement, facing, steps, terrain effects, and node gathering state.</p>
+        <p><strong>EntityManager</strong> owns resource nodes and enemies, including aggro-triggered combat starts.</p>
+      </div>
+      <div style="border:1px solid rgba(255,204,0,.35);border-radius:8px;padding:12px;background:rgba(45,35,4,.48)">
+        <h3>Systems</h3>
+        <p>Small state machines for PP, stats, combat, inventory, crafting, drones, pedometer, saves, achievements, minigame, drill, ascension, and offline rewards.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup">
+  <div class="mockup-header">Game Loop Detail</div>
+  <div class="mockup-body">
+    <div style="display:flex;gap:10px;align-items:center;overflow-x:auto;padding-bottom:4px">
+      <div style="min-width:130px;border:1px solid #0fc5;border-radius:8px;padding:10px;text-align:center">1<br>zone switch</div>
+      <div style="color:#0fc">→</div>
+      <div style="min-width:130px;border:1px solid #0fc5;border-radius:8px;padding:10px;text-align:center">2<br>player input + movement</div>
+      <div style="color:#0fc">→</div>
+      <div style="min-width:130px;border:1px solid #0fc5;border-radius:8px;padding:10px;text-align:center">3<br>collision + tracks</div>
+      <div style="color:#0fc">→</div>
+      <div style="min-width:130px;border:1px solid #0fc5;border-radius:8px;padding:10px;text-align:center">4<br>PP / drones / crafting</div>
+      <div style="color:#0fc">→</div>
+      <div style="min-width:130px;border:1px solid #0fc5;border-radius:8px;padding:10px;text-align:center">5<br>combat + interactions</div>
+      <div style="color:#0fc">→</div>
+      <div style="min-width:130px;border:1px solid #0fc5;border-radius:8px;padding:10px;text-align:center">6<br>HUD + render</div>
+    </div>
+  </div>
+</div>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">Input Path</div>
+    <div class="mockup-body">
+      <p><strong>Keyboard:</strong> <code>main.js</code> maintains a <code>keysDown</code> set.</p>
+      <p><strong>Mobile:</strong> <code>TouchInput</code> exposes <code>dx</code>, <code>dz</code>, <code>isMoving</code>, and <code>actionPressed</code>.</p>
+      <p><strong>Player:</strong> <code>Player.update(keysDown, delta, touchInput)</code> consumes both paths and moves the character.</p>
+    </div>
+  </div>
+  <div class="mockup">
+    <div class="mockup-header">UI Path</div>
+    <div class="mockup-body">
+      <p><strong>HUD</strong> renders most non-combat panels: stats, inventory, crafting, drones, equipment, pedometer, achievements, ascension, drill, minigame.</p>
+      <p><strong>CombatUI</strong> renders the combat overlay, action buttons, skill/item menus, HP bars, FP ring, and combat log.</p>
+    </div>
+  </div>
+</div>
+
+<div class="mockup">
+  <div class="mockup-header">Persistence Boundary</div>
+  <div class="mockup-body">
+    <p><strong>SaveSystem</strong> snapshots the live systems into JSON: zone, player position, PP, stats, inventory, pedometer tracks, drones, equipment, game stats, achievements, minigame, ascension, and auto-combat.</p>
+    <p>Loading applies JSON back into the existing system instances, then returns the zone and player coordinates so <code>main.js</code> can switch zones and teleport the player.</p>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Growth Pressure</h3>
+  <p>The architecture is understandable, but <strong>main.js</strong>, <strong>Environment.js</strong>, and <strong>HUD.js</strong> are the three largest files and are doing the most coordination work. Those are the likely refactor targets as the game grows.</p>
+</div>

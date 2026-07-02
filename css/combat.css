@@ -1,0 +1,396 @@
+/* ── Combat Overlay ──────────────────────────────────────────────── */
+#combat-overlay {
+  position: fixed;
+  inset: 0;
+  background: #080c14;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Courier New', Courier, monospace;
+  color: #e0ffe0;
+}
+
+#combat-overlay[hidden] {
+  display: none !important;
+}
+
+/* ── Scene (top 55%) ─────────────────────────────────────────────── */
+#combat-scene {
+  flex: 0 0 55%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  padding: 20px 40px 16px;
+  background: linear-gradient(180deg, #0c1a2e 0%, #0a1020 100%);
+  border-bottom: 2px solid #00ffcc22;
+  position: relative;
+}
+
+/* Starfield effect via pseudo-element */
+#combat-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, #ffffff22, transparent),
+    radial-gradient(1px 1px at 60% 15%, #ffffff18, transparent),
+    radial-gradient(1px 1px at 80% 40%, #ffffff20, transparent),
+    radial-gradient(1px 1px at 40% 60%, #ffffff15, transparent),
+    radial-gradient(1px 1px at 10% 70%, #ffffff22, transparent);
+  pointer-events: none;
+}
+
+/* ── Enemy panel (left) ──────────────────────────────────────────── */
+#enemy-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  z-index: 1;
+}
+
+#enemy-name {
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  color: #ff9944;
+  font-weight: bold;
+}
+
+#enemy-sprite {
+  width: 120px;
+  height: 120px;
+  background: linear-gradient(135deg, #c45a1a 30%, #8b3300 100%);
+  border-radius: 8px;
+  border: 2px solid #ff772244;
+  position: relative;
+  /* Stylized enemy silhouette via box-shadow */
+  box-shadow:
+    inset -8px -8px 20px rgba(0,0,0,0.5),
+    0 4px 20px rgba(196,90,26,0.3);
+}
+
+/* Enemy face detail */
+#enemy-sprite::before {
+  content: '';
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 10px;
+  background: #ff4444;
+  border-radius: 2px;
+  box-shadow: 0 0 8px #ff4444;
+}
+
+/* ── Player combat panel (right) ─────────────────────────────────── */
+#player-combat-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  z-index: 1;
+}
+
+#player-combat-name {
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  color: #44aaff;
+  font-weight: bold;
+}
+
+#player-sprite {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, #2255aa 30%, #112244 100%);
+  border-radius: 50% 50% 8px 8px;
+  border: 2px solid #4488ff44;
+  position: relative;
+  box-shadow:
+    inset -6px -6px 16px rgba(0,0,0,0.5),
+    0 4px 16px rgba(68,136,255,0.3);
+}
+
+/* Player back-view hair / head shape */
+#player-sprite::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 30px;
+  background: #f5c89a;
+  border-radius: 50% 50% 0 0;
+}
+
+/* ── Player sprite wrapper (holds sprite + FP ring) ─────────────── */
+#player-sprite-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── FP Ring ─────────────────────────────────────────────────────── */
+#fp-ring-wrap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+#fp-ring-svg {
+  width: 130px;
+  height: 130px;
+}
+
+#fp-ring-fill {
+  transition: stroke-dashoffset 0.12s linear;
+}
+
+#fp-text {
+  position: absolute;
+  bottom: -2px;
+  font-size: 0.65rem;
+  color: #00ffcc;
+  text-align: center;
+  pointer-events: none;
+  letter-spacing: 0.04em;
+}
+
+/* ── HP bars ─────────────────────────────────────────────────────── */
+#enemy-hp-bar-wrap,
+#player-hp-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 200px;
+}
+
+.hp-label {
+  font-size: 0.7rem;
+  color: #aaffcc;
+  min-width: 18px;
+}
+
+.hp-track {
+  flex: 1;
+  height: 8px;
+  background: #112211;
+  border-radius: 4px;
+  border: 1px solid #224422;
+  overflow: hidden;
+}
+
+.hp-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.25s ease;
+}
+
+.enemy-fill {
+  background: linear-gradient(90deg, #ff5533, #ff8844);
+}
+
+.player-fill {
+  background: linear-gradient(90deg, #00cc66, #00ffaa);
+}
+
+#enemy-hp-text,
+#player-hp-text {
+  font-size: 0.65rem;
+  color: #88ccaa;
+  min-width: 60px;
+  text-align: right;
+}
+
+/* ── Combat log ──────────────────────────────────────────────────── */
+#combat-log-wrap {
+  flex: 0 0 14%;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  border-bottom: 1px solid #00ffcc11;
+  background: rgba(0,10,0,0.4);
+  overflow: hidden;
+}
+
+#combat-log {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.log-line {
+  font-size: 0.78rem;
+  color: #aaffcc;
+  letter-spacing: 0.03em;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Action buttons ──────────────────────────────────────────────── */
+#combat-actions {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 0;
+  padding: 0;
+}
+
+.action-btn {
+  background: rgba(0, 20, 10, 0.9);
+  border: 1px solid #00cc6644;
+  color: #aaffcc;
+  font-family: 'Courier New', monospace;
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  outline: none;
+}
+
+.action-btn:hover:not(:disabled) {
+  background: rgba(0, 100, 40, 0.8);
+  color: #00ffcc;
+}
+
+.action-btn:active:not(:disabled) {
+  background: rgba(0, 160, 60, 0.8);
+}
+
+/* ── Skills menu ─────────────────────────────────────────────────── */
+#skills-menu,
+#items-menu {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  background: #060e08;
+  border-top: 2px solid #00cc66;
+  display: flex;
+  flex-direction: column;
+  z-index: 110;
+}
+
+#skills-menu[hidden],
+#items-menu[hidden] {
+  display: none !important;
+}
+
+#skills-list {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow-y: auto;
+}
+
+.skill-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: 0.8rem;
+  border-radius: 0;
+}
+
+.skill-name {
+  font-size: 0.82rem;
+  letter-spacing: 0.05em;
+}
+
+.skill-fp {
+  font-size: 0.65rem;
+  color: #00ffcc;
+}
+
+.skill-btn.fp-locked {
+  opacity: 0.35;
+}
+
+.back-btn {
+  flex: 0 0 44px;
+  font-size: 0.8rem;
+  border-top: 1px solid #00cc6644;
+}
+
+/* Items menu */
+#items-list {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow-y: auto;
+  align-content: start;
+}
+
+.item-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: 0.8rem;
+  border-radius: 0;
+}
+
+.item-name {
+  font-size: 0.82rem;
+  letter-spacing: 0.05em;
+}
+
+.item-qty {
+  font-size: 0.65rem;
+  color: #44ffaa;
+}
+
+.no-items {
+  color: #55aa77;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 20px;
+}
+
+/* ── Status effect badges ────────────────────────────────────────── */
+#status-effects {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-height: 18px;
+}
+
+.status-badge {
+  font-size: 0.55rem;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+.status-burn      { background: #cc3300; color: #ffccaa; }
+.status-shock     { background: #0055aa; color: #aaddff; }
+.status-corrosion { background: #557722; color: #ccddaa; }
+.status-poison    { background: #552288; color: #ddaaff; }
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
