@@ -25,6 +25,9 @@ const CODEX_ENTRIES = {
   rusher:  { category: 'Enemy', label: 'Rusher',  flavor: 'Fast-moving bipedal combat unit. Prioritizes aggression over defense. Minimal shielding.' },
   swinger: { category: 'Enemy', label: 'Swinger', flavor: 'Heavily armored melee fighter. Wind-up attacks carry lethal momentum. Patience wins.' },
   burst:   { category: 'Enemy', label: 'Burst',   flavor: 'Ranged energy emitter. Volatile capacitor banks power its salvos. Stay mobile.' },
+  // ── Lore ───────────────────────────────────────────────────────────────────
+  theMine:   { category: 'Lore', label: 'The Mine',   flavor: 'An excavation far older than your arrival. Somebody sank these shafts, laid these rails — and left in a hurry.' },
+  theBreach: { category: 'Lore', label: 'The Breach', flavor: 'The miners were digging for gold. They found a door. A chamber of standing stones, deep beneath the rock, whose gates open onto other worlds entirely.' },
   // ── Crafted ────────────────────────────────────────────────────────────────
   terrainCutter:    { category: 'Crafted', label: 'Terrain Cutter',    flavor: 'A powered cutting blade. Clears terrain efficiently. Mind the durability.' },
   chargingStation:  { category: 'Crafted', label: 'Charging Station',  flavor: 'Personal energy restoration module. Plug in, power up, move out.' },

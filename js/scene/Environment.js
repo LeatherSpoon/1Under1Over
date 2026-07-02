@@ -78,6 +78,9 @@ export class Environment {
     // Reveal materials (mine blocks) — updated with player position each frame
     this._revealMaterials = [];
 
+    // Continuously rotating meshes (Breach ring, etc.) — { mesh, axis, speed }
+    this._spinners = [];
+
     // Growing trees (planted from seeds)
     this._growingTrees = []; // { group, targetScale, currentScale, x, z }
 
@@ -114,6 +117,7 @@ export class Environment {
     this._growingTrees = [];
     this._treePlacedPositions = [];
     this._revealMaterials = [];
+    this._spinners = [];
     // Reset per-zone interactable station positions
     this._offloadStationPos = null;
     this._fabricatorPos = null;
@@ -148,6 +152,9 @@ export class Environment {
 
   // ── Per-frame environment update (growing trees, harvest cooldowns) ────────
   update(delta) {
+    for (const s of this._spinners) {
+      s.mesh.rotation[s.axis] += s.speed * delta;
+    }
     for (const t of this._growingTrees) {
       if (t.currentScale < t.targetScale) {
         t.currentScale = Math.min(t.targetScale, t.currentScale + delta * (t.targetScale / 60));
@@ -419,11 +426,13 @@ export class Environment {
         { x: 14, z: 10,  archetype: 'rusher' },
         { x: -12, z: 16, archetype: 'rusher' },
       ];
-      // T2 — 2 Rushers + 1 Swinger
+      // T2 — 2 Rushers in the working cavern, a Swinger mid-cavern,
+      // and one more guarding the passage down to the Breach.
       case 'mine': return [
-        { x: 8,  z: 8,  archetype: 'rusher' },
-        { x: -8, z: 6,  archetype: 'rusher' },
-        { x: 6,  z: -8, archetype: 'swinger' },
+        { x: -12.8, z: -3.2, archetype: 'rusher' },
+        { x: 12.8,  z: 3.2,  archetype: 'rusher' },
+        { x: 6.4,   z: 9.6,  archetype: 'swinger' },
+        { x: 6.4,   z: 19.2, archetype: 'swinger' },
       ];
       // T3 — 2 Rushers + 1 Swinger + 1 Burst
       case 'verdantMaw': return [

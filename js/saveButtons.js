@@ -1,4 +1,5 @@
 import { SaveSystem } from './systems/SaveSystem.js';
+import { isMineFloorCell, mineWorldToCell, MINE_SPAWN_POS } from './scene/MineLayout.js';
 
 export function initSaveButtons({ saveSystem, env, player, hud, switchZone }) {
   const saveBtn = document.getElementById('btn-save');
@@ -38,7 +39,14 @@ export function initSaveButtons({ saveSystem, env, player, hud, switchZone }) {
         const result = saveSystem.apply(data);
         if (result) {
           switchZone(result.zone);
-          player.teleportTo(result.playerX, result.playerZ);
+          // Saves from before the mine redesign can point inside the new cave
+          // walls — snap those to the mine spawn instead of restoring into rock.
+          let px = result.playerX, pz = result.playerZ;
+          if (result.zone === 'mine') {
+            const { c, r } = mineWorldToCell(px, pz);
+            if (!isMineFloorCell(c, r)) ({ x: px, z: pz } = MINE_SPAWN_POS);
+          }
+          player.teleportTo(px, pz);
           hud._buildStatList();
           const info = SaveSystem.getSaveInfo(data);
           loadBtn.textContent = 'LOADED!';

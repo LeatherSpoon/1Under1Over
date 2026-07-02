@@ -40,6 +40,7 @@ import { ModifiersSystem } from './systems/ModifiersSystem.js';
 import { TripartiteSystem } from './systems/TripartiteSystem.js';
 import { WorldEffects } from './fx/WorldEffects.js';
 import { createSwitchZone } from './zoneManager.js';
+import { MINE_BREACH_Z } from './scene/zones/Mine/layout.js';
 import { initMenuController } from './menuController.js';
 import { initSaveButtons } from './saveButtons.js';
 import { initMissionTracker } from './missionTracker.js';
@@ -470,6 +471,7 @@ const switchZone = createSwitchZone({
     _gatherTimer = 0;
     _gatherType = null;
     questSystem.recordZoneVisit(env.currentZone);
+    if (env.currentZone === 'mine') codexSystem.discover('theMine');
 
     // Presence rotation: being in a zone cross-amplifies a different tripartite leg.
     // Reset all multipliers, then apply the configured zone bonus (if any). No UI exposure.
@@ -1162,6 +1164,17 @@ function gameLoop(now) {
 
   // Update environment (growing trees, etc.)
   env.update(delta);
+
+  // Cave reveal shader — walls open up around the player so tunnels stay readable
+  for (const m of env._revealMaterials) {
+    const sh = m.userData.shader;
+    if (sh) sh.uniforms.uPlayerPos.value.copy(player.position);
+  }
+
+  // Lore discovery — the first time the player breaks through into the Breach
+  if (env.currentZone === 'mine' && player.position.z > MINE_BREACH_Z) {
+    codexSystem.discover('theBreach');
+  }
 
   // Portal accessibility recolor — every 0.5s is plenty
   _portalRefreshTimer -= delta;
