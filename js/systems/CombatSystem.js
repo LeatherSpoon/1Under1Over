@@ -1,4 +1,5 @@
 import { CONFIG } from '../config.js';
+import { DROP_TABLES } from '../entities/archetypes.js';
 
 export class CombatSystem {
   constructor(statsSystem, ppSystem, inventorySystem) {
@@ -254,7 +255,7 @@ export class CombatSystem {
       const pp = this.enemy.ppReward;
       this.pp.ppTotal += pp;
       this._log(`Victory! +${pp} PP`);
-      this._rollDrops(this.enemy.archetype);
+      this._rollDrops(this.enemy.archetype, this.enemy.isBoss ? 3 : 1);
       this.enemy.die();
     } else if (!fled) {
       this._log('Rescue drone activated! Returning to base...');
@@ -267,20 +268,14 @@ export class CombatSystem {
     if (this.onCombatEnd) this.onCombatEnd(won, fled);
   }
 
-  _rollDrops(archetype) {
-    const DROP_TABLES = {
-      rusher:  [{ mat: 'circuitWire',    label: 'Circuit Wire',    chance: 0.60 },
-                { mat: 'ironSpike',      label: 'Iron Spike',      chance: 0.30 }],
-      swinger: [{ mat: 'powerCore',      label: 'Power Core',      chance: 0.40 },
-                { mat: 'armorPlate',     label: 'Armor Plate',     chance: 0.20 }],
-      burst:   [{ mat: 'burstCapacitor', label: 'Burst Capacitor', chance: 0.60 },
-                { mat: 'logicChip',      label: 'Logic Chip',      chance: 0.30 }],
-    };
+  _rollDrops(archetype, rolls = 1) {
     const table = DROP_TABLES[archetype] || [];
-    for (const { mat, label, chance } of table) {
-      if (Math.random() < chance) {
-        this.inventory.addMaterial(mat, 1);
-        this._log(`Dropped: ${label}`);
+    for (let i = 0; i < rolls; i++) {
+      for (const { mat, label, chance } of table) {
+        if (Math.random() < chance) {
+          this.inventory.addMaterial(mat, 1);
+          this._log(`Dropped: ${label}`);
+        }
       }
     }
   }

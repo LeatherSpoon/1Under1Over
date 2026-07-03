@@ -426,40 +426,41 @@ export class Environment {
         { x: 14, z: 10,  archetype: 'rusher' },
         { x: -12, z: 16, archetype: 'rusher' },
       ];
-      // T2 — 2 Rushers in the working cavern, a Swinger mid-cavern,
-      // and one more guarding the passage down to the Breach.
+      // T2 — Rushers in the working cavern, a Cinder near the drill heat,
+      // Swingers guarding the passage down to the Breach.
       case 'mine': return [
         { x: -12.8, z: -3.2, archetype: 'rusher' },
-        { x: 12.8,  z: 3.2,  archetype: 'rusher' },
+        { x: 12.8,  z: 3.2,  archetype: 'cinder' },
         { x: 6.4,   z: 9.6,  archetype: 'swinger' },
         { x: 6.4,   z: 19.2, archetype: 'swinger' },
       ];
-      // T3 — 2 Rushers + 1 Swinger + 1 Burst
+      // T3 — jungle zone: Stingers (poison) join the mix
       case 'verdantMaw': return [
         { x: 10,  z: 8,  archetype: 'rusher' },
-        { x: -8,  z: 10, archetype: 'rusher' },
+        { x: -8,  z: 10, archetype: 'stinger' },
         { x: 12,  z: -6, archetype: 'swinger' },
         { x: -10, z: -8, archetype: 'burst' },
       ];
-      // T4 — 1 Swinger + 2 Burst (synergy pressure)
+      // T4 — coastal zone: Voltaics (shock) and Rustmaws (corrosion)
       case 'lagoonCoast': return [
-        { x: 12, z: 6,  archetype: 'swinger' },
-        { x: -10, z: 8, archetype: 'burst' },
+        { x: 12, z: 6,  archetype: 'rustmaw' },
+        { x: -10, z: 8, archetype: 'voltaic' },
         { x: 8, z: -10, archetype: 'burst' },
       ];
-      // T5 — 2 Swingers + 2 Bursts
+      // T5 — tundra: Wraiths and a Colossus anchor the top of the surface curve
       case 'frozenTundra': return [
-        { x: 10, z: 6,  archetype: 'swinger' },
-        { x: -10, z: 6, archetype: 'burst' },
+        { x: 10, z: 6,  archetype: 'colossus' },
+        { x: -10, z: 6, archetype: 'wraith' },
         { x: 8, z: -10, archetype: 'burst' },
         { x: -8, z: -8, archetype: 'swinger' },
       ];
       case 'spaceship': return []; // no enemies in the ship
       case 'workspace': return []; // no enemies in the workspace
+      // T6 — deep cave: Wardens (bulwark) + Wraiths
       case 'depths': return [
-        { x: 5,  z: 3,  archetype: 'swinger' },
-        { x: -5, z: 3,  archetype: 'swinger' },
-        { x: 0,  z: -6, archetype: 'burst'   },
+        { x: 5,  z: 3,  archetype: 'warden' },
+        { x: -5, z: 3,  archetype: 'wraith' },
+        { x: 0,  z: -6, archetype: 'voltaic' },
       ];
       default: return [];
     }

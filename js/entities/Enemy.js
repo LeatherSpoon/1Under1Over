@@ -1,59 +1,14 @@
 import * as THREE from 'three';
 import { createToonMaterial, addOutline } from '../scene/ToonMaterials.js';
 import { CONFIG } from '../config.js';
+import { ARCHETYPES } from './archetypes.js';
 
 let enemyIdCounter = 0;
 
 // ── Enemy archetypes ───────────────────────────────────────────────────────────
-//
-// 'rusher'  — Melee Rusher: low HP, fast attacks, dangerous in numbers
-// 'swinger' — Heavy Swinger: 3-tick wind-up then massive hit
-// 'burst'   — Burst Attacker: 4 idle ticks then 3 rapid hits
-
-const ARCHETYPE_CONFIG = {
-  rusher: {
-    name: 'SCRAPPER',
-    hp: 30,
-    damage: 3,
-    attackInterval: 800,  // ms — attacks every 0.8s
-    ppReward: 15,
-    bodyColor: 0xc45a1a,
-    headColor: 0xd9703a,
-    visorColor: 0xff4444,
-    threatColor: 0xff2222,
-    scale: 1.0,
-    statusEffect: null,
-    attackPattern: 'melee',
-  },
-  swinger: {
-    name: 'BRUTE',
-    hp: 60,
-    damage: 18,
-    attackInterval: 2400, // 3 ticks of ~800ms each (wind-up)
-    ppReward: 25,
-    bodyColor: 0x8855cc,
-    headColor: 0x9966dd,
-    visorColor: 0xffaa00,
-    threatColor: 0xaa44ff,
-    scale: 1.25,
-    statusEffect: null,
-    attackPattern: 'windup', // shows charge animation before hitting
-  },
-  burst: {
-    name: 'GLITCH',
-    hp: 45,
-    damage: 5,  // per burst hit (fires 3 times)
-    attackInterval: 3200, // 4 idle ticks then rapid burst
-    ppReward: 20,
-    bodyColor: 0x22ccaa,
-    headColor: 0x33ddbb,
-    visorColor: 0x00ff88,
-    threatColor: 0x00ff88,
-    scale: 0.85,
-    statusEffect: null,
-    attackPattern: 'burst', // stores burst count on the enemy
-  },
-};
+// Stats/colors live in archetypes.js (shared with CombatSystem drop tables and
+// the Adventure/Boss simulated-combat systems). Each archetype's `visual` field
+// picks one of three mesh builds below: 'rusher' | 'swinger' | 'burst'.
 
 export class Enemy {
   constructor(scene, x = 6, z = 4, archetype = 'rusher') {
@@ -63,7 +18,7 @@ export class Enemy {
     this.spawnPos = new THREE.Vector3(x, 0, z);
     this.archetype = archetype;
 
-    const cfg = ARCHETYPE_CONFIG[archetype] || ARCHETYPE_CONFIG.rusher;
+    const cfg = ARCHETYPES[archetype] || ARCHETYPES.rusher;
     this.maxHP = cfg.hp;
     this.hp = this.maxHP;
     this.aggroRadius = CONFIG.SCRAPPER_AGGRO_RADIUS;
@@ -115,12 +70,13 @@ export class Enemy {
     visor.position.set(0, 1.47, 0.22);
     this.group.add(visor);
 
-    // Archetype-specific visual extras
-    if (this.archetype === 'swinger') {
+    // Visual-build-specific extras (cfg.visual: 'rusher' | 'swinger' | 'burst')
+    const visual = cfg.visual || this.archetype;
+    if (visual === 'swinger') {
       // Large shoulder pauldrons
       for (const side of [-1, 1]) {
         const pGeo = new THREE.BoxGeometry(0.3, 0.35, 0.35);
-        const pMesh = new THREE.Mesh(pGeo, createToonMaterial(0x6633aa));
+        const pMesh = new THREE.Mesh(pGeo, createToonMaterial(cfg.bodyColor));
         pMesh.position.set(side * 0.5, 1.1, 0);
         addOutline(pMesh, 0.05);
         this.group.add(pMesh);
@@ -134,11 +90,11 @@ export class Enemy {
       this._chargeRing.position.y = 0.9;
       this._chargeRing.rotation.x = Math.PI / 2;
       this.group.add(this._chargeRing);
-    } else if (this.archetype === 'burst') {
+    } else if (visual === 'burst') {
       // Dual visors (multi-eye look)
       for (const side of [-1, 1]) {
         const vGeo = new THREE.BoxGeometry(0.12, 0.08, 0.08);
-        const vm = new THREE.Mesh(vGeo, createToonMaterial(0x00ff88));
+        const vm = new THREE.Mesh(vGeo, createToonMaterial(cfg.visorColor));
         vm.position.set(side * 0.12, 1.47, 0.22);
         this.group.add(vm);
       }
@@ -209,7 +165,8 @@ export class Enemy {
       return false;
     }
 
-    const speed = this.archetype === 'swinger' ? 0.8 : (this.archetype === 'burst' ? 1.4 : 1.2);
+    const visual = this._cfg.visual || this.archetype;
+    const speed = visual === 'swinger' ? 0.8 : (visual === 'burst' ? 1.4 : 1.2);
     const toTarget = new THREE.Vector3().subVectors(this._patrolTarget, this.position);
     const distToTarget = toTarget.length();
     if (distToTarget < 0.15) {
@@ -272,7 +229,7 @@ export class Enemy {
   // Called by CombatSystem before each attack — returns the effective damage(s)
   // Returns array of {damage, delay} objects for burst, or single [{damage, delay:0}]
   getAttackSequence() {
-    if (this.archetype === 'burst') {
+    if (this.attackPattern === 'burst') {
       // 3 rapid hits at 150ms apart
       return [
         { damage: this.damage, delay: 0 },

@@ -167,6 +167,10 @@
         <button class="menu-tab" data-tab="tech-panel" role="tab">TECH</button>
         <button class="menu-tab" data-tab="codex-panel" role="tab">CODEX</button>
         <button class="menu-tab" data-tab="quest-panel" role="tab">QUESTS</button>
+        <button class="menu-tab" data-tab="adventure-panel" role="tab">SIM</button>
+        <button class="menu-tab" data-tab="training-panel" role="tab">TRAIN</button>
+        <button class="menu-tab" data-tab="goals-panel" role="tab">GOALS</button>
+        <button class="menu-tab" data-tab="story-panel" role="tab">LOGS</button>
         <button class="menu-tab" data-tab="optimization-panel" role="tab">OPT</button>
         <button class="menu-tab" data-tab="allocation-panel" role="tab">ALLOC</button>
         <button class="menu-tab" data-tab="settings-panel" role="tab">⚙</button>
@@ -202,6 +206,50 @@
             <div>Rate bonus &nbsp;<span id="alloc-rate-bonus">×1.00</span> &nbsp;(invested <span id="alloc-rate-invested">0</span>)</div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Combat Simulator (idle adventure tiers + boss gauntlet) -->
+    <div id="adventure-panel" class="panel-overlay" hidden>
+      <div class="panel-window" style="border-color:#ff667755;">
+        <div class="panel-header" style="color:#ff8899;border-color:#ff667744;background:rgba(24,4,10,0.88);">
+          COMBAT SIMULATOR
+          <button class="panel-close" style="border-color:#ff667744;color:#ff8899;" onclick="document.getElementById('adventure-panel').hidden=true">X</button>
+        </div>
+        <div class="panel-body" id="adventure-contents"></div>
+      </div>
+    </div>
+
+    <!-- Training Matrix (idle skill training) -->
+    <div id="training-panel" class="panel-overlay" hidden>
+      <div class="panel-window" style="border-color:#66ddff55;">
+        <div class="panel-header" style="color:#88eeff;border-color:#66ddff44;background:rgba(2,16,24,0.88);">
+          TRAINING MATRIX
+          <button class="panel-close" style="border-color:#66ddff44;color:#88eeff;" onclick="document.getElementById('training-panel').hidden=true">X</button>
+        </div>
+        <div class="panel-body" id="training-contents"></div>
+      </div>
+    </div>
+
+    <!-- Goals (Challenges + Wishes) -->
+    <div id="goals-panel" class="panel-overlay" hidden>
+      <div class="panel-window" style="border-color:#ffdd4455;">
+        <div class="panel-header" style="color:#ffdd66;border-color:#ffdd4444;background:rgba(22,17,2,0.88);">
+          DIRECTIVES
+          <button class="panel-close" style="border-color:#ffdd4444;color:#ffdd66;" onclick="document.getElementById('goals-panel').hidden=true">X</button>
+        </div>
+        <div class="panel-body" id="goals-contents"></div>
+      </div>
+    </div>
+
+    <!-- Story Logs (narrative data logs) -->
+    <div id="story-panel" class="panel-overlay" hidden>
+      <div class="panel-window" style="border-color:#aaccff55;">
+        <div class="panel-header" style="color:#bbddff;border-color:#aaccff44;background:rgba(6,10,22,0.88);">
+          RECOVERED LOGS
+          <button class="panel-close" style="border-color:#aaccff44;color:#bbddff;" onclick="document.getElementById('story-panel').hidden=true">X</button>
+        </div>
+        <div class="panel-body" id="story-contents"></div>
       </div>
     </div>
 

@@ -30,6 +30,7 @@ export class StatsSystem {
       this.stats[name] = { level: 1, exp: 0 };
     }
     this._augBonuses = { hp: 0, energy: 0, speed: 0, defense: 0, damage: 0 };
+    this._setBonuses = { hp: 0, defense: 0, damage: 0 }; // from equipment tier sets
     this.currentHP = this.maxHP;
     this.currentFP = 0;
     this.currentEnergy = this.maxEnergy;
@@ -38,6 +39,12 @@ export class StatsSystem {
 
   addAugBonus(type, amount) {
     if (type in this._augBonuses) this._augBonuses[type] += amount;
+  }
+
+  /** Replace the equipment set-bonus block (recomputed by EquipmentSystem). */
+  setSetBonuses({ hp = 0, defense = 0, damage = 0 } = {}) {
+    this._setBonuses = { hp, defense, damage };
+    this.currentHP = Math.min(this.currentHP, this.maxHP);
   }
 
   get statNames() { return STAT_NAMES; }
@@ -53,7 +60,7 @@ export class StatsSystem {
 
   // ── Derived values ─────────────────────────────────────────────────────────
   get maxHP() {
-    return CONFIG.BASE_MAX_HP + this.stats.health.level * CONFIG.MAX_HP_PER_LEVEL + this._augBonuses.hp;
+    return CONFIG.BASE_MAX_HP + this.stats.health.level * CONFIG.MAX_HP_PER_LEVEL + this._augBonuses.hp + this._setBonuses.hp;
   }
   get maxFP() {
     return CONFIG.BASE_MAX_FP + this.stats.focus.level * CONFIG.FP_PER_FOCUS_LEVEL;
@@ -68,17 +75,22 @@ export class StatsSystem {
     return CONFIG.BASE_MOVE_SPEED + this.stats.speed.level * 0.15 + this._trackBonus + this._augBonuses.speed;
   }
   get gatherSpeedMult() {
-    return 1.0 + (this.stats.gatherSpeed.level - 1) * CONFIG.GATHER_SPEED_PER_LEVEL;
+    return (1.0 + (this.stats.gatherSpeed.level - 1) * CONFIG.GATHER_SPEED_PER_LEVEL) * (this._gatherBonusMult || 1);
+  }
+
+  /** Global gather-speed multiplier from ascension/challenges/wishes (set by main.js). */
+  setGatherBonusMult(mult) {
+    this._gatherBonusMult = mult > 0 ? mult : 1;
   }
 
   setTrackBonus(bonus) {
     this._trackBonus = bonus;
   }
   get damage() {
-    return this.stats.strength.level * CONFIG.BASE_DAMAGE + this._augBonuses.damage;
+    return this.stats.strength.level * CONFIG.BASE_DAMAGE + this._augBonuses.damage + this._setBonuses.damage;
   }
   get defense() {
-    return this.stats.defense.level + this._augBonuses.defense;
+    return this.stats.defense.level + this._augBonuses.defense + this._setBonuses.defense;
   }
   get agility() {
     return this.stats.agility.level;

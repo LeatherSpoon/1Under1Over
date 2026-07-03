@@ -45,6 +45,13 @@ import { initMenuController } from './menuController.js';
 import { initSaveButtons } from './saveButtons.js';
 import { initMissionTracker } from './missionTracker.js';
 import { QuestSystem } from './systems/QuestSystem.js';
+import { AdventureSystem } from './systems/AdventureSystem.js';
+import { BossSystem } from './systems/BossSystem.js';
+import { ChallengeSystem } from './systems/ChallengeSystem.js';
+import { WishSystem } from './systems/WishSystem.js';
+import { TrainingSystem } from './systems/TrainingSystem.js';
+import { SynthesisSystem } from './systems/SynthesisSystem.js';
+import { StorySystem } from './systems/StorySystem.js';
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
 
@@ -100,8 +107,40 @@ const modifiers       = new ModifiersSystem(ppSystem);
 const tripartite      = new TripartiteSystem(ppSystem);
 const questSystem     = new QuestSystem();
 
-// Apply ascension multiplier to PP system
-ppSystem.globalMultiplier = ascension.ppMultiplier;
+// NGU-parity systems (see Plans/game_analysis.md)
+const adventure       = new AdventureSystem(statsSystem, ppSystem, inventorySystem);
+const bossSystem      = new BossSystem(ppSystem);
+const challenges      = new ChallengeSystem(ppSystem);
+const wishes          = new WishSystem(ppSystem);
+const training        = new TrainingSystem(ppSystem, statsSystem);
+const synthesis       = new SynthesisSystem(ppSystem, ascension);
+const storySystem     = new StorySystem();
+
+// ── Global multiplier composition ─────────────────────────────────────────
+// PP rate: ascension × boss victories × challenge rewards × wish rewards × synthesis resonance.
+// Combat/drone/gather multipliers are pushed into their systems by applyDerivedMultipliers().
+function composedPPMultiplier() {
+  return ascension.ppMultiplier
+    * bossSystem.ppMultiplier
+    * challenges.ppMultiplier
+    * wishes.ppMultiplier
+    * synthesis.ppMultiplier;
+}
+
+function applyDerivedMultipliers() {
+  const combatMult = modifiers.damageMult
+    * ascension.combatMultiplier * challenges.damageMultiplier * wishes.damageMultiplier;
+  combatSystem.damageMult = combatMult;
+  adventure.damageMult = combatMult;
+  droneSystem.efficiencyMult = modifiers.droneMult
+    * ascension.droneMultiplier * challenges.droneMultiplier * wishes.droneMultiplier;
+  statsSystem.setGatherBonusMult(
+    ascension.gatherMultiplier * challenges.gatherMultiplier * wishes.gatherMultiplier);
+}
+
+// Apply composed multiplier to PP system
+ppSystem.globalMultiplier = composedPPMultiplier();
+applyDerivedMultipliers();
 
 // Wire minigame perfect hits to achievements
 let _lastMinigamePlay = 0;
@@ -158,6 +197,7 @@ combatSystem.tryRun = function () {
 craftingSystem.onCraftComplete = (recipe) => {
   codexSystem.discover(recipe.key);
   questSystem.recordCraftComplete(recipe.key);
+  challenges.notify('craft');
   if (recipe.type === 'equipment') {
     const item = {
       label: recipe.label,
@@ -202,7 +242,8 @@ const hud = new HUD(
   achievements, minigame, ascension, autoCombat, drillSystem,
   techTree, mastery, syncClient, factorySystem, codexSystem, augSystem,
   { mathematician, timeWarp, modifiers }, assemblySystem, tripartite,
-  extractorSystem, processingNodes
+  extractorSystem, processingNodes,
+  { adventure, bosses: bossSystem, challenges, wishes, training, synthesis, story: storySystem }
 );
 const combatUI = new CombatUI(
   combatSystem, statsSystem, entityManager, player, inventorySystem, ppSystem
@@ -244,16 +285,73 @@ ascension.ascend = function () {
     timeWarp.award(2, 'ascension');
     modifiers.load(modifiers.serialize());
     questSystem.recordAscension();
+    storySystem.trigger('ascension:' + this.ascensionCount);
   }
   return r;
+};
+
+// ── NGU-parity wiring: adventure / bosses / challenges / wishes / training /
+//    synthesis / story ────────────────────────────────────────────────────────
+
+// Sim kills feed the same progression hooks as real kills
+adventure.onKill = (archetypeKey) => {
+  gameStats.recordEnemyDefeated();
+  questSystem.recordEnemyDefeated(gameStats.enemiesDefeated);
+  challenges.notify('enemyDefeated');
+  codexSystem.discover(archetypeKey);
+};
+
+bossSystem.onVictory = (boss) => {
+  const nextTier = Math.min(boss.tier + 1, adventure.tiers.length);
+  adventure.maxUnlockedTier = Math.max(adventure.maxUnlockedTier, nextTier);
+  storySystem.trigger('boss:' + boss.id);
+  hud.showAchievementToast({
+    icon: '☠', label: `${boss.name} DEFEATED`,
+    desc: `+5% PP rate forever${nextTier > boss.tier ? ` · Sim tier ${nextTier} unlocked` : ''}`,
+    reward: 0,
+  });
+};
+
+challenges.onComplete = (c) => {
+  applyDerivedMultipliers();
+  hud.showAchievementToast({ icon: '◎', label: `Challenge Complete: ${c.label}`, desc: `Permanent: ${c.reward.label}`, reward: 0 });
+};
+challenges.onFail = (c, reason) => {
+  hud.showAchievementToast({ icon: '✕', label: `Challenge Failed: ${c.label}`, desc: reason, reward: 0 });
+};
+
+wishes.onComplete = (w) => {
+  if (w.reward.type === 'crystals') timeWarp.award(w.reward.amount, 'wish');
+  applyDerivedMultipliers();
+  hud.showAchievementToast({ icon: '✦', label: `Wish Granted: ${w.label}`, desc: w.reward.label, reward: 0 });
+};
+
+training.onLevelUp = (statName, level) => {
+  questSystem.recordStatUpgrade(statName, level);
+};
+
+synthesis.onSynthesize = (r) => {
+  timeWarp.award(5, 'synthesis');
+  modifiers.load(modifiers.serialize());
+  storySystem.trigger('synthesis:' + r.synthesisCount);
+  hud.showAchievementToast({
+    icon: '◆', label: `SYNTHESIS ${r.synthesisCount}`,
+    desc: `+${r.coresEarned} Synthesis Cores · +5 Quantum Crystals`,
+    reward: 0,
+  });
+};
+
+storySystem.onUnlock = (entry) => {
+  hud.showAchievementToast({ icon: '📡', label: `Log Recovered: ${entry.title}`, desc: 'Read it in MENU → LOGS', reward: 0 });
+  const panel = document.getElementById('story-panel');
+  if (panel && !panel.hidden) hud._refreshStory();
 };
 
 // Push trade-off multipliers into the systems that honor them, and refresh the
 // ROI table so values stay current. gatherMult/energyCostMult are read inline
 // (this module scope); damageMult/droneMult are pushed into their systems.
 modifiers.onChange = () => {
-  combatSystem.damageMult = modifiers.damageMult;
-  droneSystem.efficiencyMult = modifiers.droneMult;
+  applyDerivedMultipliers();
   const panel = document.getElementById('optimization-panel');
   if (panel && !panel.hidden) hud._refreshOptimization();
 };
@@ -291,7 +389,10 @@ inventorySystem.addMaterial = function(name, qty) {
 const _origLevelUp = statsSystem.levelUp.bind(statsSystem);
 statsSystem.levelUp = function(statName, pp) {
   const ok = _origLevelUp(statName, pp);
-  if (ok) questSystem.recordStatUpgrade(statName, this.stats[statName]?.level || 1);
+  if (ok) {
+    questSystem.recordStatUpgrade(statName, this.stats[statName]?.level || 1);
+    challenges.notify('statUpgrade');
+  }
   return ok;
 };
 
@@ -303,8 +404,11 @@ combatSystem.onCombatEnd = (won, fled) => {
   if (won) {
     gameStats.recordEnemyDefeated();
     questSystem.recordEnemyDefeated(gameStats.enemiesDefeated);
+    challenges.notify('enemyDefeated');
+    if (combatSystem.enemy?.isBoss) bossSystem.recordVictory(combatSystem.enemy.bossId);
   } else if (!fled) {
     gameStats.recordDefeat();
+    challenges.notify('defeated');
   }
 };
 
@@ -424,10 +528,29 @@ const saveSystem = new SaveSystem({
   missionTracker,
   questSystem,
   tripartite,
+  adventure,
+  bosses: bossSystem,
+  challenges,
+  wishes,
+  training,
+  synthesis,
+  story: storySystem,
 });
 
 // World-space effects (offload burst, etc.)
 const worldEffects = new WorldEffects(sceneManager.scene);
+
+// Shared offload path — used by the Offload Chamber and the Offload Daemon
+// (Synthesis auto-offload perk). Fires all progression hooks.
+function performOffload(showFx = true) {
+  const result = ppSystem.offload(tripartite.currentRateMultiplier);
+  if (!result) return null;
+  questSystem.recordOffload(ppSystem.prestigeCount);
+  challenges.notify('offload');
+  storySystem.trigger('offload:' + ppSystem.prestigeCount);
+  if (showFx) worldEffects.triggerOffload(player.position);
+  return result;
+}
 // TODO: SECRET_UNLOCKS — deferred. When designed, fire `worldEffects.triggerSecretUnlock(player.position)`
 // from the achievement check loop and skip the toast for those entries.
 
@@ -471,6 +594,7 @@ const switchZone = createSwitchZone({
     _gatherTimer = 0;
     _gatherType = null;
     questSystem.recordZoneVisit(env.currentZone);
+    storySystem.trigger('zone:' + env.currentZone);
     if (env.currentZone === 'mine') codexSystem.discover('theMine');
 
     // Presence rotation: being in a zone cross-amplifies a different tripartite leg.
@@ -482,6 +606,9 @@ const switchZone = createSwitchZone({
 });
 
 initSaveButtons({ saveSystem, env, player, hud, switchZone });
+
+// First story log — the insertion report (idempotent; loaded saves carry their own state)
+storySystem.trigger('boot');
 
 let _pendingZone = null;
 
@@ -537,7 +664,17 @@ document.addEventListener('keyup', e => {
 
 window.addEventListener('blur', () => keysDown.clear());
 
-const { togglePanel } = initMenuController({ hud, telemetry, env });
+const { togglePanel, closeMenuScreen } = initMenuController({ hud, telemetry, env });
+
+// Boss fights run in the real combat window via a synthetic enemy (no 3D entity)
+bossSystem.onFightRequested = (boss) => {
+  if (player.isInCombat || combatSystem.active) return;
+  closeMenuScreen();
+  const bossEnemy = bossSystem.createBossEnemy(boss);
+  player.isInCombat = true;
+  combatUI.show(bossEnemy);
+  combatSystem.startCombat(bossEnemy);
+};
 
 function _tryPlantSeed() {
   if (inventorySystem.materials.seed <= 0) return;
@@ -867,11 +1004,9 @@ function handleSpaceshipInteractions() {
           dist,
           hint: `[E/ACT] Offload: −${ppAvail} PP → +${previewGain} cap${rateLabel}`,
           act: () => {
-            const result = ppSystem.offload(tripartite.currentRateMultiplier);
+            const result = performOffload(true);
             if (result) {
               hud.showInteractHint(`Offloaded! −${result.taken} PP → +${result.capGain} cap (now ${Math.floor(result.newCap)})`);
-              questSystem.recordOffload(ppSystem.prestigeCount);
-              worldEffects.triggerOffload(player.position);
             }
           },
         });
@@ -1120,6 +1255,18 @@ function gameLoop(now) {
   tripartite.update(delta);
   worldEffects.update(delta);
 
+  // NGU-parity idle systems
+  adventure.update(delta);   // idle combat sim
+  training.update(delta);    // idle skill training (siphons PP income)
+  wishes.update(delta);      // focused wish siphon
+  challenges.update(delta);  // goal polling + time limits
+
+  // Offload Daemon (Synthesis perk): auto-offload the instant PP hits cap
+  if (synthesis.autoOffloadEnabled && ppSystem.ppCap > 0 && ppSystem.ppTotal >= ppSystem.ppCap) {
+    const r = performOffload(true);
+    if (r) hud.showAchievementToast({ icon: '⚙', label: 'Offload Daemon', desc: `−${r.taken} PP → +${r.capGain} cap`, reward: 0 });
+  }
+
   // Update pedometer
   const steps = player.consumeSteps();
   pedometer.update(steps);
@@ -1174,6 +1321,7 @@ function gameLoop(now) {
   // Lore discovery — the first time the player breaks through into the Breach
   if (env.currentZone === 'mine' && player.position.z > MINE_BREACH_Z) {
     codexSystem.discover('theBreach');
+    storySystem.trigger('breach');
   }
 
   // Portal accessibility recolor — every 0.5s is plenty
@@ -1183,6 +1331,9 @@ function gameLoop(now) {
     env.refreshPortalAccess((portal) =>
       ppSystem.ppTotal >= portal.ppRequired || pedometer.isZoneUnlocked(portal.targetZone)
     );
+    // Re-push composed combat/drone/gather multipliers (covers save-load and
+    // any path that changed a source multiplier without firing a callback)
+    applyDerivedMultipliers();
   }
 
   // ── New busy-box systems ────────────────────────────────────────────────────
@@ -1199,8 +1350,8 @@ function gameLoop(now) {
     }
   }
 
-  // Keep ascension multiplier synced
-  ppSystem.globalMultiplier = ascension.ppMultiplier;
+  // Keep the composed PP multiplier synced (ascension × bosses × challenges × wishes × synthesis)
+  ppSystem.globalMultiplier = composedPPMultiplier();
 
   // Achievement checks
   achievements.update(delta, {

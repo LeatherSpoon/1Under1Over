@@ -105,6 +105,25 @@ Environment also supports:
 5. For a menu-bar tab: add `<button class="menu-tab" data-tab="my-panel">` inside `#menu-tabbar` in `index.html`
 6. For a HUD button: add to `_wirePanelToggles()` or a dedicated `_wireMyButton()` method, called from the constructor
 
+### NGU-parity systems (SIM / TRAIN / GOALS / LOGS tabs + Synthesis)
+
+Seven systems close the gap analyzed in `Plans/game_analysis.md`. All are DOM-free, live in `js/systems/`, serialize via `SaveSystem` (version 8+), and are passed to `HUD` as a single `extensions` bag (`{ adventure, bosses, challenges, wishes, training, synthesis, story }` — the last constructor param):
+
+- **AdventureSystem** (SIM tab) — idle combat simulator. Pick a tier; enemies are worn down at a DPS derived from real combat stats, paying PP + archetype drops while AFK. Tiers are gated by boss defeats.
+- **BossSystem** (SIM tab, Boss Gauntlet) — per-tier bosses fought in the real combat window via a *synthetic enemy object* (duck-types the `Enemy` entity — no 3D mesh). `onFightRequested` is handled in `main.js`; victory detection rides the `onCombatEnd` chain (`enemy.isBoss`/`enemy.bossId`). Each victory: +5% PP rate forever + next sim tier.
+- **ChallengeSystem / WishSystem** (GOALS tab) — restriction runs for permanent multipliers; huge PP-siphon sinks for permanent bonuses. Challenge restrictions are enforced by `challenges.notify(event)` calls sprinkled into the existing `main.js` wrappers (statUpgrade / enemyDefeated / defeated / offload / craft).
+- **TrainingSystem** (TRAIN tab) — NGU-style idle skill training: assigned stats siphon 25% of PP income each until they auto-level. Slots grow via Synthesis perk.
+- **SynthesisSystem** (section inside the Ascension panel) — third prestige layer: burns the whole ascension layer for Cores; Cores buy new mechanics (auto-offload daemon, extra training slots, cap overflow, resonance). Call `applyPerks({ pp, training })` after purchase and on load.
+- **StorySystem** (LOGS tab) — act-structured data logs unlocked by `story.trigger(key)` calls (`'boot'`, `'zone:<name>'`, `'breach'`, `'offload:<n>'`, `'ascension:<n>'`, `'boss:<id>'`, `'synthesis:<n>'`).
+
+**Multiplier composition** — `main.js` owns two helpers: `composedPPMultiplier()` (ascension × bosses × challenges × wishes × synthesis → `ppSystem.globalMultiplier`, re-synced every frame) and `applyDerivedMultipliers()` (combat/drone/gather products pushed into CombatSystem, AdventureSystem, DroneSystem, and `statsSystem.setGatherBonusMult`; re-pushed every 0.5s so save-loads self-heal). Never set `combatSystem.damageMult` etc. directly — extend those helpers.
+
+**Enemy archetypes** live in `js/entities/archetypes.js` (10 archetypes + drop tables, DOM/Three-free so Node tests and the sim can import them). `Enemy.js` picks its mesh build from `cfg.visual` ('rusher'|'swinger'|'burst'); combat window labels come from `cfg.combatLabel`. Add zone spawn entries in `Environment.getEnemySpawns()`.
+
+**Equipment**: items carry an optional `mergeLevel` (duplicates = same `label`+`tier`; each merge +15% stat bonuses). 3+ equipped items of one tier activate a set bonus routed through `statsSystem.setSetBonuses()` (recomputed inside equip/unequip — survives save-load automatically).
+
+Tests for all of the above: `tests/systems/nguParity.test.js`.
+
 ### IIC framework systems (Optimization Console)
 
 The OPT tab houses three subsystems instantiated in `main.js` and passed to `HUD` as a single `optimization` bag (`{ mathematician, timeWarp, modifiers }`):
@@ -138,6 +157,14 @@ All three serialize/deserialize via `SaveSystem` (version 4+).
 | Achievements, augments, codex, zones, stats (seed) | `server/definitions/systemsData.js` |
 | Number formatting (K/M/B/T/Qa+ shorthand, /min·/hr rates) | `js/util/NumberFormat.js` |
 | ROI Analyzer (Mathematician — paid reveal window) | `js/systems/MathematicianSystem.js` |
+| Enemy archetype data + drop tables (shared, DOM-free) | `js/entities/archetypes.js` |
+| Idle combat simulator (SIM tab) | `js/systems/AdventureSystem.js` |
+| Boss gauntlet + boss combat objects | `js/systems/BossSystem.js` |
+| Challenge runs (GOALS tab) | `js/systems/ChallengeSystem.js` |
+| Wishes — long-term PP sinks (GOALS tab) | `js/systems/WishSystem.js` |
+| Idle skill training (TRAIN tab) | `js/systems/TrainingSystem.js` |
+| Synthesis — third prestige layer | `js/systems/SynthesisSystem.js` |
+| Story data logs (LOGS tab) | `js/systems/StorySystem.js` |
 | Time-Warp + Quantum Crystals (premium currency) | `js/systems/TimeWarpSystem.js` |
 | Trade-off Modifiers (Overclock, Frugal Circuits, etc.) | `js/systems/ModifiersSystem.js` |
 | Optimization Console panel (OPT tab) | `_refreshOptimization()` in `js/ui/HUD.js` |

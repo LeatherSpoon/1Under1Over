@@ -1,6 +1,6 @@
 import { CONFIG } from '../config.js';
 
-const SAVE_VERSION = 7;
+const SAVE_VERSION = 8;
 
 export class SaveSystem {
   constructor(systems) {
@@ -17,6 +17,7 @@ export class SaveSystem {
       techTree, mastery, sync, factory, codex, augmentations,
       mathematician, timeWarp, modifiers, missionTracker, questSystem, assembly,
       extractor, processingNodes, tripartite,
+      adventure, bosses, challenges, wishes, training, synthesis, story,
     } = this.systems;
 
     const data = {
@@ -119,6 +120,15 @@ export class SaveSystem {
       missionTracker: missionTracker ? missionTracker.serialize() : null,
       questSystem:    questSystem    ? questSystem.serialize()    : null,
       tripartite:    tripartite    ? tripartite.serialize()    : null,
+
+      // v8+: NGU-parity systems
+      adventure:  adventure  ? adventure.serialize()  : null,
+      bosses:     bosses     ? bosses.serialize()     : null,
+      challenges: challenges ? challenges.serialize() : null,
+      wishes:     wishes     ? wishes.serialize()     : null,
+      training:   training   ? training.serialize()   : null,
+      synthesis:  synthesis  ? synthesis.serialize()  : null,
+      story:      story      ? story.serialize()      : null,
     };
 
     for (const name of stats.statNames) {
@@ -194,6 +204,7 @@ export class SaveSystem {
       techTree, mastery, sync, factory, codex, augmentations,
       mathematician, timeWarp, modifiers, missionTracker, questSystem, assembly,
       extractor, processingNodes, tripartite,
+      adventure, bosses, challenges, wishes, training, synthesis, story,
     } = this.systems;
 
     // Drill System
@@ -315,6 +326,19 @@ export class SaveSystem {
     if (missionTracker && data.missionTracker) missionTracker.load(data.missionTracker);
     if (questSystem    && data.questSystem)    questSystem.load(data.questSystem);
     if (tripartite     && data.tripartite)     tripartite.deserialize(data.tripartite);
+
+    // v8+: NGU-parity systems. Synthesis loads before training so perk-granted
+    // training slots exist when training re-validates its assignments.
+    if (bosses     && data.bosses)     bosses.deserialize(data.bosses);
+    if (adventure  && data.adventure)  adventure.deserialize(data.adventure);
+    if (challenges && data.challenges) challenges.deserialize(data.challenges);
+    if (wishes     && data.wishes)     wishes.deserialize(data.wishes);
+    if (synthesis  && data.synthesis) {
+      synthesis.deserialize(data.synthesis);
+      synthesis.applyPerks({ pp, training });
+    }
+    if (training   && data.training)   training.deserialize(data.training);
+    if (story      && data.story)      story.deserialize(data.story);
     // Legacy: migrate old taskSystem saves (no-op if not present)
 
 

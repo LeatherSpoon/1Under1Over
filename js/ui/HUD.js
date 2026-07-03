@@ -96,7 +96,7 @@ function _makeIcon(key) {
 }
 
 export class HUD {
-  constructor(statsSystem, ppSystem, pedometerSystem, inventorySystem, craftingSystem, droneSystem, equipmentSystem, gameStats, achievements, minigame, ascension, autoCombat, drillSystem, techTree = null, mastery = null, syncClient = null, factorySystem = null, codexSystem = null, augmentationSystem = null, optimization = null, assemblySystem = null, tripartite = null, extractorSystem = null, processingNodes = null) {
+  constructor(statsSystem, ppSystem, pedometerSystem, inventorySystem, craftingSystem, droneSystem, equipmentSystem, gameStats, achievements, minigame, ascension, autoCombat, drillSystem, techTree = null, mastery = null, syncClient = null, factorySystem = null, codexSystem = null, augmentationSystem = null, optimization = null, assemblySystem = null, tripartite = null, extractorSystem = null, processingNodes = null, extensions = null) {
     this.stats = statsSystem;
     this.pp = ppSystem;
     this.pedometer = pedometerSystem;
@@ -121,6 +121,8 @@ export class HUD {
     this.augmentations = augmentationSystem;
     this.opt = optimization || {}; // { mathematician, timeWarp, modifiers }
     this.tripartite = tripartite;
+    // NGU-parity extensions: { adventure, bosses, challenges, wishes, training, synthesis, story }
+    this.ext = extensions || {};
     this.questSystem = null; // set via setQuestSystem() after construction
 
     this.ppDisplay = document.getElementById('pp-display');
@@ -150,6 +152,10 @@ export class HUD {
     this._lastPPTotal = null;
     this._lastPPDecile = -1;
     this._ppPulseTimer = null;
+
+    // PP/s history for the growth graph (one sample per second, ~3 min window)
+    this._rateHistory = [];
+    this._rateSampleAt = 0;
 
     this._constructAddMode = true;
 
@@ -422,6 +428,25 @@ export class HUD {
     if (!el || !this.gameStats) return;
     el.innerHTML = '';
 
+    // ── Session growth section (PP-go-up visualization) ──
+    const session = document.createElement('div');
+    session.style.cssText = 'margin-bottom:12px;padding:8px;border:1px solid #00ffcc33;border-radius:6px;background:rgba(0,255,204,0.04);';
+    const mins = Math.max(1, (Date.now() - this._sessionStart) / 60000);
+    const avgRate = this._sessionPP / (mins * 60);
+    session.innerHTML = `
+      <div style="color:#00ffcc;font-size:0.7rem;letter-spacing:0.15em;margin-bottom:6px;">THIS SESSION</div>
+      <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:#aaccbb;">
+        <span>PP earned</span><span style="color:#00ffcc;">${abbrevNum(Math.floor(this._sessionPP))}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:#aaccbb;">
+        <span>Time played</span><span style="color:#00ffcc;">${mins < 60 ? Math.floor(mins) + 'm' : Math.floor(mins / 60) + 'h ' + Math.floor(mins % 60) + 'm'}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:#aaccbb;">
+        <span>Avg PP/s</span><span style="color:#00ffcc;">${avgRate.toFixed(2)}</span>
+      </div>`;
+    session.appendChild(this._buildRateGraph());
+    el.appendChild(session);
+
     const gs = this.gameStats;
     const entries = [
       ['Enemies Defeated', gs.enemiesDefeated],
@@ -431,6 +456,9 @@ export class HUD {
       ['Worlds Discovered', `${gs.worldsDiscovered} / ${gs.totalWorlds}`],
       ['Total Steps', gs.totalStepsTaken.toLocaleString()],
     ];
+    if (this.ext.adventure) entries.push(['Simulator Kills', this.ext.adventure.totalKills]);
+    if (this.ext.bosses) entries.push(['Bosses Defeated', `${this.ext.bosses.defeated.size} / ${this.ext.bosses.bosses.length}`]);
+    if (this.ext.training) entries.push(['Auto-trained Levels', this.ext.training.totalAutoLevels]);
 
     for (const [label, value] of entries) {
       const row = document.createElement('div');
@@ -438,6 +466,34 @@ export class HUD {
       row.innerHTML = `<span class="statistics-label">${label}</span><span class="statistics-value">${value}</span>`;
       el.appendChild(row);
     }
+  }
+
+  /** SVG sparkline of effective PP/s over the last ~3 minutes. */
+  _buildRateGraph() {
+    const W = 320, H = 60, PAD = 4;
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-top:8px;';
+    const samples = this._rateHistory;
+    if (samples.length < 2) {
+      wrap.innerHTML = '<div style="font-size:0.62rem;color:#558866;text-align:center;">PP/s graph — gathering samples…</div>';
+      return wrap;
+    }
+    const max = Math.max(...samples, 0.001);
+    const stepX = (W - PAD * 2) / (samples.length - 1);
+    const pts = samples
+      .map((v, i) => `${(PAD + i * stepX).toFixed(1)},${(H - PAD - (v / max) * (H - PAD * 2)).toFixed(1)}`)
+      .join(' ');
+    const firstX = PAD.toFixed(1);
+    const lastX = (PAD + (samples.length - 1) * stepX).toFixed(1);
+    wrap.innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:60px;display:block;" preserveAspectRatio="none">
+        <polygon points="${firstX},${H - PAD} ${pts} ${lastX},${H - PAD}" fill="rgba(0,255,204,0.12)"/>
+        <polyline points="${pts}" fill="none" stroke="#00ffcc" stroke-width="1.5"/>
+      </svg>
+      <div style="display:flex;justify-content:space-between;font-size:0.58rem;color:#558866;">
+        <span>PP/s — last ${Math.round(samples.length / 60 * 60)}s</span><span>peak ${max.toFixed(1)}</span>
+      </div>`;
+    return wrap;
   }
 
   _wirePanelToggles() {
@@ -465,6 +521,7 @@ export class HUD {
       'optimization-panel', 'allocation-panel', 'quest-panel',
       'workshop-panel', 'constructor-panel', 'fabrication-panel', 'assembly-matrix-panel',
       'refinery-panel',
+      'adventure-panel', 'training-panel', 'goals-panel', 'story-panel',
     ];
     for (const id of ids) {
       if (id === exceptId) continue;
@@ -494,6 +551,11 @@ export class HUD {
       case 'optimization-panel': this._refreshOptimization(); break;
       case 'allocation-panel': this._refreshAllocation(); break;
       case 'quest-panel': this._refreshQuestHub(); break;
+      case 'adventure-panel': this._refreshAdventure(); break;
+      case 'training-panel': this._refreshTraining(); break;
+      case 'goals-panel': this._refreshGoals(); break;
+      case 'story-panel': this._refreshStory(); break;
+      case 'statistics-panel': this._refreshStatistics(); break;
     }
   }
 
@@ -1847,13 +1909,20 @@ export class HUD {
     // Stats bar (continuously refreshed by _updateEquipStats from update())
     this._updateEquipStats();
 
-    // Bonus section
+    // Bonus section (item bonuses + active tier set bonuses)
     const bonusBody = document.getElementById('equip-bonus-body');
     if (bonusBody) {
       const entries = Object.entries(this.equipment.getTotalBonuses()).filter(([, v]) => v !== 0);
-      bonusBody.innerHTML = entries.length === 0
+      let html = entries.length === 0
         ? 'No active bonuses.'
         : entries.map(([s, v]) => `<div>+${v} ${s.replace(/([A-Z])/g, ' $1')}</div>`).join('');
+      const sets = this.equipment.getActiveSets?.() || [];
+      for (const tier of sets) {
+        const b = this.equipment.constructor.SET_BONUSES[tier];
+        const parts = Object.entries(b).filter(([, v]) => v > 0).map(([s, v]) => `+${v} ${s}`).join(', ');
+        html += `<div style="color:#ffcc66;">${tier} set (3+): ${parts}</div>`;
+      }
+      bonusBody.innerHTML = html;
     }
 
     // Tools section
@@ -1949,6 +2018,12 @@ export class HUD {
     const tierEl = document.createElement('div');
     tierEl.className = `equip-detail-item-tier tier-${(item.tier||'basic').toLowerCase()}`;
     tierEl.textContent = item.tier || 'Basic'; wrap.appendChild(tierEl);
+    if (item.mergeLevel > 0) {
+      const mergeEl = document.createElement('div');
+      mergeEl.style.cssText = 'text-align:center;color:#ffcc66;font-size:0.68rem;margin:2px 0;';
+      mergeEl.textContent = `${'★'.repeat(Math.min(5, item.mergeLevel))} Merge Lv ${item.mergeLevel} (+${item.mergeLevel * 15}% bonuses)`;
+      wrap.appendChild(mergeEl);
+    }
     if (item.statBonuses && Object.keys(item.statBonuses).length > 0) {
       const bonusDiv = document.createElement('div'); bonusDiv.className = 'equip-detail-bonuses';
       for (const [stat, val] of Object.entries(item.statBonuses)) {
@@ -1956,6 +2031,27 @@ export class HUD {
         row.textContent = `+${val} ${stat.replace(/([A-Z])/g, ' $1')}`; bonusDiv.appendChild(row);
       }
       wrap.appendChild(bonusDiv);
+    }
+
+    // Merge duplicates — same label + tier, from the equipment bag
+    const bagIdxOfItem = fromBag ? this.inventory.equipmentBag.indexOf(item) : -1;
+    const dupIdx = this.equipment.findDuplicateInBag(this.inventory, item, bagIdxOfItem);
+    if (dupIdx >= 0) {
+      const mergeBtn = document.createElement('button');
+      mergeBtn.className = 'stat-up-btn';
+      mergeBtn.style.cssText = 'width:100%;margin:6px 0;padding:6px;border-color:#ffcc66;color:#ffcc66;font-size:0.7rem;';
+      mergeBtn.textContent = 'MERGE DUPLICATE (+15%)';
+      mergeBtn.title = 'Consume a duplicate from the bag to raise this item\'s merge level';
+      mergeBtn.addEventListener('click', () => {
+        const ok = fromBag
+          ? this.equipment.mergeBagItems(this.inventory, bagIdxOfItem)
+          : this.equipment.mergeFromBag(this.inventory, slotKey);
+        if (ok) {
+          this._refreshEquipment();
+          this._showEquipDetail(item, slotKey, fromBag);
+        }
+      });
+      wrap.appendChild(mergeBtn);
     }
     if (fromBag) {
       const bagIdx = this.inventory.equipmentBag.indexOf(item);
@@ -2063,6 +2159,15 @@ export class HUD {
     this.ppRate.textContent = `(+${effRate.toFixed(1)}/s)`;
     this._updateSessionStats(pp);
 
+    // Sample PP/s once per second for the growth graph (~3 min ring buffer)
+    if (now - this._rateSampleAt >= 1000) {
+      this._rateSampleAt = now;
+      this._rateHistory.push(effRate);
+      if (this._rateHistory.length > 180) this._rateHistory.shift();
+      const statsPanel = document.getElementById('statistics-panel');
+      if (statsPanel && !statsPanel.hidden) this._refreshStatistics();
+    }
+
     // Rate tooltip — per-min / per-hour Achievement Counter (IIC §2)
     const rateSec = document.getElementById('rate-sec');
     const rateMin = document.getElementById('rate-min');
@@ -2132,6 +2237,16 @@ export class HUD {
 
     const pedPanel = document.getElementById('pedometer-panel');
     if (pedPanel && !pedPanel.hidden) this._refreshPedometer();
+
+    // Live-refresh the NGU-parity panels (sim HP bars, training pools, goal progress)
+    for (const [panelId, refresh] of [
+      ['adventure-panel', () => this._refreshAdventure()],
+      ['training-panel',  () => this._refreshTraining()],
+      ['goals-panel',     () => this._refreshGoals()],
+    ]) {
+      const p = document.getElementById(panelId);
+      if (p && !p.hidden) refresh();
+    }
 
     this._refreshActivityTimers();
 
@@ -2390,6 +2505,434 @@ export class HUD {
   _wireCodexButton()      {}
   _wireAscensionButton()  {}
   _refreshCodex()         {}
-  _refreshAscension()     {}
+
+  // ── Ascension panel (incl. Synthesis — third prestige layer) ──────────────
+  _refreshAscension() {
+    const el = document.getElementById('ascension-contents');
+    if (!el || !this.ascension) return;
+    el.innerHTML = '';
+    const asc = this.ascension;
+
+    const head = document.createElement('div');
+    head.style.cssText = 'text-align:center;margin-bottom:10px;';
+    head.innerHTML = `
+      <div style="color:#cc88ff;font-size:0.8rem;">Ascensions: ${asc.ascensionCount} &nbsp;·&nbsp; AP: ${asc.ascensionPoints}</div>
+      <div style="color:#8866aa;font-size:0.68rem;margin-top:4px;">Sacrifice ALL cap progress for Ascension Points.</div>`;
+    el.appendChild(head);
+
+    // Threshold progress + ascend button
+    const th = asc.ascensionThreshold;
+    const pct = Math.min(100, (this.pp.ppCap / th) * 100);
+    const prog = document.createElement('div');
+    prog.innerHTML = `
+      <div style="display:flex;justify-content:space-between;font-size:0.68rem;color:#aaccbb;">
+        <span>PP capacity</span><span>${abbrevNum(Math.floor(this.pp.ppCap))} / ${abbrevNum(th)}</span>
+      </div>
+      <div style="height:8px;background:#1a1025;border:1px solid #cc88ff44;border-radius:4px;overflow:hidden;margin:4px 0 8px;">
+        <div style="height:100%;width:${pct}%;background:#cc88ff;"></div>
+      </div>`;
+    el.appendChild(prog);
+
+    const ascBtn = document.createElement('button');
+    ascBtn.className = 'stat-up-btn';
+    ascBtn.style.cssText = 'width:100%;padding:8px;border-color:#cc88ff;color:#cc88ff;margin-bottom:10px;';
+    if (this._ascendArmed) {
+      ascBtn.textContent = 'CONFIRM — RESET CAP FOR AP?';
+      ascBtn.style.background = 'rgba(204,136,255,0.15)';
+    } else {
+      ascBtn.textContent = asc.canAscend() ? 'ASCEND' : `ASCEND (needs ${abbrevNum(th)} cap)`;
+    }
+    ascBtn.disabled = !asc.canAscend();
+    ascBtn.onclick = () => {
+      if (!this._ascendArmed) {
+        this._ascendArmed = true;
+        setTimeout(() => { this._ascendArmed = false; this._refreshAscension(); }, 3000);
+      } else {
+        this._ascendArmed = false;
+        const r = asc.ascend();
+        if (r) this.showAchievementToast({ icon: '✦', label: `Ascension ${r.ascensionCount}`, desc: `+${r.apEarned} AP (total ${r.totalAP})`, reward: 0 });
+      }
+      this._refreshAscension();
+    };
+    el.appendChild(ascBtn);
+
+    // AP upgrades
+    const upTitle = document.createElement('div');
+    upTitle.className = 'panel-subtitle';
+    upTitle.textContent = 'AMPLIFIERS';
+    el.appendChild(upTitle);
+    for (const up of asc.getUpgrades()) {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #cc88ff22;';
+      row.innerHTML = `<div style="flex:1;"><div style="color:#cc88ff;font-size:0.78rem;">${up.label} <span style="color:#8866aa;">${up.value}</span></div><div style="color:#556677;font-size:0.68rem;">${up.desc}</div></div>`;
+      const btn = document.createElement('button');
+      btn.className = 'stat-up-btn';
+      btn.style.cssText = 'border-color:#cc88ff44;color:#cc88ff;';
+      btn.textContent = `${up.cost} AP`;
+      btn.disabled = asc.ascensionPoints < up.cost;
+      btn.onclick = () => { if (asc.buyUpgrade(up.id)) this._refreshAscension(); };
+      row.appendChild(btn);
+      el.appendChild(row);
+    }
+
+    // ── Synthesis (third prestige layer) ──
+    const synth = this.ext.synthesis;
+    if (!synth) return;
+    const sTitle = document.createElement('div');
+    sTitle.className = 'panel-subtitle';
+    sTitle.style.cssText = 'margin-top:14px;color:#ffcc44;';
+    sTitle.textContent = 'SYNTHESIS';
+    el.appendChild(sTitle);
+
+    const sHead = document.createElement('div');
+    sHead.style.cssText = 'font-size:0.68rem;color:#aa9955;margin:4px 0 8px;';
+    sHead.innerHTML = `Syntheses: <span style="color:#ffcc44;">${synth.synthesisCount}</span> · Cores: <span style="color:#ffcc44;">${synth.cores}</span><br>
+      Burn the entire ascension layer (count, AP, amplifiers) and the current run for Synthesis Cores. Cores buy new <i>mechanics</i>, not multipliers.`;
+    el.appendChild(sHead);
+
+    const synthBtn = document.createElement('button');
+    synthBtn.className = 'stat-up-btn';
+    synthBtn.style.cssText = 'width:100%;padding:8px;border-color:#ffcc44;color:#ffcc44;margin-bottom:8px;';
+    if (this._synthArmed) {
+      synthBtn.textContent = `CONFIRM — RESET ASCENSION FOR ${synth.corePreview} CORES?`;
+      synthBtn.style.background = 'rgba(255,204,68,0.12)';
+    } else {
+      synthBtn.textContent = synth.canSynthesize()
+        ? `SYNTHESIZE (+${synth.corePreview} cores)`
+        : 'SYNTHESIZE (needs 2+ ascensions)';
+    }
+    synthBtn.disabled = !synth.canSynthesize();
+    synthBtn.onclick = () => {
+      if (!this._synthArmed) {
+        this._synthArmed = true;
+        setTimeout(() => { this._synthArmed = false; this._refreshAscension(); }, 3000);
+      } else {
+        this._synthArmed = false;
+        synth.synthesize();
+      }
+      this._refreshAscension();
+    };
+    el.appendChild(synthBtn);
+
+    for (const perk of synth.perks) {
+      const lvl = synth.perkLevel(perk.id);
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #ffcc4422;';
+      row.innerHTML = `<div style="flex:1;"><div style="color:#ffcc44;font-size:0.78rem;">${perk.label} <span style="color:#aa9955;">${lvl}/${perk.maxLevel}</span></div><div style="color:#556677;font-size:0.68rem;">${perk.desc}</div></div>`;
+      if (lvl < perk.maxLevel) {
+        const btn = document.createElement('button');
+        btn.className = 'stat-up-btn';
+        btn.style.cssText = 'border-color:#ffcc4444;color:#ffcc44;';
+        btn.textContent = `${perk.cost} ◆`;
+        btn.disabled = synth.cores < perk.cost;
+        btn.onclick = () => {
+          if (synth.buyPerk(perk.id)) {
+            synth.applyPerks({ pp: this.pp, training: this.ext.training });
+            this._refreshAscension();
+          }
+        };
+        row.appendChild(btn);
+      }
+      el.appendChild(row);
+    }
+  }
+
+  // ── Combat Simulator panel (idle adventure + boss gauntlet) ────────────────
+  _refreshAdventure() {
+    const el = document.getElementById('adventure-contents');
+    const adv = this.ext.adventure;
+    if (!el || !adv) return;
+    el.innerHTML = '';
+
+    const head = document.createElement('div');
+    head.style.cssText = 'font-size:0.68rem;color:#cc8899;margin-bottom:8px;';
+    head.innerHTML = `Run combat simulations while you do anything else. Sim DPS <span style="color:#ff8899;">${adv.dps.toFixed(1)}</span> — scales with your combat stats. Kills: <span style="color:#ff8899;">${abbrevNum(adv.totalKills)}</span> · PP earned: <span style="color:#ff8899;">${abbrevNum(Math.floor(adv.ppEarned))}</span>`;
+    el.appendChild(head);
+
+    // Live encounter readout
+    const enemy = adv.currentEnemy;
+    const live = document.createElement('div');
+    live.style.cssText = 'margin-bottom:10px;padding:6px 8px;border:1px solid #ff667733;border-radius:6px;background:rgba(255,102,119,0.05);min-height:34px;';
+    if (adv.activeTier && enemy) {
+      const pct = Math.max(0, (enemy.hp / enemy.maxHP) * 100);
+      live.innerHTML = `
+        <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:#ffaabb;">
+          <span>▶ ${enemy.name}</span><span>${Math.max(0, Math.ceil(enemy.hp))} / ${enemy.maxHP}</span>
+        </div>
+        <div style="height:6px;background:#220810;border:1px solid #ff667744;border-radius:3px;overflow:hidden;margin-top:3px;">
+          <div style="height:100%;width:${pct}%;background:#ff6677;"></div>
+        </div>`;
+    } else if (adv.activeTier) {
+      live.innerHTML = '<div style="font-size:0.7rem;color:#cc8899;">Respawning…</div>';
+    } else {
+      live.innerHTML = '<div style="font-size:0.7rem;color:#885566;">Simulator offline — pick a tier below.</div>';
+    }
+    el.appendChild(live);
+
+    // Tier list
+    for (const tier of adv.tiers) {
+      const unlocked = adv.isTierUnlocked(tier.id);
+      const active = adv.activeTier === tier.id;
+      const row = document.createElement('div');
+      row.style.cssText = `display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #ff667722;${unlocked ? '' : 'opacity:0.45;'}`;
+      row.innerHTML = `<div style="flex:1;">
+        <div style="color:${active ? '#ffcc00' : '#ff8899'};font-size:0.78rem;">T${tier.id} — ${tier.label}${active ? ' ⟳' : ''}</div>
+        <div style="color:#556677;font-size:0.66rem;">${tier.zone} · ${tier.pool.join(', ')} · ${abbrevNum(adv.killsByTier[tier.id] || 0)} kills</div>
+      </div>`;
+      const btn = document.createElement('button');
+      btn.className = 'stat-up-btn';
+      btn.style.cssText = 'border-color:#ff667744;color:#ff8899;min-width:64px;';
+      if (!unlocked) {
+        btn.textContent = 'LOCKED';
+        btn.disabled = true;
+        btn.title = 'Defeat the previous tier\'s boss to unlock';
+      } else {
+        btn.textContent = active ? 'STOP' : 'RUN';
+        btn.onclick = () => { adv.setTier(active ? 0 : tier.id); this._refreshAdventure(); };
+      }
+      row.appendChild(btn);
+      el.appendChild(row);
+    }
+
+    // Boss gauntlet
+    const bosses = this.ext.bosses;
+    if (!bosses) return;
+    const bTitle = document.createElement('div');
+    bTitle.className = 'panel-subtitle';
+    bTitle.style.cssText = 'margin-top:12px;color:#ff6677;';
+    bTitle.textContent = 'BOSS GAUNTLET';
+    el.appendChild(bTitle);
+    const bNote = document.createElement('div');
+    bNote.style.cssText = 'font-size:0.64rem;color:#885566;margin:2px 0 6px;';
+    bNote.textContent = `Each boss victory: +5% PP rate forever, next sim tier unlocked. Bosses are fought for real — heal up first.`;
+    el.appendChild(bNote);
+
+    for (const boss of bosses.bosses) {
+      const defeated = bosses.isDefeated(boss.id);
+      const canFight = bosses.canChallenge(boss.id, adv);
+      const remaining = bosses.killsRemaining(boss.id, adv);
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #ff667722;';
+      row.innerHTML = `<div style="flex:1;">
+        <div style="color:${defeated ? '#66dd88' : '#ff8899'};font-size:0.78rem;">☠ ${boss.name}${defeated ? ' ✓' : ''} <span style="color:#556677;">(T${boss.tier})</span></div>
+        <div style="color:#556677;font-size:0.66rem;">${boss.desc}</div>
+      </div>`;
+      if (!defeated) {
+        const btn = document.createElement('button');
+        btn.className = 'stat-up-btn';
+        btn.style.cssText = 'border-color:#ff667744;color:#ff8899;min-width:82px;';
+        if (canFight) {
+          btn.textContent = 'CHALLENGE';
+          btn.onclick = () => bosses.requestFight(boss.id, adv);
+        } else {
+          btn.textContent = adv.isTierUnlocked(boss.tier) ? `${remaining} kills` : 'LOCKED';
+          btn.disabled = true;
+          btn.title = adv.isTierUnlocked(boss.tier)
+            ? `Defeat ${remaining} more T${boss.tier} sim enemies to unlock`
+            : 'Unlock this tier first';
+        }
+        row.appendChild(btn);
+      }
+      el.appendChild(row);
+    }
+  }
+
+  // ── Training Matrix panel (idle skill training) ────────────────────────────
+  _refreshTraining() {
+    const el = document.getElementById('training-contents');
+    const tr = this.ext.training;
+    if (!el || !tr) return;
+    el.innerHTML = '';
+
+    const head = document.createElement('div');
+    head.style.cssText = 'font-size:0.68rem;color:#66aabb;margin-bottom:8px;';
+    head.innerHTML = `Assign stats to train continuously — each slot siphons 25% of your PP income into that stat until it levels, over and over. Slots: <span style="color:#88eeff;">${tr.assigned.length} / ${tr.slots}</span> · Auto-levels gained: <span style="color:#88eeff;">${tr.totalAutoLevels}</span>`;
+    el.appendChild(head);
+    if (tr.slots < 4) {
+      const hint = document.createElement('div');
+      hint.style.cssText = 'font-size:0.62rem;color:#446677;margin-bottom:8px;';
+      hint.textContent = 'More slots: Parallel Training Matrix perk (Synthesis).';
+      el.appendChild(hint);
+    }
+
+    for (const name of this.stats.statNames) {
+      const assigned = tr.isAssigned(name);
+      const { pool, cost, pct } = tr.poolFor(name);
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #66ddff22;';
+      row.innerHTML = `<div style="flex:1;">
+        <div style="display:flex;justify-content:space-between;font-size:0.74rem;">
+          <span style="color:${assigned ? '#88eeff' : '#7799aa'};">${this.stats.getStatLabel(name)} <span style="color:#556677;">Lv ${this.stats.stats[name].level}</span></span>
+          <span style="color:#556677;font-size:0.64rem;">${abbrevNum(Math.floor(pool))} / ${abbrevNum(cost)}</span>
+        </div>
+        <div style="height:4px;background:#08161e;border:1px solid #66ddff33;border-radius:2px;overflow:hidden;margin-top:2px;">
+          <div style="height:100%;width:${pct}%;background:${assigned ? '#66ddff' : '#33555f'};"></div>
+        </div>
+      </div>`;
+      const btn = document.createElement('button');
+      btn.className = 'stat-up-btn';
+      btn.style.cssText = `min-width:58px;border-color:#66ddff44;color:${assigned ? '#ffaa66' : '#88eeff'};`;
+      btn.textContent = assigned ? 'STOP' : 'TRAIN';
+      btn.disabled = !assigned && tr.assigned.length >= tr.slots;
+      btn.onclick = () => { tr.toggle(name); this._refreshTraining(); };
+      row.appendChild(btn);
+      el.appendChild(row);
+    }
+  }
+
+  // ── Directives panel (challenges + wishes) ─────────────────────────────────
+  _refreshGoals() {
+    const el = document.getElementById('goals-contents');
+    const ch = this.ext.challenges;
+    const wi = this.ext.wishes;
+    if (!el || (!ch && !wi)) return;
+    el.innerHTML = '';
+
+    if (ch) {
+      const t = document.createElement('div');
+      t.className = 'panel-subtitle';
+      t.textContent = 'CHALLENGES';
+      el.appendChild(t);
+      const note = document.createElement('div');
+      note.style.cssText = 'font-size:0.64rem;color:#887744;margin:2px 0 6px;';
+      note.textContent = 'Play under a restriction, hit the goal, keep the bonus forever. Breaking the restriction fails the run (retry any time).';
+      el.appendChild(note);
+
+      for (const c of ch.challenges) {
+        const done = ch.completed.has(c.id);
+        const active = ch.activeId === c.id;
+        const row = document.createElement('div');
+        row.style.cssText = `padding:5px 0;border-bottom:1px solid #ffdd4422;${done ? 'opacity:0.75;' : ''}`;
+        let inner = `<div style="display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;">
+            <div style="color:${done ? '#66dd88' : active ? '#ffcc00' : '#ffdd66'};font-size:0.78rem;">${c.label}${done ? ' ✓' : active ? ' — ACTIVE' : ''}</div>
+            <div style="color:#556677;font-size:0.66rem;">${c.desc}</div>
+            <div style="color:#997733;font-size:0.62rem;">Reward: ${c.reward.label}</div>
+          </div>
+          <span data-slot="btn"></span>
+        </div>`;
+        if (active) {
+          const p = ch.progressFor(c);
+          const tRem = ch.timeRemaining;
+          inner += `<div style="display:flex;justify-content:space-between;font-size:0.62rem;color:#997733;margin-top:3px;">
+            <span>Progress ${abbrevNum(p.current)} / ${abbrevNum(p.target)}</span>${tRem !== null ? `<span>⏱ ${formatDuration(tRem)}</span>` : ''}
+          </div>
+          <div style="height:4px;background:#1e1704;border:1px solid #ffdd4433;border-radius:2px;overflow:hidden;margin-top:2px;">
+            <div style="height:100%;width:${p.pct}%;background:#ffdd44;"></div>
+          </div>`;
+        }
+        row.innerHTML = inner;
+        const slot = row.querySelector('[data-slot="btn"]');
+        if (!done) {
+          const btn = document.createElement('button');
+          btn.className = 'stat-up-btn';
+          btn.style.cssText = 'border-color:#ffdd4444;color:#ffdd66;min-width:70px;';
+          if (active) {
+            btn.textContent = 'ABANDON';
+            btn.onclick = () => { ch.abandon(); this._refreshGoals(); };
+          } else {
+            btn.textContent = 'START';
+            btn.disabled = !!ch.activeId;
+            btn.onclick = () => { ch.start(c.id); this._refreshGoals(); };
+          }
+          slot.appendChild(btn);
+        }
+        el.appendChild(row);
+      }
+    }
+
+    if (wi) {
+      const t = document.createElement('div');
+      t.className = 'panel-subtitle';
+      t.style.marginTop = '12px';
+      t.textContent = 'WISHES';
+      el.appendChild(t);
+      const note = document.createElement('div');
+      note.style.cssText = 'font-size:0.64rem;color:#887744;margin:2px 0 6px;';
+      note.textContent = 'Enormous long-term sinks. A focused wish siphons 2% of your PP per second into its pool; progress never decays.';
+      el.appendChild(note);
+
+      for (const w of wi.wishes) {
+        const done = wi.completed.has(w.id);
+        const focused = wi.focusedId === w.id;
+        const p = wi.progressFor(w);
+        const row = document.createElement('div');
+        row.style.cssText = `padding:5px 0;border-bottom:1px solid #ffdd4422;${done ? 'opacity:0.75;' : ''}`;
+        row.innerHTML = `<div style="display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;">
+            <div style="color:${done ? '#66dd88' : focused ? '#ffcc00' : '#ffdd66'};font-size:0.78rem;">${w.label}${done ? ' ✓' : focused ? ' — FOCUSED' : ''}</div>
+            <div style="color:#556677;font-size:0.66rem;">${w.desc}</div>
+            <div style="color:#997733;font-size:0.62rem;">Reward: ${w.reward.label}</div>
+          </div>
+          <span data-slot="btn"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.62rem;color:#997733;margin-top:3px;">
+          <span>${abbrevNum(Math.floor(p.invested))} / ${abbrevNum(w.cost)} PP</span><span>${p.pct.toFixed(1)}%</span>
+        </div>
+        <div style="height:4px;background:#1e1704;border:1px solid #ffdd4433;border-radius:2px;overflow:hidden;margin-top:2px;">
+          <div style="height:100%;width:${p.pct}%;background:${done ? '#66dd88' : '#ffdd44'};"></div>
+        </div>`;
+        const slot = row.querySelector('[data-slot="btn"]');
+        if (!done) {
+          const btn = document.createElement('button');
+          btn.className = 'stat-up-btn';
+          btn.style.cssText = 'border-color:#ffdd4444;color:#ffdd66;min-width:64px;';
+          btn.textContent = focused ? 'PAUSE' : 'FOCUS';
+          btn.onclick = () => { wi.focus(w.id); this._refreshGoals(); };
+          slot.appendChild(btn);
+        }
+        el.appendChild(row);
+      }
+    }
+  }
+
+  // ── Recovered Logs panel (story) ───────────────────────────────────────────
+  _refreshStory() {
+    const el = document.getElementById('story-contents');
+    const story = this.ext.story;
+    if (!el || !story) return;
+    el.innerHTML = '';
+
+    const unlocked = story.getUnlockedEntries();
+    const total = story.entries.length;
+    const head = document.createElement('div');
+    head.style.cssText = 'font-size:0.68rem;color:#7799cc;margin-bottom:8px;';
+    head.textContent = `${unlocked.length} / ${total} logs recovered. New logs surface as you push deeper into the planet's systems.`;
+    el.appendChild(head);
+
+    let lastAct = null;
+    for (const entry of unlocked) {
+      if (entry.act !== lastAct) {
+        lastAct = entry.act;
+        const actEl = document.createElement('div');
+        actEl.className = 'panel-subtitle';
+        actEl.style.cssText = 'margin-top:10px;color:#88aadd;';
+        actEl.textContent = entry.act;
+        el.appendChild(actEl);
+      }
+      const unread = !story.readIds.has(entry.id);
+      const det = document.createElement('details');
+      det.style.cssText = 'margin:4px 0;border:1px solid #aaccff22;border-radius:4px;padding:4px 8px;background:rgba(170,204,255,0.03);';
+      const sum = document.createElement('summary');
+      sum.style.cssText = `cursor:pointer;font-size:0.76rem;color:${unread ? '#bbddff' : '#7799bb'};`;
+      sum.textContent = `${unread ? '● ' : ''}${entry.title}`;
+      det.appendChild(sum);
+      const body = document.createElement('div');
+      body.style.cssText = 'font-size:0.7rem;color:#99aabb;line-height:1.55;white-space:pre-line;padding:6px 2px 2px;';
+      body.textContent = entry.text;
+      det.appendChild(body);
+      det.addEventListener('toggle', () => {
+        if (det.open) { story.markRead(entry.id); sum.textContent = entry.title; sum.style.color = '#7799bb'; }
+      });
+      el.appendChild(det);
+    }
+
+    if (unlocked.length < total) {
+      const locked = document.createElement('div');
+      locked.style.cssText = 'margin-top:10px;font-size:0.66rem;color:#445566;text-align:center;';
+      locked.textContent = `▒▒▒ ${total - unlocked.length} encrypted log${total - unlocked.length === 1 ? '' : 's'} remain ▒▒▒`;
+      el.appendChild(locked);
+    }
+  }
 
 }

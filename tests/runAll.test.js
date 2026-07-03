@@ -17,3 +17,4 @@ import './systems/materialGraph.test.js';
 import './systems/processingExtractorSave.test.js';
 import './systems/telemetryProgression.test.js';
 import './systems/taskSystem.test.js';
+import './systems/nguParity.test.js';

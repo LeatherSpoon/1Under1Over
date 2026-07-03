@@ -1,4 +1,5 @@
 import { SkillsMenu } from './SkillsMenu.js';
+import { ARCHETYPES } from '../entities/archetypes.js';
 
 const CIRCUMFERENCE = 2 * Math.PI * 40; // r=40 matches SVG
 
@@ -40,12 +41,9 @@ export class CombatUI {
   }
 
   show(enemy) {
-    const archetypeLabel = {
-      rusher:  'SCRAPPER',
-      swinger: 'BRUTE [Wind-Up]',
-      burst:   'GLITCH [Burst]',
-    };
-    this.enemyNameEl.textContent = archetypeLabel[enemy.archetype] || enemy.name;
+    this.enemyNameEl.textContent = enemy.isBoss
+      ? `☠ ${enemy.name}`
+      : (ARCHETYPES[enemy.archetype]?.combatLabel || enemy.name);
     this._clearLog();
     this._updateHP(
       this.stats.currentHP, this.stats.maxHP,
