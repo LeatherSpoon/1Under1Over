@@ -20,6 +20,15 @@ function seededRandom(seed) {
 // Solid walls share one immortal "rock" so getCollisionBoxes() keeps them forever.
 const SOLID = { alive: true };
 
+// Cell-aligned wall runs and ore blocks are full 3.2m squares, so diagonally
+// adjacent cells (e.g. two ore veins touching corner-to-corner) leave zero
+// physical gap between them — less than the player's 0.7m diameter, trapping
+// the player against both boxes at once. Insetting every grid-block collision
+// box by this margin guarantees >= 0.7m of clearance at any diagonal touch
+// (cell centers are MINE_CELL*sqrt(2) ≈ 4.53m apart; 2*(1.6-0.3)*sqrt(2) ≈
+// 3.68m leaves an ~0.85m diagonal gap) without changing the visible geometry.
+const GRID_COLLISION_INSET = 0.3;
+
 /**
  * The Mine — a Shadows-of-Brimstone-style descent.
  *
@@ -101,8 +110,8 @@ function _buildWalls(env, rng) {
     env.group.add(mesh);
 
     env._collisionBoxes.push({
-      minX: run.cx - run.width / 2, maxX: run.cx + run.width / 2,
-      minZ: run.cz - run.depth / 2, maxZ: run.cz + run.depth / 2,
+      minX: run.cx - run.width / 2 + GRID_COLLISION_INSET, maxX: run.cx + run.width / 2 - GRID_COLLISION_INSET,
+      minZ: run.cz - run.depth / 2 + GRID_COLLISION_INSET, maxZ: run.cz + run.depth / 2 - GRID_COLLISION_INSET,
       rock: SOLID,
     });
   }
@@ -154,8 +163,8 @@ function _buildOreBlocks(env, rng) {
     const rock = { mesh, x: b.x, z: b.z, alive: true, props: b.props, richness: 3, maxRichness: 3, crack1, crack2 };
     env._rocks.push(rock);
     env._collisionBoxes.push({
-      minX: b.x - bw / 2, maxX: b.x + bw / 2,
-      minZ: b.z - bd / 2, maxZ: b.z + bd / 2,
+      minX: b.x - bw / 2 + GRID_COLLISION_INSET, maxX: b.x + bw / 2 - GRID_COLLISION_INSET,
+      minZ: b.z - bd / 2 + GRID_COLLISION_INSET, maxZ: b.z + bd / 2 - GRID_COLLISION_INSET,
       rock,
     });
   }
