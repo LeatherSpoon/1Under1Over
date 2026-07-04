@@ -6,7 +6,7 @@
   z-index: 100;
   display: flex;
   flex-direction: column;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: var(--font-mono);
   color: #e0ffe0;
 }
 
@@ -254,7 +254,7 @@
   background: rgba(0, 20, 10, 0.9);
   border: 1px solid #00cc6644;
   color: #aaffcc;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-mono);
   font-size: 1rem;
   letter-spacing: 0.1em;
   font-weight: bold;
