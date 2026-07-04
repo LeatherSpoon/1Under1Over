@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Processing Power Codebase Map</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #07100d;
+      color: #d9fff1;
+      font-family: "Segoe UI", Arial, sans-serif;
+      line-height: 1.45;
+    }
+    main {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 32px 0 56px;
+    }
+    h1, h2, h3 { margin: 0; line-height: 1.1; }
+    h1 { font-size: clamp(2rem, 4vw, 4rem); }
+    h2 { font-size: 1.15rem; color: #00ffcc; letter-spacing: .08em; text-transform: uppercase; }
+    h3 { color: #ffffff; margin-bottom: 8px; }
+    p { color: #a9cfc1; margin: 8px 0 0; }
+    code {
+      color: #ffe59a;
+      background: rgba(255, 204, 0, .08);
+      border: 1px solid rgba(255, 204, 0, .22);
+      border-radius: 4px;
+      padding: 1px 5px;
+    }
+    .hero {
+      min-height: 32vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-bottom: 1px solid rgba(0, 255, 204, .2);
+      margin-bottom: 28px;
+    }
+    .subtitle {
+      font-size: 1.1rem;
+      max-width: 760px;
+    }
+    .section {
+      margin-top: 24px;
+      padding: 20px;
+      border: 1px solid rgba(0, 255, 204, .22);
+      border-radius: 8px;
+      background: rgba(0, 18, 12, .66);
+    }
+    .swimlane {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 12px;
+      align-items: stretch;
+      margin-top: 14px;
+    }
+    .lane-label {
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 8px;
+      padding: 12px;
+      background: rgba(255,255,255,.04);
+      color: #ffffff;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+    }
+    .lane-body {
+      border: 1px solid rgba(0,255,204,.18);
+      border-radius: 8px;
+      padding: 12px;
+      background: rgba(0,0,0,.16);
+    }
+    .file-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .file {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,.1);
+      background: rgba(255,255,255,.035);
+    }
+    .file strong { color: #fff; }
+    .note {
+      border-left: 3px solid #ffcc00;
+      padding: 10px 12px;
+      margin-top: 12px;
+      background: rgba(255,204,0,.08);
+      color: #ffe9a8;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .two { grid-template-columns: repeat(2, 1fr); }
+    .card {
+      border: 1px solid rgba(0, 255, 204, .22);
+      border-radius: 8px;
+      padding: 16px;
+      background: rgba(3, 30, 22, .72);
+      min-height: 140px;
+    }
+    .gold {
+      border-color: rgba(255, 204, 0, .34);
+      background: rgba(44, 34, 0, .5);
+    }
+    .blue {
+      border-color: rgba(96, 160, 255, .34);
+      background: rgba(8, 22, 48, .62);
+    }
+    .flow {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 14px 2px 4px;
+      align-items: center;
+    }
+    .step {
+      min-width: 150px;
+      border: 1px solid rgba(0, 255, 204, .32);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+      background: rgba(0, 0, 0, .22);
+      color: #d9fff1;
+      font-weight: 700;
+    }
+    .arrow { color: #00ffcc; font-size: 1.4rem; }
+    ul { margin: 10px 0 0; padding-left: 20px; color: #a9cfc1; }
+    li + li { margin-top: 6px; }
+    @media (max-width: 820px) {
+      .grid, .two { grid-template-columns: 1fr; }
+      .swimlane { grid-template-columns: 1fr; }
+      .file-list { grid-template-columns: 1fr; }
+      main { width: min(100vw - 20px, 1180px); padding-top: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <h1>Processing Power Codebase Map</h1>
+      <p class="subtitle">This is a browser-based Three.js idle RPG. The code is organized as a small custom game engine: one coordinator, a Three.js scene layer, gameplay systems, entities, and DOM-based UI.</p>
+    </section>
+
+    <section class="section">
+      <h2>Runtime Flow</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>HTML Shell</h3>
+          <p><code>index.html</code> defines the canvas, HUD panels, combat overlay, mobile controls, styles, import map, and module entry point.</p>
+        </div>
+        <div class="card gold">
+          <h3>Coordinator</h3>
+          <p><code>js/main.js</code> creates systems, wires keyboard/click handlers, switches zones, handles interactions, and runs the animation loop.</p>
+        </div>
+        <div class="card">
+          <h3>Frame Loop</h3>
+          <p><code>gameLoop()</code> updates player, systems, combat, gathering, portals, HUD, camera, and renderer once per frame.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Startup Walkthrough</h2>
+      <div class="swimlane">
+        <div class="lane-label">1. Browser loads</div>
+        <div class="lane-body">
+          <p><code>index.html</code> creates all fixed DOM surfaces up front: the WebGL canvas, HUD container, game panels, combat overlay, and mobile controls.</p>
+        </div>
+        <div class="lane-label">2. Modules resolve</div>
+        <div class="lane-body">
+          <p>The import map points <code>three</code> at the local vendored Three.js file. This is why the app must be served over HTTP instead of opened with <code>file://</code>.</p>
+        </div>
+        <div class="lane-label">3. main.js boots</div>
+        <div class="lane-body">
+          <p><code>main.js</code> constructs all gameplay systems first, then constructs scene/world/player/UI objects that depend on those systems.</p>
+        </div>
+        <div class="lane-label">4. Loop starts</div>
+        <div class="lane-body">
+          <p><code>sceneManager.renderer.setAnimationLoop(gameLoop)</code> hands control to the browser's animation cadence.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Ownership Boundaries</h2>
+      <div class="grid">
+        <div class="card blue">
+          <h3>Scene</h3>
+          <p><code>SceneManager</code> owns Three.js scene, renderer, orthographic camera, resize handling, camera follow, and render.</p>
+          <p><code>Environment</code> builds zones, terrain, props, portals, stations, collision circles, trees, rocks, and spawn metadata.</p>
+        </div>
+        <div class="card">
+          <h3>Entities</h3>
+          <p><code>Player</code> owns mesh, position, movement, facing, steps, terrain effects, and node gathering state.</p>
+          <p><code>EntityManager</code> owns resource nodes and enemies, including aggro-triggered combat starts.</p>
+        </div>
+        <div class="card gold">
+          <h3>Systems</h3>
+          <p>Small state machines for PP, stats, combat, inventory, crafting, drones, pedometer, saves, achievements, minigame, drill, ascension, and offline rewards.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Game Loop Detail</h2>
+      <div class="flow">
+        <div class="step">1<br>zone switch</div>
+        <div class="arrow">→</div>
+        <div class="step">2<br>player input + movement</div>
+        <div class="arrow">→</div>
+        <div class="step">3<br>collision + tracks</div>
+        <div class="arrow">→</div>
+        <div class="step">4<br>PP / drones / crafting</div>
+        <div class="arrow">→</div>
+        <div class="step">5<br>combat + interactions</div>
+        <div class="arrow">→</div>
+        <div class="step">6<br>HUD + render</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Input And UI Paths</h2>
+      <div class="grid two">
+        <div class="card">
+          <h3>Input</h3>
+          <p><strong>Keyboard:</strong> <code>main.js</code> maintains a <code>keysDown</code> set.</p>
+          <p><strong>Mobile:</strong> <code>TouchInput</code> exposes <code>dx</code>, <code>dz</code>, <code>isMoving</code>, and <code>actionPressed</code>.</p>
+          <p><strong>Player:</strong> <code>Player.update(keysDown, delta, touchInput)</code> consumes both paths and moves the character.</p>
+        </div>
+        <div class="card">
+          <h3>UI</h3>
+          <p><code>HUD</code> renders most non-combat panels: stats, inventory, crafting, drones, equipment, pedometer, achievements, ascension, drill, minigame.</p>
+          <p><code>CombatUI</code> renders the combat overlay, action buttons, skill/item menus, HP bars, FP ring, and combat log.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>System Responsibilities</h2>
+      <div class="file-list">
+        <div class="file"><strong>PPSystem</strong><p>Main idle number: total PP, PP/sec, prestige bonus, temporary modifiers, ascension multiplier.</p></div>
+        <div class="file"><strong>StatsSystem</strong><p>Stat levels and derived combat/movement values: HP, FP, energy, damage, defense, agility, speed.</p></div>
+        <div class="file"><strong>CombatSystem</strong><p>Combat state, enemy/player HP, FP spends, skills, status effects, drops, run outcomes.</p></div>
+        <div class="file"><strong>InventorySystem</strong><p>Materials, consumables, tools, storage container, and equipment bag.</p></div>
+        <div class="file"><strong>CraftingSystem</strong><p>Recipes, crafting timers, queueing, material consumption, item/tool output.</p></div>
+        <div class="file"><strong>DroneSystem</strong><p>Idle material gathering through assignable/upgradable drones.</p></div>
+        <div class="file"><strong>PedometerSystem</strong><p>Step currency, PP-per-step upgrades, track placement, stat purchases, zone unlocks.</p></div>
+        <div class="file"><strong>SaveSystem</strong><p>Turns live game state into JSON and applies JSON back to existing system instances.</p></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Where Behavior Lives</h2>
+      <div class="grid two">
+        <div class="card">
+          <h3>Good separation</h3>
+          <ul>
+            <li>PP math is mostly in <code>PPSystem</code>.</li>
+            <li>Stat derivation is mostly in <code>StatsSystem</code>.</li>
+            <li>Combat mechanics are mostly in <code>CombatSystem</code>.</li>
+            <li>Three.js setup is mostly in <code>SceneManager</code>.</li>
+          </ul>
+        </div>
+        <div class="card gold">
+          <h3>Mixed responsibility</h3>
+          <ul>
+            <li><code>main.js</code> owns several interaction rules directly.</li>
+            <li><code>HUD.js</code> both renders panels and mutates gameplay systems from button handlers.</li>
+            <li><code>Environment.js</code> combines zone generation, collision metadata, portal metadata, and station placement.</li>
+          </ul>
+        </div>
+      </div>
+      <p class="note">That mixed responsibility is not fatal for this project size, but it is the first thing that will slow feature work as mechanics multiply.</p>
+    </section>
+
+    <section class="section">
+      <h2>Persistence</h2>
+      <p><code>SaveSystem</code> snapshots the live systems into JSON: zone, player position, PP, stats, inventory, pedometer tracks, drones, equipment, game stats, achievements, minigame, ascension, and auto-combat.</p>
+      <p>Loading applies JSON back into the existing system instances, then returns the zone and player coordinates so <code>main.js</code> can switch zones and teleport the player.</p>
+    </section>
+
+    <section class="section">
+      <h2>Practical Change Guide</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Change balance</h3>
+          <p>Start in <code>config.js</code>. It holds rates, costs, skills, terrain, and unlock thresholds.</p>
+        </div>
+        <div class="card">
+          <h3>Add a new UI panel</h3>
+          <p>Add static shell markup in <code>index.html</code>, styling in CSS, then render/wire it from <code>HUD.js</code>.</p>
+        </div>
+        <div class="card">
+          <h3>Add a new zone</h3>
+          <p>Add zone build logic and metadata in <code>Environment.js</code>, then connect unlocks/portals through config and main loop logic.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Growth Pressure</h2>
+      <ul>
+        <li><code>main.js</code> is the coordinator and has accumulated interaction logic.</li>
+        <li><code>Environment.js</code> builds many zones and props in one large file.</li>
+        <li><code>HUD.js</code> renders and wires nearly every non-combat panel.</li>
+      </ul>
+      <p>Those three files are the natural refactor targets as the game grows.</p>
+    </section>
+  </main>
+</body>
+</html>

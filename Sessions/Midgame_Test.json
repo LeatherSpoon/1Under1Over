@@ -1,0 +1,101 @@
+{
+  "version": 2,
+  "timestamp": 1744838400000,
+  "sessionName": "Midgame Test",
+  "zone": "landingSite",
+  "playerX": 0,
+  "playerZ": 0,
+  "pp": {
+    "ppTotal": 5000,
+    "prestigeBonus": 0.5,
+    "rateModifiers": {
+      "prestige": 0.5
+    }
+  },
+  "stats": {
+    "levels": {
+      "strength": { "level": 5, "exp": 0 },
+      "health": { "level": 15, "exp": 0 },
+      "defense": { "level": 4, "exp": 0 },
+      "constitution": { "level": 3, "exp": 0 },
+      "dexterity": { "level": 4, "exp": 0 },
+      "agility": { "level": 3, "exp": 0 },
+      "perception": { "level": 2, "exp": 0 },
+      "focusRate": { "level": 3, "exp": 0 },
+      "focus": { "level": 3, "exp": 0 },
+      "crafting": { "level": 3, "exp": 0 },
+      "craftingSpeed": { "level": 2, "exp": 0 },
+      "speed": { "level": 3, "exp": 0 }
+    },
+    "currentHP": 150,
+    "currentFP": 0
+  },
+  "inventory": {
+    "materials": {
+      "copper": 15, "timber": 12, "stone": 10, "iron": 14, "carbon": 6,
+      "quartz": 8, "silica": 4, "fiber": 10, "silver": 2, "gold": 1,
+      "titanium": 0, "tungsten": 0, "resin": 3, "epoxy": 0,
+      "elastomer": 0, "magnet": 0, "glass": 0, "lumber": 3, "seed": 2
+    },
+    "consumables": {
+      "ration": 5, "firstAid": 2, "repairKit": 0, "antidote": 1,
+      "ironPatch": 3, "signalFlare": 1
+    },
+    "tools": {
+      "terrainCutter": true
+    }
+  },
+  "pedometer": {
+    "totalSteps": 5000,
+    "ppBonusPerStep": 0.45,
+    "ppBonusPurchases": 2,
+    "nextBonusCost": 200,
+    "trackCount": 12,
+    "nextTrackCost": 100,
+    "pendingTracks": 2,
+    "placedTracks": [
+      { "zone": "landingSite", "x": -2, "z": 0 },
+      { "zone": "landingSite", "x": 0, "z": 0 },
+      { "zone": "landingSite", "x": 2, "z": 0 },
+      { "zone": "landingSite", "x": 4, "z": 0 },
+      { "zone": "landingSite", "x": 6, "z": 0 },
+      { "zone": "landingSite", "x": -4, "z": -4 },
+      { "zone": "landingSite", "x": -6, "z": -6 },
+      { "zone": "landingSite", "x": -8, "z": -8 },
+      { "zone": "mine", "x": 0, "z": -10 },
+      { "zone": "mine", "x": 0, "z": -8 }
+    ],
+    "statStepPurchases": {},
+    "totalStatPurchases": 0,
+    "nextStatCost": 200,
+    "unlockedZones": ["verdantMaw"]
+  },
+  "drones": {
+    "list": [
+      { "id": 1, "name": "Drone Alpha", "assignedMaterial": "copper", "efficiency": 2, "gatherTimer": 0 },
+      { "id": 2, "name": "Drone Beta", "assignedMaterial": null, "efficiency": 1, "gatherTimer": 0 }
+    ],
+    "upgradeCost": 125
+  },
+  "equipment": {
+    "slots": {
+      "weapon": { "label": "Basic Blade", "slot": "weapon", "tier": "Basic", "statBonuses": { "strength": 2 } },
+      "offhand": null,
+      "head": null,
+      "body": null,
+      "legs": null,
+      "accessory": null,
+      "deploy1": null,
+      "deploy2": null,
+      "consumable": null
+    }
+  },
+  "gameStats": {
+    "enemiesDefeated": 23,
+    "defeats": 5,
+    "actionsTaken": 412,
+    "highestHit": 20,
+    "totalStepsTaken": 5000,
+    "visitedZones": ["landingSite", "mine", "spaceship", "verdantMaw"]
+  }
+}

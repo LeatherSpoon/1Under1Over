@@ -1,0 +1,262 @@
+/* ── Mobile / Touch Controls ─────────────────────────────────────────────── */
+
+/* Hidden by default; revealed on coarse-pointer (touch) devices */
+#mobile-controls {
+  display: none;
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* Prevent unwanted scroll / zoom on the game canvas */
+#game-canvas {
+  touch-action: none;
+}
+
+/* ── Virtual Joystick (used for both touch and desktop mouse) ─────────────── */
+#joystick-zone {
+  position: absolute;
+  width: 130px;
+  height: 130px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  z-index: 25;
+}
+
+#joystick-zone[hidden] {
+  display: none !important;
+}
+
+#joystick-base {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid transparent;
+  opacity: 0;
+}
+
+#joystick-stick {
+  position: absolute;
+  width: 54px;
+  height: 54px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid transparent;
+  pointer-events: none;
+  box-shadow: none;
+  opacity: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Touch devices (any orientation)
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (pointer: coarse) {
+
+  #mobile-controls {
+    display: block;
+  }
+
+  /* ── Action Button (E key) ─────────────────────────────────────────────── */
+  #btn-mobile-action {
+    position: absolute;
+    bottom: 52px;
+    right: 36px;
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    background: rgba(0, 100, 50, 0.85);
+    border: 2px solid #00cc66;
+    color: #aaffcc;
+    font-family: 'Courier New', monospace;
+    font-size: 0.82rem;
+    font-weight: bold;
+    letter-spacing: 0.08em;
+    pointer-events: auto;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: pointer;
+    box-shadow: 0 0 14px rgba(0, 204, 102, 0.2);
+    line-height: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+  }
+
+  #btn-mobile-action:active,
+  #btn-mobile-action.pressed {
+    background: rgba(0, 170, 75, 0.9);
+    box-shadow: 0 0 20px rgba(0, 255, 150, 0.4);
+  }
+
+  #btn-mobile-action .act-label {
+    font-size: 1.1rem;
+  }
+
+  #btn-mobile-action .act-sub {
+    font-size: 0.6rem;
+    color: #55ffaa;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── Menu toggle: nudge above home bar on touch ─────────────────────────── */
+  #menu-toggle-btn {
+    bottom: 18px;
+    left: 14px;
+  }
+
+  #panel-buttons {
+    bottom: 62px;
+    left: 14px;
+  }
+
+  .panel-toggle-btn {
+    padding: 9px 13px;
+    font-size: 0.74rem;
+    min-width: 58px;
+    text-align: center;
+  }
+
+  /* ── Panel overlays: bottom-sheet on touch ─────────────────────────── */
+  .panel-overlay,
+  #inventory-panel,
+  #crafting-panel,
+  #drone-panel,
+  #ascension-panel,
+  #drill-panel {
+    align-items: flex-end;
+  }
+
+  .panel-window,
+  #inventory-modal,
+  #crafting-modal,
+  #drone-modal,
+  #ascension-modal {
+    width: 100% !important;
+    height: 72vh !important;
+    border-radius: 14px 14px 0 0 !important;
+    box-shadow: 0 -6px 32px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  #drill-panel .panel-window {
+    height: auto !important;
+    max-height: 55vh !important;
+  }
+
+  .sidebar-title  { font-size: 0.66rem; }
+  .stat-label     { font-size: 0.67rem; }
+  .stat-level     { font-size: 0.62rem; }
+  .stat-up-btn    { font-size: 0.62rem; padding: 2px 4px; }
+
+  /* ── Combat action buttons: taller for fat fingers ─────────────────────── */
+  .action-btn {
+    min-height: 52px;
+    font-size: 1.05rem;
+  }
+
+  /* ── Interact hint: larger text ────────────────────────────────────────── */
+  #interact-hint {
+    font-size: 0.95rem;
+    padding: 8px 20px;
+    bottom: 180px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Portrait-specific
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (pointer: coarse) and (orientation: portrait) {
+
+  #joystick-zone {
+    width: 140px;
+    height: 140px;
+  }
+
+  #joystick-stick {
+    width: 60px;
+    height: 60px;
+  }
+
+  #btn-mobile-action {
+    bottom: 58px;
+    right: 28px;
+    width: 84px;
+    height: 84px;
+    font-size: 0.88rem;
+  }
+
+  /* HUD top-left: slightly smaller in portrait */
+  #pp-display,
+  #hp-display,
+  #steps-display {
+    font-size: 0.8rem;
+    padding: 4px 9px;
+  }
+
+  #zone-label {
+    font-size: 0.85rem;
+    padding: 4px 10px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Landscape-specific
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (pointer: coarse) and (orientation: landscape) {
+
+  #joystick-zone {
+    width: 110px;
+    height: 110px;
+  }
+
+  #joystick-stick {
+    width: 46px;
+    height: 46px;
+  }
+
+  #btn-mobile-action {
+    bottom: 28px;
+    right: 28px;
+    width: 68px;
+    height: 68px;
+    font-size: 0.78rem;
+  }
+
+  #hud-topleft {
+    top: 8px;
+    left: 8px;
+  }
+
+  /* Shorter panels in landscape */
+  .panel-window,
+  #inventory-modal,
+  #crafting-modal,
+  #drone-modal,
+  #ascension-modal {
+    height: 85vh !important;
+  }
+}
+
+/* ── Portrait: crafting stacks vertically ──────────────────────────────── */
+@media (pointer: coarse) and (orientation: portrait) {
+  #crafting-panel-body {
+    flex-direction: column;
+  }
+
+  #crafting-inv-panel {
+    width: 100%;
+    max-height: 30%;
+    border-right: 0;
+    border-bottom: 1px solid #00cc6622;
+  }
+}

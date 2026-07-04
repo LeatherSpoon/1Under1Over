@@ -1,0 +1,9 @@
+4G would design zones not as environments but as resource contexts. Being in Zone A applies a passive buff to Clock Rate. Being in Zone B amplifies Yield on your next offload. Being in Zone C accelerates drone collection. You can only be in one zone at a time.
+
+In 2.5D with real combat, 4G would extend this further. Enemies in your game aren't just obstacles — they're data sources. Each enemy archetype, when defeated enough times, reveals information about the zone it inhabits. Not loot. Information. Zone resonance thresholds. Hidden capacity bonuses. Optimal offload timing windows.
+
+n NGU, rebirth was a button. Powerful, but emotionally flat. In 2.5D, 4G would make the prestige moment a physical act in the world.
+The player has to walk to a specific location — maybe the Ship from your Field Research spec, maybe a different terminal — and manually initiate the offload. The walk itself creates a moment of reflection. The player passes their active systems on the way. They see their drone stations, their crafting queue, their combat zone. It's a goodbye lap.
+This isn't friction for friction's sake. It's manufactured emotional weight on the most important decision in the loop. The player feels the reset because they physically moved through what they're giving up. Make the offload station its own room within the spaceship that is the furthest away from the entrance.
+
+

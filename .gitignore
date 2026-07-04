@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Session/tool state and logs
+.superpowers/
+.claude/settings.local.json
+*.log
+
+# Art sources — ~80MB of 1024px originals. The game only serves the 128px
+# derivatives in Assets/Inventory/icons/ (regenerate from these when adding art;
+# see "Item icon art" in CLAUDE.md). Keep the originals backed up outside git.
+Assets/Inventory/*.png
+Assets/Inventory/originals_with_background/
+
+# OS junk
+Thumbs.db
+Desktop.ini
+.DS_Store
