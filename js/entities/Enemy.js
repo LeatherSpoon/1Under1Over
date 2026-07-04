@@ -5,13 +5,42 @@ import { CONFIG } from '../config.js';
 
 let enemyIdCounter = 0;
 
+// Object3D.clone(true) doesn't rebind skeletons — SkinnedMesh clones keep
+// pointing at the source skeleton's bones, so posing/matrixWorld updates on
+// the clone leave the mesh unbound (vertices fly to bind-pose world origin).
+// Standard three.js SkeletonUtils.clone algorithm, inlined to avoid vendoring
+// another addon file just for this.
+function cloneSkinned(source) {
+  const sourceLookup = new Map();
+  const cloneLookup = new Map();
+  const clone = source.clone();
+  (function parallelTraverse(a, b) {
+    sourceLookup.set(b, a);
+    cloneLookup.set(a, b);
+    for (let i = 0; i < a.children.length; i++) parallelTraverse(a.children[i], b.children[i]);
+  })(source, clone);
+  clone.traverse(node => {
+    if (!node.isSkinnedMesh) return;
+    const sourceMesh = sourceLookup.get(node);
+    node.skeleton = sourceMesh.skeleton.clone();
+    node.bindMatrix.copy(sourceMesh.bindMatrix);
+    node.skeleton.bones = sourceMesh.skeleton.bones.map(bone => cloneLookup.get(bone));
+    node.bind(node.skeleton, node.bindMatrix);
+  });
+  return clone;
+}
+
 // GLB replacement for specific boss archetypes — preloaded once, cloned per spawn.
 // Falls back to the procedural boxes/cones body below if not loaded yet.
-const _bossModelPaths = { boss_lagoon: './models/Pirate_Lizard.glb' };
+const _bossModelPaths = { boss_lagoon: './models/Pirate_Lizard.glb', dunkraza: './models/Scorpion.glb' };
 const _bossModels = {};
+const _bossAnimations = {};
 const _bossLoader = new GLTFLoader();
 for (const [archetype, path] of Object.entries(_bossModelPaths)) {
-  _bossLoader.load(path, gltf => { _bossModels[archetype] = gltf.scene; }, undefined, () => {});
+  _bossLoader.load(path, gltf => {
+    _bossModels[archetype] = gltf.scene;
+    _bossAnimations[archetype] = gltf.animations;
+  }, undefined, () => {});
 }
 
 // ── Enemy archetypes ───────────────────────────────────────────────────────────
@@ -177,6 +206,21 @@ const ARCHETYPE_CONFIG = {
     dodgeChance: 0.25,
     attackPattern: 'melee',
     visual: 'dualVisor',
+  },
+
+  // Elite guardian — posted at the Mine's Depths-shaft boundary, the toughest
+  // regular (non-boss) enemy in the early game.
+  dunkraza: {
+    name: 'DUNKRAZA',
+    hp: 150, damage: 12, attackInterval: 2200, ppReward: 65,
+    bodyColor: 0x552244, headColor: 0x663355, visorColor: 0xff2266, threatColor: 0xff2266,
+    scale: 0.4, speed: 0.95,
+    statusEffect: 'poison',
+    armor: 4,
+    dodgeChance: 0.2,
+    attackPattern: 'burst',
+    burstCount: 2,
+    visual: 'spikes',
   },
 
   // ── Zone bosses — unique, no timed respawn, permanent bonus on defeat ─────
@@ -440,10 +484,21 @@ export class Enemy {
   // GLB-model body for bosses with a matching entry in _bossModelPaths — replaces
   // the procedural body/head/visor/legs but keeps the same gameplay-facing indicators.
   _buildBossModelMesh(src, cfg) {
-    const model = src.clone(true);
+    let hasSkinned = false;
+    src.traverse(n => { if (n.isSkinnedMesh) hasSkinned = true; });
+    const model = hasSkinned ? cloneSkinned(src) : src.clone(true);
     model.scale.setScalar(1.4);
     model.traverse(n => { if (n.isMesh) n.castShadow = true; });
     this.group.add(model);
+
+    const clips = _bossAnimations[this.archetype];
+    if (clips && clips.length) {
+      this._mixer = new THREE.AnimationMixer(model);
+      this._idleAction = clips.find(c => /idle/i.test(c.name)) && this._mixer.clipAction(clips.find(c => /idle/i.test(c.name)));
+      this._walkAction = clips.find(c => /walk/i.test(c.name)) && this._mixer.clipAction(clips.find(c => /walk/i.test(c.name)));
+      this._currentAction = this._idleAction || this._walkAction;
+      this._currentAction?.play();
+    }
 
     if (cfg.attackPattern === 'windup') {
       const chargeGeo = new THREE.TorusGeometry(0.35, 0.06, 6, 14);
@@ -480,6 +535,19 @@ export class Enemy {
     if (this._threatIndicator) {
       this._threatIndicator.position.y = this._threatBaseY + Math.sin(Date.now() * 0.004) * 0.12;
       this._threatIndicator.rotation.y += delta * 2.0;
+    }
+
+    // GLB boss-model Idle/Walk crossfade, keyed off patrol movement state
+    if (this._mixer) {
+      this._mixer.update(delta);
+      if (this._walkAction && this._idleAction) {
+        const desired = this._isWaiting ? this._idleAction : this._walkAction;
+        if (this._currentAction !== desired) {
+          desired.reset().fadeIn(0.3).play();
+          this._currentAction?.fadeOut(0.3);
+          this._currentAction = desired;
+        }
+      }
     }
 
     // Check aggro

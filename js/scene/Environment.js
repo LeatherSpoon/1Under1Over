@@ -458,14 +458,16 @@ export class Environment {
         { x: 18, z: 18,  archetype: 'boss_landing', boss: true },
       ];
       // T2 — Rushers in the working cavern, a Swinger mid-cavern, a Cinderling
-      // near the drill, a Rustmaw guarding the descent, and the Forge Warden
-      // at the mouth of the winding passage to the Breach.
+      // near the drill, a Rustmaw guarding the descent, Dunkraza posted at the
+      // Depths shaft (the toughest regular enemy in the early game), and the
+      // Forge Warden at the mouth of the winding passage to the Breach.
       case 'mine': return [
         { x: -12.8, z: -3.2, archetype: 'rusher' },
         { x: 12.8,  z: 3.2,  archetype: 'rusher' },
         { x: 6.4,   z: 9.6,  archetype: 'swinger' },
         { x: -6.4,  z: 6.4,  archetype: 'pyro' },
         { x: 6.4,   z: 19.2, archetype: 'corroder' },
+        { x: 16,    z: 3.2,  archetype: 'dunkraza' },
         { x: -3.2,  z: 12.8, archetype: 'boss_mine', boss: true },
       ];
       // T3 — venomous jungle pack + the Maw Sovereign
