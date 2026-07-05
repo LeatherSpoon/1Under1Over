@@ -2,10 +2,12 @@ import * as THREE from 'three';
 import { createToonMaterial, addOutline, addOutlineToGroup, createRevealToonMaterial } from '../../ToonMaterials.js';
 import { CONFIG } from '../../../config.js';
 import {
-  MINE_MAP, mineCellToWorld, isMineFloorCell,
+  mineCellToWorld, isMineFloorCell,
   MINE_ZONE_PORTALS, MINE_DRILL_POS,
   getMineableWallBlocks, getMineWallRuns, getMineFloorRuns,
+  setActiveMineMap, getActiveMineMap,
 } from './layout.js';
+import { generateMineMap } from './generator.js';
 
 function seededRandom(seed) {
   let s = seed | 0;
@@ -44,6 +46,10 @@ const GRID_COLLISION_INSET = 0.3;
  *   lagoonCoast  →  Breach far gate    CONFIG.ENV_UNLOCK.lagoonCoast
  */
 export function build(env) {
+  // Re-roll (or restore) the cave for this delve before reading any map data.
+  const seed = env._mineDelve?.seed ?? 1;
+  setActiveMineMap(generateMineMap(seed));
+
   env._addGround(0x060504); // void — unbroken mountain rock
   const rng = seededRandom(54321);
 
@@ -134,6 +140,8 @@ function _buildOreBlocks(env, rng) {
   }
 
   for (const b of blocks) {
+    // Blocks mined out earlier in this delve stay depleted (open floor).
+    if (env._mineDelve?.isMined(b.cellC, b.cellR)) continue;
     const bw = 3.2;
     const bh = 3.2 + rng() * 1.6; // shorter than the cave walls — reads as a workable seam
     const bd = 3.2;
@@ -572,8 +580,9 @@ function _scatterCaveDetail(env, rng) {
   const crysMat = { rock: new THREE.MeshBasicMaterial({ color: 0x55e0c8 }), breach: new THREE.MeshBasicMaterial({ color: 0xbb88ff }) };
   const portals = Object.values(MINE_ZONE_PORTALS);
 
-  for (let r = 0; r < MINE_MAP.length; r++) {
-    for (let c = 0; c < MINE_MAP[r].length; c++) {
+  const map = getActiveMineMap();
+  for (let r = 0; r < map.length; r++) {
+    for (let c = 0; c < map[r].length; c++) {
       if (!isMineFloorCell(c, r)) continue;
       const { x, z } = mineCellToWorld(c, r);
 
