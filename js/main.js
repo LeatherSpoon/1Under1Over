@@ -556,6 +556,7 @@ const switchZone = createSwitchZone({
 });
 
 initSaveButtons({ saveSystem, env, player, hud, switchZone });
+window.__debugSwitchZone = switchZone;
 
 let _pendingZone = null;
 
