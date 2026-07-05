@@ -632,7 +632,12 @@ function _buildWorldGate(env, pos, rotY) {
 }
 
 // ── Scattered stalagmites and glow crystals ──────────────────────────────────
-function _scatterCaveDetail(env, rng) {
+function _scatterCaveDetail(env, rng, kitMats) {
+  const palettes = {
+    rock:   { rock: 0x55493d, crystal: 0x55e0c8 },
+    breach: { rock: 0x3a2d5e, crystal: 0xbb88ff },
+  };
+  const useKit = kitReady();
   const stalMat = { rock: createToonMaterial(0x201812), breach: createToonMaterial(0x2a2040) };
   const crysMat = { rock: new THREE.MeshBasicMaterial({ color: 0x55e0c8 }), breach: new THREE.MeshBasicMaterial({ color: 0xbb88ff }) };
   const portals = Object.values(MINE_ZONE_PORTALS);
@@ -651,13 +656,33 @@ function _scatterCaveDetail(env, rng) {
 
       const roll = rng();
       const breachy = r >= 17;
+      const key = breachy ? 'breach' : 'rock';
       const ox = (rng() - 0.5) * 2.0;
       const oz = (rng() - 0.5) * 2.0;
+
+      if (useKit) {
+        let name = null;
+        if (roll < 0.30)      name = STAL_PIECES[Math.floor(rng() * STAL_PIECES.length)];
+        else if (roll < 0.42) name = CRYSTAL_PIECES[Math.floor(rng() * CRYSTAL_PIECES.length)];
+        else if (roll < 0.50) name = RUBBLE_PIECES[0];
+        if (!name) continue;
+        const piece = getKitPiece(name);
+        if (!piece) continue;
+        applyDressingMaterials(piece, kitMats, palettes[key]);
+        piece.position.set(x + ox, 0, z + oz);
+        piece.rotation.y = rng() * Math.PI * 2; // free rotation — dressing is off-grid
+        const s = 0.8 + rng() * 0.6;
+        piece.scale.set(s, s, s);
+        addOutlineToGroup(piece, 0.03);
+        env.group.add(piece);
+        continue;
+      }
+
       if (roll < 0.30) {
         const h = 0.5 + rng() * 0.9;
         const stal = new THREE.Mesh(
           new THREE.ConeGeometry(0.16 + rng() * 0.22, h, 6),
-          stalMat[breachy ? 'breach' : 'rock']
+          stalMat[key]
         );
         stal.position.set(x + ox, h / 2, z + oz);
         stal.castShadow = true;
@@ -666,7 +691,7 @@ function _scatterCaveDetail(env, rng) {
       } else if (roll < 0.42) {
         const crys = new THREE.Mesh(
           new THREE.OctahedronGeometry(0.16 + rng() * 0.14, 0),
-          crysMat[breachy ? 'breach' : 'rock']
+          crysMat[key]
         );
         crys.position.set(x + ox, 0.22, z + oz);
         crys.rotation.y = rng() * Math.PI;
