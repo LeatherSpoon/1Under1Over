@@ -160,50 +160,71 @@ function _buildWallsPrimitive(env, rng) {
 }
 
 // ── Mineable ore blocks with glowing veins ──────────────────────────────────
-function _buildOreBlocks(env, rng) {
+function _buildOreBlocks(env, rng, kitMats) {
   const blocks = getMineableWallBlocks();
+  const useKit = kitReady();
+
+  // Primitive-path shared materials (only built when falling back)
   const tierMats = {};
   const veinMats = {};
-  for (const b of blocks) {
-    if (!tierMats[b.props.color]) {
-      const m = createRevealToonMaterial(b.props.color, { revealR: 1.8 });
-      tierMats[b.props.color] = m;
-      env._revealMaterials.push(m);
-    }
-    if (!veinMats[b.props.veinColor]) {
-      veinMats[b.props.veinColor] = new THREE.MeshBasicMaterial({ color: b.props.veinColor });
+  if (!useKit) {
+    for (const b of blocks) {
+      if (!tierMats[b.props.color]) {
+        const m = createRevealToonMaterial(b.props.color, { revealR: 1.8 });
+        tierMats[b.props.color] = m;
+        env._revealMaterials.push(m);
+      }
+      if (!veinMats[b.props.veinColor]) {
+        veinMats[b.props.veinColor] = new THREE.MeshBasicMaterial({ color: b.props.veinColor });
+      }
     }
   }
 
   for (const b of blocks) {
     // Blocks mined out earlier in this delve stay depleted (open floor).
     if (env._mineDelve?.isMined(b.cellC, b.cellR)) continue;
-    const bw = 3.2;
-    const bh = 3.2 + rng() * 1.6; // shorter than the cave walls — reads as a workable seam
-    const bd = 3.2;
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), tierMats[b.props.color]);
-    mesh.position.set(b.x, bh / 2, b.z);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    addOutline(mesh, 0.04);
-    env.group.add(mesh);
+    const bw = 3.2, bd = 3.2;
+    let mesh, bh;
 
-    // Glowing vein studs — the "there's ore in that rock" sparkle
-    const veinMat = veinMats[b.props.veinColor];
-    const studCount = 2 + Math.floor(rng() * 2);
-    for (let i = 0; i < studCount; i++) {
-      const stud = new THREE.Mesh(new THREE.OctahedronGeometry(0.14 + rng() * 0.1, 0), veinMat);
-      const face = Math.floor(rng() * 4);
-      const along = (rng() - 0.5) * (bw * 0.7);
-      const up = 0.5 + rng() * (bh * 0.55) - bh / 2;
-      if (face === 0)      stud.position.set(along, up,  bd / 2 + 0.02);
-      else if (face === 1) stud.position.set(along, up, -bd / 2 - 0.02);
-      else if (face === 2) stud.position.set( bw / 2 + 0.02, up, along);
-      else                 stud.position.set(-bw / 2 - 0.02, up, along);
-      mesh.add(stud);
+    if (useKit) {
+      bh = 3.4;
+      mesh = getKitPiece(ORE_PIECES[Math.floor(rng() * ORE_PIECES.length)]);
+      applyOreMaterials(mesh, env, kitMats, b.props);
+      mesh.position.set(b.x, 0, b.z);
+      mesh.rotation.y = Math.floor(rng() * 4) * (Math.PI / 2);
+      addOutlineToGroup(mesh, 0.04);
+      env.group.add(mesh);
+    } else {
+      bh = 3.2 + rng() * 1.6; // shorter than the cave walls — reads as a workable seam
+      mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), tierMats[b.props.color]);
+      mesh.position.set(b.x, bh / 2, b.z);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      addOutline(mesh, 0.04);
+      env.group.add(mesh);
+
+      // Glowing vein studs — the "there's ore in that rock" sparkle
+      const veinMat = veinMats[b.props.veinColor];
+      const studCount = 2 + Math.floor(rng() * 2);
+      for (let i = 0; i < studCount; i++) {
+        const stud = new THREE.Mesh(new THREE.OctahedronGeometry(0.14 + rng() * 0.1, 0), veinMat);
+        const face = Math.floor(rng() * 4);
+        const along = (rng() - 0.5) * (bw * 0.7);
+        const up = 0.5 + rng() * (bh * 0.55) - bh / 2;
+        if (face === 0)      stud.position.set(along, up,  bd / 2 + 0.02);
+        else if (face === 1) stud.position.set(along, up, -bd / 2 - 0.02);
+        else if (face === 2) stud.position.set( bw / 2 + 0.02, up, along);
+        else                 stud.position.set(-bw / 2 - 0.02, up, along);
+        mesh.add(stud);
+      }
     }
 
     const { crack1, crack2 } = env._makeCrackStages(mesh, bw, bh, bd);
+    if (useKit) {
+      // Crack overlays assume a center origin; the kit chunk's origin is at its base.
+      crack1.position.y += bh / 2;
+      crack2.position.y += bh / 2;
+    }
     const rock = { mesh, x: b.x, z: b.z, alive: true, props: b.props, richness: 3, maxRichness: 3, crack1, crack2 };
     env._rocks.push(rock);
     env._collisionBoxes.push({
