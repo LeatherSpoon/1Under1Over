@@ -4,10 +4,12 @@ import { CONFIG } from '../../../config.js';
 import {
   mineCellToWorld, isMineFloorCell, mineRegionForRow,
   MINE_ZONE_PORTALS, MINE_DRILL_POS,
-  getMineableWallBlocks, getMineWallRuns,
+  getMineableWallBlocks, getMineWallRuns, getMineWallCells,
   setActiveMineMap, getActiveMineMap,
 } from './layout.js';
 import { generateMineMap } from './generator.js';
+import { kitReady, getKitPiece, applyWallMaterials, applyOreMaterials, applyDressingMaterials } from './kit.js';
+import { pickWallPiece, ORE_PIECES, STAL_PIECES, CRYSTAL_PIECES, RUBBLE_PIECES } from './kitRules.js';
 
 function seededRandom(seed) {
   let s = seed | 0;
@@ -53,15 +55,17 @@ export function build(env) {
   env._addGround(0x060504); // void — unbroken mountain rock
   const rng = seededRandom(54321);
 
+  const kitMats = {}; // per-build shader cache for kit clones (reveal/glow/toon)
+
   _buildFloors(env);
-  _buildWalls(env, rng);
-  _buildOreBlocks(env, rng);
+  _buildWalls(env, rng, kitMats);
+  _buildOreBlocks(env, rng, kitMats);
   _buildEntrance(env);
   _buildShaftDressing(env);
   _buildDrillRig(env, MINE_DRILL_POS.x, MINE_DRILL_POS.z);
   _buildDepthsShaft(env);
   _buildBreach(env, rng);
-  _scatterCaveDetail(env, rng);
+  _scatterCaveDetail(env, rng, kitMats);
 
   // ── Zone portals ──────────────────────────────────────────────────────────
   const mp = MINE_ZONE_PORTALS;
@@ -106,7 +110,36 @@ function _buildFloors(env) {
 }
 
 // ── Solid cave walls (non-mineable) ─────────────────────────────────────────
-function _buildWalls(env, rng) {
+function _buildWalls(env, rng, kitMats) {
+  // Collision always comes from the merged runs — identical to the pre-kit
+  // behavior and independent of which visual path builds below.
+  for (const run of getMineWallRuns()) {
+    env._collisionBoxes.push({
+      minX: run.cx - run.width / 2 + GRID_COLLISION_INSET, maxX: run.cx + run.width / 2 - GRID_COLLISION_INSET,
+      minZ: run.cz - run.depth / 2 + GRID_COLLISION_INSET, maxZ: run.cz + run.depth / 2 - GRID_COLLISION_INSET,
+      rock: SOLID,
+    });
+  }
+
+  if (!kitReady()) {
+    _buildWallsPrimitive(env, rng);
+    return;
+  }
+
+  for (const cell of getMineWallCells()) {
+    const piece = getKitPiece(pickWallPiece(cell.region, rng()));
+    if (!piece) continue;
+    applyWallMaterials(piece, env, kitMats);
+    piece.position.set(cell.x, 0, cell.z);
+    piece.rotation.y = Math.floor(rng() * 4) * (Math.PI / 2); // quarter turns keep the footprint
+    piece.scale.y = 0.92 + rng() * 0.2;                        // per-cell crest variation
+    addOutlineToGroup(piece, 0.03);
+    env.group.add(piece);
+  }
+}
+
+// Pre-kit visual path — kept as the fallback while MineKit.glb loads.
+function _buildWallsPrimitive(env, rng) {
   const rockMat  = createRevealToonMaterial(0x191410, { revealR: 2.4 });
   const alienMat = createRevealToonMaterial(0x171126, { revealR: 2.4 });
   env._revealMaterials.push(rockMat, alienMat);
@@ -123,12 +156,6 @@ function _buildWalls(env, rng) {
     mesh.receiveShadow = true;
     addOutline(mesh, 0.03);
     env.group.add(mesh);
-
-    env._collisionBoxes.push({
-      minX: run.cx - run.width / 2 + GRID_COLLISION_INSET, maxX: run.cx + run.width / 2 - GRID_COLLISION_INSET,
-      minZ: run.cz - run.depth / 2 + GRID_COLLISION_INSET, maxZ: run.cz + run.depth / 2 - GRID_COLLISION_INSET,
-      rock: SOLID,
-    });
   }
 }
 
