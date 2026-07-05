@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# Git worktrees (isolated feature workspaces)
+.worktrees/
+
 # Session/tool state and logs
 .superpowers/
 .claude/settings.local.json
