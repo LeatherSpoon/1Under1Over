@@ -48,6 +48,13 @@ export const MINE_MAP = [
   '                         ', // r24  z=+38.4
 ];
 
+// The live grid the getters read. Defaults to the baseline; the generator swaps
+// it in via setActiveMineMap() when a delve is (re)built.
+let _activeMap = MINE_MAP;
+
+export function setActiveMineMap(grid) { _activeMap = grid; }
+export function getActiveMineMap() { return _activeMap; }
+
 export function mineCellToWorld(c, r) {
   return { x: (c - HALF) * MINE_CELL, z: (r - HALF) * MINE_CELL };
 }
@@ -84,8 +91,8 @@ const TIER_PROPS = [
 ];
 
 function cellAt(c, r) {
-  if (r < 0 || r >= MINE_MAP.length || c < 0 || c >= MINE_MAP[r].length) return ' ';
-  return MINE_MAP[r][c];
+  if (r < 0 || r >= _activeMap.length || c < 0 || c >= _activeMap[r].length) return ' ';
+  return _activeMap[r][c];
 }
 
 function isOpenCell(ch) { return ch === '.'; }
@@ -99,8 +106,8 @@ export function isMineFloorCell(c, r) {
 /** Mineable ore blocks parsed from the map. Same shape the old generator produced. */
 export function getMineableWallBlocks() {
   const blocks = [];
-  for (let r = 0; r < MINE_MAP.length; r++) {
-    for (let c = 0; c < MINE_MAP[r].length; c++) {
+  for (let r = 0; r < _activeMap.length; r++) {
+    for (let c = 0; c < _activeMap[r].length; c++) {
       const ch = cellAt(c, r);
       if (!isOreCell(ch)) continue;
       const { x, z } = mineCellToWorld(c, r);
@@ -108,6 +115,8 @@ export function getMineableWallBlocks() {
         x: Number(x.toFixed(2)),
         z: Number(z.toFixed(2)),
         r: 1.6,
+        cellC: c,
+        cellR: r,
         isBorder: false,
         props: TIER_PROPS[ch.charCodeAt(0) - 49], // '1' → tier 0
       });
@@ -133,10 +142,10 @@ export function getMineWallRuns() {
   };
 
   const runs = [];
-  for (let r = 0; r < MINE_MAP.length; r++) {
+  for (let r = 0; r < _activeMap.length; r++) {
     let start = -1;
-    for (let c = 0; c <= MINE_MAP[r].length; c++) {
-      if (c < MINE_MAP[r].length && isWall(c, r)) {
+    for (let c = 0; c <= _activeMap[r].length; c++) {
+      if (c < _activeMap[r].length && isWall(c, r)) {
         if (start === -1) start = c;
       } else if (start !== -1) {
         const a = mineCellToWorld(start, r);
@@ -165,10 +174,10 @@ export function getMineFloorRuns() {
     r <= 4 ? 'entrance' : r <= 7 ? 'shaft' : r <= 16 ? 'cavern' : r <= 19 ? 'passage' : 'breach';
 
   const runs = [];
-  for (let r = 0; r < MINE_MAP.length; r++) {
+  for (let r = 0; r < _activeMap.length; r++) {
     let start = -1;
-    for (let c = 0; c <= MINE_MAP[r].length; c++) {
-      if (c < MINE_MAP[r].length && isCarved(cellAt(c, r))) {
+    for (let c = 0; c <= _activeMap[r].length; c++) {
+      if (c < _activeMap[r].length && isCarved(cellAt(c, r))) {
         if (start === -1) start = c;
       } else if (start !== -1) {
         const a = mineCellToWorld(start, r);
