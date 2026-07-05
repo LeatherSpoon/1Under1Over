@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import { createToonMaterial, addOutline, addOutlineToGroup, createRevealToonMaterial } from '../../ToonMaterials.js';
 import { CONFIG } from '../../../config.js';
 import {
-  mineCellToWorld, isMineFloorCell,
+  mineCellToWorld, isMineFloorCell, mineRegionForRow,
   MINE_ZONE_PORTALS, MINE_DRILL_POS,
-  getMineableWallBlocks, getMineWallRuns, getMineFloorRuns,
+  getMineableWallBlocks, getMineWallRuns,
   setActiveMineMap, getActiveMineMap,
 } from './layout.js';
 import { generateMineMap } from './generator.js';
@@ -74,25 +74,34 @@ export function build(env) {
 }
 
 // ── Floors ───────────────────────────────────────────────────────────────────
-const FLOOR_TINT = {
-  entrance: 0x1e140b, // packed dirt
-  shaft:    0x191009, // dirt + grime
-  cavern:   0x151009, // worked stone
-  passage:  0x140e15, // rock giving way to something else
-  breach:   0x130c1d, // ancient violet-black stone
+// Three tones per region — per-cell picks break the flat monotone floor.
+const FLOOR_TONES = {
+  entrance: [0x4a3623, 0x54402b, 0x40301f], // packed dirt, lantern-warm
+  shaft:    [0x44311f, 0x4e3a26, 0x3a2a1a],
+  cavern:   [0x4a4238, 0x544b3f, 0x3f382f], // worked grey-brown stone
+  passage:  [0x453b4a, 0x4f4456, 0x3a3140], // rock going violet
+  breach:   [0x3a2d52, 0x443666, 0x302545], // ancient stone
 };
 
 function _buildFloors(env) {
   const mats = {};
-  for (const [region, color] of Object.entries(FLOOR_TINT)) {
-    mats[region] = createToonMaterial(color);
+  for (const [region, tones] of Object.entries(FLOOR_TONES)) {
+    mats[region] = tones.map((c) => createToonMaterial(c));
   }
-  for (const run of getMineFloorRuns()) {
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(run.width, run.depth), mats[run.region]);
-    mesh.rotation.x = -Math.PI / 2;
-    mesh.position.set(run.cx, 0.015, run.cz);
-    mesh.receiveShadow = true;
-    env.group.add(mesh);
+  const geo = new THREE.PlaneGeometry(3.2, 3.2);
+  const map = getActiveMineMap();
+  for (let r = 0; r < map.length; r++) {
+    for (let c = 0; c < map[r].length; c++) {
+      const ch = map[r][c];
+      const carved = ch === '.' || (ch >= '1' && ch <= '5'); // floor shows under mined-out ore
+      if (!carved) continue;
+      const { x, z } = mineCellToWorld(c, r);
+      const mesh = new THREE.Mesh(geo, mats[mineRegionForRow(r)][(c * 7 + r * 13) % 3]);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(x, 0.015, z);
+      mesh.receiveShadow = true;
+      env.group.add(mesh);
+    }
   }
 }
 
