@@ -20,4 +20,6 @@ import './systems/taskSystem.test.js';
 import './systems/idleProgressionSystems.test.js';
 import './systems/mineActiveMap.test.js';
 import './systems/mineGenerator.test.js';
+import './systems/mineDelveSystem.test.js';
+import './systems/mineDelveSave.test.js';
 import './systems/combatMechanics.test.js';

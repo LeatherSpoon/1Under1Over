@@ -1,6 +1,6 @@
 import { CONFIG } from '../config.js';
 
-const SAVE_VERSION = 8;
+const SAVE_VERSION = 9;
 
 export class SaveSystem {
   constructor(systems) {
@@ -17,7 +17,7 @@ export class SaveSystem {
       techTree, mastery, sync, factory, codex, augmentations,
       mathematician, timeWarp, modifiers, missionTracker, questSystem, assembly,
       extractor, processingNodes, tripartite, bosses, expedition, challenges,
-      neuralImplant,
+      neuralImplant, mineDelve,
     } = this.systems;
 
     const data = {
@@ -124,6 +124,7 @@ export class SaveSystem {
       expedition:    expedition    ? expedition.serialize()    : null,
       challenges:    challenges    ? challenges.serialize()    : null,
       neuralImplant: neuralImplant ? neuralImplant.serialize() : null,
+      mineDelve:     mineDelve     ? mineDelve.serialize()     : null,
     };
 
     for (const name of stats.statNames) {
@@ -199,7 +200,7 @@ export class SaveSystem {
       techTree, mastery, sync, factory, codex, augmentations,
       mathematician, timeWarp, modifiers, missionTracker, questSystem, assembly,
       extractor, processingNodes, tripartite, bosses, expedition, challenges,
-      neuralImplant,
+      neuralImplant, mineDelve,
     } = this.systems;
 
     // Drill System
@@ -333,6 +334,7 @@ export class SaveSystem {
       challenges.applyBonuses();
     }
     if (neuralImplant && data.neuralImplant) neuralImplant.deserialize(data.neuralImplant);
+    if (mineDelve && data.mineDelve) mineDelve.load(data.mineDelve);
     // Legacy: migrate old taskSystem saves (no-op if not present)
 
 
