@@ -2,11 +2,12 @@ import * as THREE from 'three';
 import { createToonMaterial, addOutline, addOutlineToGroup, createRevealToonMaterial } from '../../ToonMaterials.js';
 import { CONFIG } from '../../../config.js';
 import {
-  mineCellToWorld, isMineFloorCell, mineRegionForRow,
+  mineCellToWorld, isMineFloorCell,
   MINE_ZONE_PORTALS, MINE_DRILL_POS,
   getMineableWallBlocks, getMineWallRuns, getMineWallCells,
   setActiveMineMap, getActiveMineMap,
 } from './layout.js';
+import { floorColorAt } from './floorColor.js';
 import { generateMineMap } from './generator.js';
 import { kitReady, getKitPiece, applyWallMaterials, applyOreMaterials, applyDressingMaterials } from './kit.js';
 import { pickWallPiece, ORE_PIECES, STAL_PIECES, CRYSTAL_PIECES, RUBBLE_PIECES } from './kitRules.js';
@@ -78,21 +79,14 @@ export function build(env) {
 }
 
 // ── Floors ───────────────────────────────────────────────────────────────────
-// Three tones per region — per-cell picks break the flat monotone floor.
-const FLOOR_TONES = {
-  entrance: [0x4a3623, 0x54402b, 0x40301f], // packed dirt, lantern-warm
-  shaft:    [0x44311f, 0x4e3a26, 0x3a2a1a],
-  cavern:   [0x4a4238, 0x544b3f, 0x3f382f], // worked grey-brown stone
-  passage:  [0x453b4a, 0x4f4456, 0x3a3140], // rock going violet
-  breach:   [0x3a2d52, 0x443666, 0x302545], // ancient stone
-};
-
+// One merged mesh, colors sampled per vertex from the continuous floorColorAt
+// field — tones flow across cell boundaries instead of stepping per tile, and
+// ~300 tile draw calls collapse into one.
 function _buildFloors(env) {
-  const mats = {};
-  for (const [region, tones] of Object.entries(FLOOR_TONES)) {
-    mats[region] = tones.map((c) => createToonMaterial(c));
-  }
-  const geo = new THREE.PlaneGeometry(3.2, 3.2);
+  const SUB = 3; // 3×3 quads per cell — ~1.07 m color resolution
+  const step = 3.2 / SUB;
+  const positions = [], normals = [], colors = [];
+  const col = new THREE.Color();
   const map = getActiveMineMap();
   for (let r = 0; r < map.length; r++) {
     for (let c = 0; c < map[r].length; c++) {
@@ -100,13 +94,30 @@ function _buildFloors(env) {
       const carved = ch === '.' || (ch >= '1' && ch <= '5'); // floor shows under mined-out ore
       if (!carved) continue;
       const { x, z } = mineCellToWorld(c, r);
-      const mesh = new THREE.Mesh(geo, mats[mineRegionForRow(r)][(c * 7 + r * 13) % 3]);
-      mesh.rotation.x = -Math.PI / 2;
-      mesh.position.set(x, 0.015, z);
-      mesh.receiveShadow = true;
-      env.group.add(mesh);
+      const x0 = x - 1.6, z0 = z - 1.6;
+      for (let i = 0; i < SUB; i++) {
+        for (let j = 0; j < SUB; j++) {
+          const xa = x0 + i * step, xb = xa + step;
+          const za = z0 + j * step, zb = za + step;
+          for (const [vx, vz] of [[xa, za], [xa, zb], [xb, za], [xb, za], [xa, zb], [xb, zb]]) {
+            positions.push(vx, 0, vz);
+            normals.push(0, 1, 0);
+            const [cr, cg, cb] = floorColorAt(vx, vz);
+            col.setRGB(cr, cg, cb, THREE.SRGBColorSpace);
+            colors.push(col.r, col.g, col.b);
+          }
+        }
+      }
     }
   }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  const mesh = new THREE.Mesh(geo, createToonMaterial(0xffffff, { vertexColors: true }));
+  mesh.position.y = 0.015;
+  mesh.receiveShadow = true;
+  env.group.add(mesh);
 }
 
 // ── Solid cave walls (non-mineable) ─────────────────────────────────────────
