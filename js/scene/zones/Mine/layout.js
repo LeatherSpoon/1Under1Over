@@ -130,22 +130,22 @@ export function getMineableWallBlocks() {
  * merged into horizontal runs so the builder can draw fewer meshes.
  * kind: 'rock' near the surface, 'alien' once the passage breaks through (r ≥ 17).
  */
-export function getMineWallRuns() {
-  const isWall = (c, r) => {
-    if (isCarved(cellAt(c, r))) return false;
-    for (let dr = -1; dr <= 1; dr++) {
-      for (let dc = -1; dc <= 1; dc++) {
-        if ((dr || dc) && isCarved(cellAt(c + dc, r + dr))) return true;
-      }
+function isWallCell(c, r) {
+  if (isCarved(cellAt(c, r))) return false;
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if ((dr || dc) && isCarved(cellAt(c + dc, r + dr))) return true;
     }
-    return false;
-  };
+  }
+  return false;
+}
 
+export function getMineWallRuns() {
   const runs = [];
   for (let r = 0; r < _activeMap.length; r++) {
     let start = -1;
     for (let c = 0; c <= _activeMap[r].length; c++) {
-      if (c < _activeMap[r].length && isWall(c, r)) {
+      if (c < _activeMap[r].length && isWallCell(c, r)) {
         if (start === -1) start = c;
       } else if (start !== -1) {
         const a = mineCellToWorld(start, r);
@@ -165,14 +165,29 @@ export function getMineWallRuns() {
   return runs;
 }
 
+/** Per-cell wall list for the GLB kit builder (collision still uses the merged runs). */
+export function getMineWallCells() {
+  const cells = [];
+  for (let r = 0; r < _activeMap.length; r++) {
+    for (let c = 0; c < _activeMap[r].length; c++) {
+      if (!isWallCell(c, r)) continue;
+      const { x, z } = mineCellToWorld(c, r);
+      cells.push({ x, z, c, r, region: mineRegionForRow(r) });
+    }
+  }
+  return cells;
+}
+
+/** Region band for a map row — drives kit palettes and floor tints. */
+export function mineRegionForRow(r) {
+  return r <= 4 ? 'entrance' : r <= 7 ? 'shaft' : r <= 16 ? 'cavern' : r <= 19 ? 'passage' : 'breach';
+}
+
 /**
  * Floor runs (open + ore cells — ore blocks stand on floor so mining reveals it),
  * merged per row. region drives the floor tint in the builder.
  */
 export function getMineFloorRuns() {
-  const regionOf = (r) =>
-    r <= 4 ? 'entrance' : r <= 7 ? 'shaft' : r <= 16 ? 'cavern' : r <= 19 ? 'passage' : 'breach';
-
   const runs = [];
   for (let r = 0; r < _activeMap.length; r++) {
     let start = -1;
@@ -187,7 +202,7 @@ export function getMineFloorRuns() {
           cz: a.z,
           width: (c - start) * MINE_CELL,
           depth: MINE_CELL,
-          region: regionOf(r),
+          region: mineRegionForRow(r),
         });
         start = -1;
       }
