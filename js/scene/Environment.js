@@ -298,6 +298,7 @@ export class Environment {
       rock.mesh.visible = false;
       const idx = this._collisionCircles.indexOf(rock.collision);
       if (idx !== -1) this._collisionCircles.splice(idx, 1);
+      if (this.onRockDepleted) this.onRockDepleted(rock);
     } else {
       // Show crack overlays per hit stage
       if (stage >= 1 && rock.crack1) rock.crack1.visible = true;
