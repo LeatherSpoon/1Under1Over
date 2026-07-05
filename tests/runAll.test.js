@@ -24,4 +24,5 @@ import './systems/mineDelveSystem.test.js';
 import './systems/mineDelveSave.test.js';
 import './systems/mineKitRules.test.js';
 import './systems/mineFloorColor.test.js';
+import './systems/mineDigging.test.js';
 import './systems/combatMechanics.test.js';

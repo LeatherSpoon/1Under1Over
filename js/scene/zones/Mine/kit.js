@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { createRevealToonMaterial, createToonMaterial } from '../../ToonMaterials.js';
+import { createRevealToonMaterial, createToonMaterial, createRevealOutlineMaterial } from '../../ToonMaterials.js';
 import { materialKindFor } from './kitRules.js';
 
 // Modular cave kit — preloaded once, cloned per cell. Falls back to the
@@ -84,6 +84,28 @@ export function applyOreMaterials(obj, env, kitMats, props, revealR = 1.8) {
       ? _basicFor(kitMats, props.veinColor)
       : _revealFor(kitMats, env, props.color, revealR, vc)
   );
+}
+
+/**
+ * Outline pass for reveal-material pieces. The outline shell must discard in
+ * the same player circle as the piece's reveal material, or the reveal hole
+ * exposes the shell interior as a solid black blob.
+ */
+export function addRevealOutlines(obj, env, kitMats, thickness = 0.03, revealR = 2.4) {
+  const key = `o:${revealR}`;
+  if (!kitMats[key]) {
+    const m = createRevealOutlineMaterial({ revealR });
+    env._revealMaterials.push(m);
+    kitMats[key] = m;
+  }
+  const outlineMat = kitMats[key];
+  obj.traverse((child) => {
+    if (!child.isMesh || child.material?.side === THREE.BackSide) return;
+    const outline = new THREE.Mesh(child.geometry, outlineMat);
+    outline.scale.setScalar(1 + thickness);
+    outline.renderOrder = -1;
+    child.add(outline);
+  });
 }
 
 /** Dressing: rock parts re-tinted per region, crystal parts glow per region. */

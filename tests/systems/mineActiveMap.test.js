@@ -9,8 +9,9 @@ import {
 test('setActiveMineMap swaps the grid the getters read, then restores', () => {
   const baseline = getActiveMineMap();
   try {
-    // A 3x3 grid with a single tier-1 ore block in the centre.
-    setActiveMineMap(['   ', ' 1 ', '   ']);
+    // A 3x3 grid with a single tier-1 ore block in the centre, exposed by
+    // the floor cell beside it (buried blocks are excluded by design).
+    setActiveMineMap(['   ', '.1 ', '   ']);
     const blocks = getMineableWallBlocks();
     assert.equal(blocks.length, 1);
     assert.equal(blocks[0].cellC, 1);

@@ -782,7 +782,7 @@ function handleExtendedGather(delta) {
 
     const energyCost = _energyCost(_nearestRock.props ? _nearestRock.props.cost : CONFIG.ENERGY_COST_ROCK);
     const duration = _nearestRock.props ? _nearestRock.props.duration : 3.0;
-    const richnessLabel = _nearestRock.richness === 3 ? ' (Rich)' : _nearestRock.richness === 2 ? ' (Cracked)' : ' (Depleted)';
+    const richnessLabel = _nearestRock.maxRichness === 1 ? '' : _nearestRock.richness === 3 ? ' (Rich)' : _nearestRock.richness === 2 ? ' (Cracked)' : ' (Depleted)';
     const label = _nearestRock.props && _nearestRock.props.tier > 0
                   ? `Mine T${_nearestRock.props.tier} Rock${richnessLabel}`
                   : `Drill Rock${richnessLabel}`;

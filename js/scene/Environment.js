@@ -299,6 +299,9 @@ export class Environment {
       const idx = this._collisionCircles.indexOf(rock.collision);
       if (idx !== -1) this._collisionCircles.splice(idx, 1);
       if (this.onRockDepleted) this.onRockDepleted(rock);
+      // Dig-anywhere (Mine only — only Mine rocks carry grid cells): open the
+      // cell and spawn the newly-exposed rock behind it.
+      if (this._mineDig && rock.cellC !== undefined) this._mineDig.onDepleted(rock);
     } else {
       // Show crack overlays per hit stage
       if (stage >= 1 && rock.crack1) rock.crack1.visible = true;

@@ -1,15 +1,15 @@
 import * as THREE from 'three';
-import { createToonMaterial, addOutline, addOutlineToGroup, createRevealToonMaterial } from '../../ToonMaterials.js';
+import { createToonMaterial, addOutline, addOutlineToGroup, createRevealToonMaterial, createRevealOutlineMaterial } from '../../ToonMaterials.js';
 import { CONFIG } from '../../../config.js';
 import {
-  mineCellToWorld, isMineFloorCell,
+  mineCellToWorld, mineWorldToCell, isMineFloorCell, mineRegionForRow,
   MINE_ZONE_PORTALS, MINE_DRILL_POS,
-  getMineableWallBlocks, getMineWallRuns, getMineWallCells,
-  setActiveMineMap, getActiveMineMap,
+  getMineableWallBlocks, getMineableBlockAt, getMineWallRuns, getMineWallCells,
+  setActiveMineMap, getActiveMineMap, setMineMapCell,
 } from './layout.js';
 import { floorColorAt } from './floorColor.js';
 import { generateMineMap } from './generator.js';
-import { kitReady, getKitPiece, applyWallMaterials, applyOreMaterials, applyDressingMaterials } from './kit.js';
+import { kitReady, getKitPiece, applyWallMaterials, applyOreMaterials, applyDressingMaterials, addRevealOutlines } from './kit.js';
 import { pickWallPiece, ORE_PIECES, STAL_PIECES, CRYSTAL_PIECES, RUBBLE_PIECES } from './kitRules.js';
 
 function seededRandom(seed) {
@@ -53,6 +53,17 @@ export function build(env) {
   const seed = env._mineDelve?.seed ?? 1;
   setActiveMineMap(generateMineMap(seed));
 
+  // Cells mined earlier in this delve stay open — mutate the map before any
+  // getter reads it (floors, walls, and blocks all derive from it).
+  if (env._mineDelve) {
+    const map = getActiveMineMap();
+    for (let r = 0; r < map.length; r++) {
+      for (let c = 0; c < map[r].length; c++) {
+        if (env._mineDelve.isMined(c, r)) setMineMapCell(c, r, '.');
+      }
+    }
+  }
+
   env._addGround(0x060504); // void — unbroken mountain rock
   const rng = seededRandom(54321);
 
@@ -60,7 +71,7 @@ export function build(env) {
 
   _buildFloors(env);
   _buildWalls(env, rng, kitMats);
-  _buildOreBlocks(env, rng, kitMats);
+  _buildMineableBlocks(env, rng, kitMats);
   _buildEntrance(env);
   _buildShaftDressing(env);
   _buildDrillRig(env, MINE_DRILL_POS.x, MINE_DRILL_POS.z);
@@ -71,7 +82,6 @@ export function build(env) {
   // ── Zone portals ──────────────────────────────────────────────────────────
   const mp = MINE_ZONE_PORTALS;
   env._addPortal(mp.landingSite.x,  mp.landingSite.z,  'landingSite',  0,                              'Landing Site');
-  env._addReturnBeacon(mp.landingSite.x, mp.landingSite.z);
   env._addPortal(mp.depths.x,       mp.depths.z,       'depths',       CONFIG.ENV_UNLOCK.depths,       'The Depths');
   env._addPortal(mp.verdantMaw.x,   mp.verdantMaw.z,   'verdantMaw',   CONFIG.ENV_UNLOCK.verdantMaw,   'Verdant Maw');
   env._addPortal(mp.frozenTundra.x, mp.frozenTundra.z, 'frozenTundra', CONFIG.ENV_UNLOCK.frozenTundra, 'Frozen Tundra');
@@ -91,7 +101,7 @@ function _buildFloors(env) {
   for (let r = 0; r < map.length; r++) {
     for (let c = 0; c < map[r].length; c++) {
       const ch = map[r][c];
-      const carved = ch === '.' || (ch >= '1' && ch <= '5'); // floor shows under mined-out ore
+      const carved = ch === '.' || (ch >= '0' && ch <= '5'); // floor pre-built under every mineable cell
       if (!carved) continue;
       const { x, z } = mineCellToWorld(c, r);
       const x0 = x - 1.6, z0 = z - 1.6;
@@ -144,7 +154,7 @@ function _buildWalls(env, rng, kitMats) {
     piece.position.set(cell.x, 0, cell.z);
     piece.rotation.y = Math.floor(rng() * 4) * (Math.PI / 2); // quarter turns keep the footprint
     piece.scale.y = 0.92 + rng() * 0.2;                        // per-cell crest variation
-    addOutlineToGroup(piece, 0.03);
+    addRevealOutlines(piece, env, kitMats, 0.03, 2.4);
     env.group.add(piece);
   }
 }
@@ -153,7 +163,8 @@ function _buildWalls(env, rng, kitMats) {
 function _buildWallsPrimitive(env, rng) {
   const rockMat  = createRevealToonMaterial(0x191410, { revealR: 2.4 });
   const alienMat = createRevealToonMaterial(0x171126, { revealR: 2.4 });
-  env._revealMaterials.push(rockMat, alienMat);
+  const outlineMat = createRevealOutlineMaterial({ revealR: 2.4 });
+  env._revealMaterials.push(rockMat, alienMat, outlineMat);
 
   for (const run of getMineWallRuns()) {
     const alien = run.kind === 'alien';
@@ -165,85 +176,150 @@ function _buildWallsPrimitive(env, rng) {
     mesh.position.set(run.cx, h / 2, run.cz);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    addOutline(mesh, 0.03);
+    const outline = new THREE.Mesh(mesh.geometry, outlineMat);
+    outline.scale.setScalar(1.03);
+    outline.renderOrder = -1;
+    mesh.add(outline);
     env.group.add(mesh);
   }
 }
 
-// ── Mineable ore blocks with glowing veins ──────────────────────────────────
-function _buildOreBlocks(env, rng, kitMats) {
-  const blocks = getMineableWallBlocks();
-  const useKit = kitReady();
+// ── Mineable blocks: ore seams + dig-anywhere plain rock ─────────────────────
+// Only exposed blocks are instantiated. Mining one out opens its cell and
+// spawns the newly-exposed rock behind it (env._mineDig, called by drillRock).
+function _buildMineableBlocks(env, rng, kitMats) {
+  const ctx = { kitMats, rng, live: new Set(), tierMats: {}, veinMats: {} };
 
-  // Primitive-path shared materials (only built when falling back)
-  const tierMats = {};
-  const veinMats = {};
-  if (!useKit) {
-    for (const b of blocks) {
-      if (!tierMats[b.props.color]) {
-        const m = createRevealToonMaterial(b.props.color, { revealR: 1.8 });
-        tierMats[b.props.color] = m;
-        env._revealMaterials.push(m);
+  for (const b of getMineableWallBlocks()) _spawnMineableBlock(env, ctx, b);
+
+  env._mineDig = {
+    onDepleted: (rock) => {
+      setMineMapCell(rock.cellC, rock.cellR, '.');
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (!dr && !dc) continue;
+          const nc = rock.cellC + dc, nr = rock.cellR + dr;
+          if (ctx.live.has(`${nc},${nr}`)) continue;
+          const nb = getMineableBlockAt(nc, nr);
+          if (nb) _spawnMineableBlock(env, ctx, nb);
+        }
       }
-      if (!veinMats[b.props.veinColor]) {
-        veinMats[b.props.veinColor] = new THREE.MeshBasicMaterial({ color: b.props.veinColor });
+    },
+  };
+}
+
+function _spawnMineableBlock(env, ctx, b) {
+  ctx.live.add(`${b.cellC},${b.cellR}`);
+  const { kitMats, rng } = ctx;
+  const useKit = kitReady();
+  const bw = 3.2, bd = 3.2;
+  let mesh, bh;
+  let crack1 = null, crack2 = null;
+
+  if (b.plain && useKit) {
+    // Plain rock looks like cave wall — mineable, one hit, stone-only loot.
+    bh = 3.4;
+    mesh = getKitPiece(pickWallPiece(mineRegionForRow(b.cellR), rng()));
+    applyWallMaterials(mesh, env, kitMats);
+    mesh.position.set(b.x, 0, b.z);
+    mesh.rotation.y = Math.floor(rng() * 4) * (Math.PI / 2);
+    mesh.scale.y = 0.92 + rng() * 0.2;
+    addRevealOutlines(mesh, env, kitMats, 0.03, 2.4);
+    env.group.add(mesh);
+  } else if (b.plain) {
+    // Primitive fallback: same silhouette the old solid walls had.
+    bh = 3.8 + rng() * 1.4;
+    if (!ctx.plainMat) {
+      ctx.plainMat = createRevealToonMaterial(0x191410, { revealR: 2.4 });
+      ctx.plainOutlineMat = createRevealOutlineMaterial({ revealR: 2.4 });
+      env._revealMaterials.push(ctx.plainMat, ctx.plainOutlineMat);
+    }
+    mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), ctx.plainMat);
+    mesh.position.set(b.x, bh / 2, b.z);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    const outline = new THREE.Mesh(mesh.geometry, ctx.plainOutlineMat);
+    outline.scale.setScalar(1.03);
+    outline.renderOrder = -1;
+    mesh.add(outline);
+    env.group.add(mesh);
+  } else if (useKit) {
+    bh = 3.4;
+    const oreName = ORE_PIECES[Math.floor(rng() * ORE_PIECES.length)];
+    mesh = getKitPiece(oreName);
+    applyOreMaterials(mesh, env, kitMats, b.props);
+    mesh.position.set(b.x, 0, b.z);
+    mesh.rotation.y = Math.floor(rng() * 4) * (Math.PI / 2);
+    addRevealOutlines(mesh, env, kitMats, 0.04, 1.8);
+    env.group.add(mesh);
+
+    // Blender-authored fissure overlays (fall through to box cracks if the
+    // loaded GLB predates them).
+    const c1 = getKitPiece(`${oreName}_crack1`);
+    const c2 = getKitPiece(`${oreName}_crack2`);
+    if (c1 && c2) {
+      if (!kitMats.crack) kitMats.crack = new THREE.MeshBasicMaterial({ color: 0x0a0806, side: THREE.DoubleSide });
+      for (const g of [c1, c2]) {
+        g.traverse((n) => { if (n.isMesh) n.material = kitMats.crack; });
+        g.visible = false;
+        mesh.add(g);
       }
+      crack1 = c1;
+      crack2 = c2;
+    }
+  } else {
+    bh = 3.2 + rng() * 1.6; // shorter than the cave walls — reads as a workable seam
+    if (!ctx.tierMats[b.props.color]) {
+      ctx.tierMats[b.props.color] = createRevealToonMaterial(b.props.color, { revealR: 1.8 });
+      env._revealMaterials.push(ctx.tierMats[b.props.color]);
+    }
+    if (!ctx.veinMats[b.props.veinColor]) {
+      ctx.veinMats[b.props.veinColor] = new THREE.MeshBasicMaterial({ color: b.props.veinColor });
+    }
+    mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), ctx.tierMats[b.props.color]);
+    mesh.position.set(b.x, bh / 2, b.z);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    addOutline(mesh, 0.04);
+    env.group.add(mesh);
+
+    // Glowing vein studs — the "there's ore in that rock" sparkle
+    const veinMat = ctx.veinMats[b.props.veinColor];
+    const studCount = 2 + Math.floor(rng() * 2);
+    for (let i = 0; i < studCount; i++) {
+      const stud = new THREE.Mesh(new THREE.OctahedronGeometry(0.14 + rng() * 0.1, 0), veinMat);
+      const face = Math.floor(rng() * 4);
+      const along = (rng() - 0.5) * (bw * 0.7);
+      const up = 0.5 + rng() * (bh * 0.55) - bh / 2;
+      if (face === 0)      stud.position.set(along, up,  bd / 2 + 0.02);
+      else if (face === 1) stud.position.set(along, up, -bd / 2 - 0.02);
+      else if (face === 2) stud.position.set( bw / 2 + 0.02, up, along);
+      else                 stud.position.set(-bw / 2 - 0.02, up, along);
+      mesh.add(stud);
     }
   }
 
-  for (const b of blocks) {
-    // Blocks mined out earlier in this delve stay depleted (open floor).
-    if (env._mineDelve?.isMined(b.cellC, b.cellR)) continue;
-    const bw = 3.2, bd = 3.2;
-    let mesh, bh;
-
-    if (useKit) {
-      bh = 3.4;
-      mesh = getKitPiece(ORE_PIECES[Math.floor(rng() * ORE_PIECES.length)]);
-      applyOreMaterials(mesh, env, kitMats, b.props);
-      mesh.position.set(b.x, 0, b.z);
-      mesh.rotation.y = Math.floor(rng() * 4) * (Math.PI / 2);
-      addOutlineToGroup(mesh, 0.04);
-      env.group.add(mesh);
-    } else {
-      bh = 3.2 + rng() * 1.6; // shorter than the cave walls — reads as a workable seam
-      mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), tierMats[b.props.color]);
-      mesh.position.set(b.x, bh / 2, b.z);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      addOutline(mesh, 0.04);
-      env.group.add(mesh);
-
-      // Glowing vein studs — the "there's ore in that rock" sparkle
-      const veinMat = veinMats[b.props.veinColor];
-      const studCount = 2 + Math.floor(rng() * 2);
-      for (let i = 0; i < studCount; i++) {
-        const stud = new THREE.Mesh(new THREE.OctahedronGeometry(0.14 + rng() * 0.1, 0), veinMat);
-        const face = Math.floor(rng() * 4);
-        const along = (rng() - 0.5) * (bw * 0.7);
-        const up = 0.5 + rng() * (bh * 0.55) - bh / 2;
-        if (face === 0)      stud.position.set(along, up,  bd / 2 + 0.02);
-        else if (face === 1) stud.position.set(along, up, -bd / 2 - 0.02);
-        else if (face === 2) stud.position.set( bw / 2 + 0.02, up, along);
-        else                 stud.position.set(-bw / 2 - 0.02, up, along);
-        mesh.add(stud);
-      }
-    }
-
-    const { crack1, crack2 } = env._makeCrackStages(mesh, bw, bh, bd);
+  if (!b.plain && !crack1) {
+    ({ crack1, crack2 } = env._makeCrackStages(mesh, bw, bh, bd));
     if (useKit) {
       // Crack overlays assume a center origin; the kit chunk's origin is at its base.
       crack1.position.y += bh / 2;
       crack2.position.y += bh / 2;
     }
-    const rock = { mesh, x: b.x, z: b.z, alive: true, props: b.props, richness: 3, maxRichness: 3, crack1, crack2 };
-    env._rocks.push(rock);
-    env._collisionBoxes.push({
-      minX: b.x - bw / 2 + GRID_COLLISION_INSET, maxX: b.x + bw / 2 - GRID_COLLISION_INSET,
-      minZ: b.z - bd / 2 + GRID_COLLISION_INSET, maxZ: b.z + bd / 2 - GRID_COLLISION_INSET,
-      rock,
-    });
   }
+
+  const richness = b.plain ? 1 : 3;
+  const rock = {
+    mesh, x: b.x, z: b.z, alive: true, props: b.props,
+    richness, maxRichness: richness, crack1, crack2,
+    cellC: b.cellC, cellR: b.cellR,
+  };
+  env._rocks.push(rock);
+  env._collisionBoxes.push({
+    minX: b.x - bw / 2 + GRID_COLLISION_INSET, maxX: b.x + bw / 2 - GRID_COLLISION_INSET,
+    minZ: b.z - bd / 2 + GRID_COLLISION_INSET, maxZ: b.z + bd / 2 - GRID_COLLISION_INSET,
+    rock,
+  });
 }
 
 // ── Entrance: adit frame, rails, cart ────────────────────────────────────────
@@ -321,7 +397,8 @@ function _buildEntrance(env) {
     env.group.add(tie);
   }
 
-  // Abandoned ore cart beside the rails
+  // Abandoned ore cart beside the rails (skipped if its cell rolled as rock)
+  if (!_onOpenFloor(1.6, -17.5)) return;
   const cart = new THREE.Group();
   const body = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.75, 0.95), createToonMaterial(0x51555e));
   body.position.y = 0.75;
@@ -344,10 +421,18 @@ function _buildEntrance(env) {
 }
 
 // ── Shaft + cavern dressing: timber supports and lanterns ───────────────────
+// The cave re-rolls per delve, so dressing only stands on open floor — a
+// lantern revealed by mining out a rock reads as nonsense.
+function _onOpenFloor(x, z) {
+  const { c, r } = mineWorldToCell(x, z);
+  return isMineFloorCell(c, r);
+}
+
 function _buildShaftDressing(env) {
   const postMat = createToonMaterial(WOOD);
-  // Support frames across the main shaft
+  // Support frames across the main shaft (skipped when a post lands in rock)
   for (const fz of [-25.6, -19.2]) {
+    if (!_onOpenFloor(-4.4, fz) || !_onOpenFloor(4.4, fz)) continue;
     const set = new THREE.Group();
     for (const px of [-4.4, 4.4]) {
       const post = new THREE.Mesh(new THREE.BoxGeometry(0.32, 3.1, 0.32), postMat);
@@ -364,10 +449,15 @@ function _buildShaftDressing(env) {
   }
 
   // Lanterns marking the route: shaft → cavern → passage
-  _addLantern(env, -3.6, -22.6);
-  _addLantern(env, -12.8, -1.8);                                 // beside the drill rig
-  _addLantern(env,  9.6, -3.2);                                  // mid-cavern
-  _addLantern(env,  5.6, 16.0, { intensity: 2.4, distance: 10 }); // passage mouth — the light thins out
+  const lanternSpots = [
+    [-3.6, -22.6, undefined],
+    [-12.8, -1.8, undefined],                        // beside the drill rig
+    [9.6, -3.2, undefined],                          // mid-cavern
+    [5.6, 16.0, { intensity: 2.4, distance: 10 }],   // passage mouth — the light thins out
+  ];
+  for (const [lx, lz, opts] of lanternSpots) {
+    if (_onOpenFloor(lx, lz)) _addLantern(env, lx, lz, opts);
+  }
 }
 
 // ── Central drill rig (unchanged silhouette, relocated) ──────────────────────
@@ -515,47 +605,9 @@ const ALIEN_STONE = 0x241a38;
 const RUNE_VIOLET = 0x8a5cff;
 
 function _buildBreach(env, rng) {
-  const cx = 0, cz = 28.8; // chamber centre / ancient ring
-
-  // Dais with a glowing rune ring
-  const dais = new THREE.Mesh(new THREE.CylinderGeometry(2.7, 3.0, 0.35, 12), createToonMaterial(ALIEN_STONE));
-  dais.position.set(cx, 0.175, cz);
-  dais.receiveShadow = true;
-  addOutline(dais, 0.03);
-  env.group.add(dais);
-
-  const daisRing = new THREE.Mesh(
-    new THREE.TorusGeometry(2.75, 0.07, 6, 40),
-    new THREE.MeshBasicMaterial({ color: RUNE_VIOLET })
-  );
-  daisRing.rotation.x = Math.PI / 2;
-  daisRing.position.set(cx, 0.4, cz);
-  env.group.add(daisRing);
-
-  // The Great Ring — a standing gate the miners uncovered, slowly turning
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(2.0, 0.22, 10, 36), createToonMaterial(0x35284f));
-  ring.position.set(cx, 2.45, cz);
-  addOutline(ring, 0.03);
-  env.group.add(ring);
-  env._spinners.push({ mesh: ring, axis: 'z', speed: 0.22 });
-
-  const rift = new THREE.Mesh(
-    new THREE.CircleGeometry(1.72, 28),
-    new THREE.MeshBasicMaterial({ color: 0x7733cc, transparent: true, opacity: 0.38, side: THREE.DoubleSide })
-  );
-  rift.position.set(cx, 2.45, cz);
-  env.group.add(rift);
-
-  const shard = new THREE.Mesh(
-    new THREE.OctahedronGeometry(0.3, 0),
-    new THREE.MeshBasicMaterial({ color: 0xbb88ff })
-  );
-  shard.position.set(cx, 5.3, cz);
-  env.group.add(shard);
-  env._spinners.push({ mesh: shard, axis: 'y', speed: 0.9 });
-
-  // Block the whole dais — the player walks at y=0 and would clip into it
-  env._collisionCircles.push({ x: cx, z: cz, r: 2.9 });
+  const cx = 0, cz = 28.8; // chamber centre — the rune circle marks the site
+  // (The chamber centerpiece is a user-authored hero prop, integrated via the
+  // asset pipeline when it lands in Assets/3D/ — nothing procedural here.)
 
   // Chamber light — cold violet, nothing like the lanterns behind you
   const glow = new THREE.PointLight(RUNE_VIOLET, 4.2, 22, 1);

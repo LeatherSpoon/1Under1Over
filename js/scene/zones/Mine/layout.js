@@ -95,31 +95,66 @@ function cellAt(c, r) {
   return _activeMap[r][c];
 }
 
-function isOpenCell(ch) { return ch === '.'; }
-function isOreCell(ch)  { return ch >= '1' && ch <= '5'; }
-function isCarved(ch)   { return isOpenCell(ch) || isOreCell(ch); }
+function isOpenCell(ch)      { return ch === '.'; }
+function isOreCell(ch)       { return ch >= '1' && ch <= '5'; }
+function isPlainRockCell(ch) { return ch === '0'; } // dig-anywhere filler rock
+function isMineableCell(ch)  { return isPlainRockCell(ch) || isOreCell(ch); }
+function isCarved(ch)        { return isOpenCell(ch) || isMineableCell(ch); }
+
+// Plain rock ('0'): one hit, stone-only loot (drillRock always rolls stone;
+// no `ore` key means no ore roll). Cheap and fast so excavation feels good.
+export const PLAIN_ROCK_PROPS = {
+  tier: 0, ore: null, chance: 0, cost: 3, duration: 1.4,
+  color: 0x4c4238, veinColor: 0x000000, plain: true,
+};
 
 export function isMineFloorCell(c, r) {
   return isOpenCell(cellAt(c, r));
 }
 
-/** Mineable ore blocks parsed from the map. Same shape the old generator produced. */
+/** Overwrite one active-map cell (mining a block out calls this with '.'). */
+export function setMineMapCell(c, r, ch) {
+  if (r < 0 || r >= _activeMap.length || c < 0 || c >= _activeMap[r].length) return;
+  _activeMap[r] = _activeMap[r].slice(0, c) + ch + _activeMap[r].slice(c + 1);
+}
+
+function hasOpenNeighbor(c, r) {
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if ((dr || dc) && isOpenCell(cellAt(c + dc, r + dr))) return true;
+    }
+  }
+  return false;
+}
+
+/** Block descriptor for a mineable cell (ore or plain rock), or null. */
+export function getMineableBlockAt(c, r) {
+  const ch = cellAt(c, r);
+  if (!isMineableCell(ch)) return null;
+  const { x, z } = mineCellToWorld(c, r);
+  return {
+    x: Number(x.toFixed(2)),
+    z: Number(z.toFixed(2)),
+    r: 1.6,
+    cellC: c,
+    cellR: r,
+    isBorder: false,
+    plain: isPlainRockCell(ch),
+    props: isPlainRockCell(ch) ? PLAIN_ROCK_PROPS : TIER_PROPS[ch.charCodeAt(0) - 49], // '1' → tier 0
+  };
+}
+
+/**
+ * Mineable blocks parsed from the map — only *exposed* ones (an open floor
+ * cell in the 8-neighborhood). Rock deeper in the mass is spawned dynamically
+ * as digging opens cells (see _mineDig in Mine/index.js).
+ */
 export function getMineableWallBlocks() {
   const blocks = [];
   for (let r = 0; r < _activeMap.length; r++) {
     for (let c = 0; c < _activeMap[r].length; c++) {
-      const ch = cellAt(c, r);
-      if (!isOreCell(ch)) continue;
-      const { x, z } = mineCellToWorld(c, r);
-      blocks.push({
-        x: Number(x.toFixed(2)),
-        z: Number(z.toFixed(2)),
-        r: 1.6,
-        cellC: c,
-        cellR: r,
-        isBorder: false,
-        props: TIER_PROPS[ch.charCodeAt(0) - 49], // '1' → tier 0
-      });
+      if (!isMineableCell(cellAt(c, r)) || !hasOpenNeighbor(c, r)) continue;
+      blocks.push(getMineableBlockAt(c, r));
     }
   }
   return blocks;

@@ -74,10 +74,7 @@ export function addOutlineToGroup(group, thickness = 0.04) {
  *   mat.userData.shader.uniforms.uPlayerPos.value.copy(playerPos)
  * (main.js does this for every material in env._revealMaterials.)
  */
-export function createRevealToonMaterial(color, options = {}) {
-  const { revealR = 1.5, ...matOptions } = options;
-  const mat = new THREE.MeshToonMaterial({ color, gradientMap, ...matOptions });
-
+function _addRevealDiscard(mat, revealR) {
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uPlayerPos = { value: new THREE.Vector3(0, 0, 1e6) };
     shader.uniforms.uRevealR   = { value: revealR };
@@ -102,6 +99,24 @@ export function createRevealToonMaterial(color, options = {}) {
       vec4 diffuseColor = vec4( diffuse, opacity );`
     );
   };
+}
 
+export function createRevealToonMaterial(color, options = {}) {
+  const { revealR = 1.5, ...matOptions } = options;
+  const mat = new THREE.MeshToonMaterial({ color, gradientMap, ...matOptions });
+  _addRevealDiscard(mat, revealR);
+  return mat;
+}
+
+/**
+ * Black BackSide outline material whose fragments open around the player in
+ * the same circle as the reveal materials. Outlines on reveal meshes MUST use
+ * this — a plain black shell doesn't discard, so the reveal hole exposes the
+ * shell interior as a solid black blob over the wall.
+ */
+export function createRevealOutlineMaterial(options = {}) {
+  const { revealR = 1.5 } = options;
+  const mat = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.BackSide });
+  _addRevealDiscard(mat, revealR);
   return mat;
 }

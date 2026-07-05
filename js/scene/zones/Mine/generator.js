@@ -52,6 +52,16 @@ function placeOre(grid, rng) {
   }
 }
 
+// Dig-anywhere: every interior void becomes diggable plain rock ('0'). Only
+// the outer shell stays ' ' (immortal) so the cave keeps a boundary.
+function fillPlainRock(grid) {
+  for (let r = 1; r < MINE_GRID_SIZE - 1; r++) {
+    for (let c = 1; c < MINE_GRID_SIZE - 1; c++) {
+      if (grid[r][c] === ' ') grid[r][c] = '0';
+    }
+  }
+}
+
 function toStrings(grid) {
   return grid.map(row => row.join(''));
 }
@@ -87,6 +97,7 @@ export function generateMineMap(seed) {
     carveCorridors(grid);
     carveCave(grid, rng);
     placeOre(grid, rng);
+    fillPlainRock(grid);
     const strings = toStrings(grid);
     if (reachableGates(strings)) return strings;
   }
@@ -94,5 +105,6 @@ export function generateMineMap(seed) {
   const grid = blankGrid();
   stampAnchors(grid);
   carveCorridors(grid);
+  fillPlainRock(grid);
   return toStrings(grid);
 }
