@@ -26,9 +26,19 @@ export const ZONE_SPAWN_POS = {
 export function createSwitchZone({
   gameStats, sceneManager, env, player, entityManager, hud, pedometer, ppSystem,
   bossSystem = null,
+  mineDelve = null,
   onAfterSwitch,
 }) {
   return function switchZone(zoneName) {
+    // Delve lifecycle: descending into the Mine from the surface re-rolls the
+    // cave; surfacing arms the next descent. Entering the Mine from The Depths
+    // keeps the same delve. This runs before env.switchZone so the builder sees
+    // the correct seed.
+    if (mineDelve) {
+      if (zoneName === 'mine' && mineDelve.armed) mineDelve.startNewDelve();
+      if (zoneName === 'landingSite') mineDelve.arm();
+    }
+
     gameStats.recordZoneVisit(zoneName);
     sceneManager.scene.remove(player.group);
     env.switchZone(zoneName);

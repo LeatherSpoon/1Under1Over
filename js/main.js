@@ -40,7 +40,8 @@ import { ModifiersSystem } from './systems/ModifiersSystem.js';
 import { TripartiteSystem } from './systems/TripartiteSystem.js';
 import { WorldEffects } from './fx/WorldEffects.js';
 import { createSwitchZone } from './zoneManager.js';
-import { MINE_BREACH_Z } from './scene/zones/Mine/layout.js';
+import { MINE_BREACH_Z, mineWorldToCell } from './scene/zones/Mine/layout.js';
+import { MineDelveSystem } from './systems/MineDelveSystem.js';
 import { initMenuController } from './menuController.js';
 import { initSaveButtons } from './saveButtons.js';
 import { initMissionTracker } from './missionTracker.js';
@@ -465,6 +466,8 @@ if (offlineSummary) {
 
 const missionTracker = initMissionTracker({ codexSystem });
 
+const mineDelve = new MineDelveSystem();
+
 const saveSystem = new SaveSystem({
   pp: ppSystem,
   stats: statsSystem,
@@ -497,6 +500,7 @@ const saveSystem = new SaveSystem({
   expedition,
   challenges,
   neuralImplant,
+  mineDelve,
 });
 
 // World-space effects (offload burst, etc.)
@@ -534,9 +538,17 @@ questSystem.onUpdate = () => {
 questSystem.onUpdate(); // initial render
 hud.setQuestSystem(questSystem);
 
+// The Mine builder reads the delve seed and mined cells; record depletions back.
+env._mineDelve = mineDelve;
+env.onRockDepleted = (rock) => {
+  if (env.currentZone !== 'mine') return;
+  const cell = mineWorldToCell(rock.x, rock.z);
+  mineDelve.recordMined(cell.c, cell.r);
+};
+
 const switchZone = createSwitchZone({
   gameStats, sceneManager, env, player, entityManager, hud, pedometer, ppSystem,
-  bossSystem,
+  bossSystem, mineDelve,
   onAfterSwitch: () => {
     _portalRefreshTimer = 0.5;
     _nearestTree = null;
