@@ -80,7 +80,7 @@ This keeps the player center outside the block at all approach angles without th
 5. `ZONE_LORE` map in `js/main.js` + a matching `Lore` entry in `js/systems/CodexSystem.js` (codex lore auto-discovers on first zone visit)
 6. (optional) `js/scene/SceneManager.js` — `ZONE_AMBIENCE` preset if the zone needs non-default sky/fog/light levels. Cave zones (mine, depths) go dark and rely on point lights added by their zone builders; `switchZone` applies presets via `sceneManager.setZoneAmbience(zoneName)`.
 
-**The Mine is tile-map-driven**: `js/scene/zones/Mine/layout.js` holds a 25×25 ASCII map (`.` floor, `1`-`5` ore tiers, space = solid rock). Non-mineable cave walls are auto-generated around carved cells and merged into per-row runs; `tests/mineLayout.test.js` flood-fills the map to prove every gate stays reachable, so layout edits are test-checked. Narrative flow: entrance adit → main shaft → working cavern (drill rig + Depths shaft) → winding passage → the Breach (ancient portal chamber holding the world gates).
+**The Mine is tile-map-driven and re-rolls per delve**: `js/scene/zones/Mine/layout.js` holds the baseline 25×25 ASCII map (`.` floor, `1`-`5` ore tiers, space = solid rock) plus a mutable *active map* all getters read (`setActiveMineMap`/`getActiveMineMap`). At build time `Mine/index.js` swaps in `generateMineMap(seed)` from `Mine/generator.js`: fixed anchor rooms + guaranteed corridors (`Mine/anchors.js` — entrance, drill, Depths shaft, Breach; portals never move) filled with a seeded cave carve and depth-banded ore, flood-fill-validated so every gate stays reachable (`tests/systems/mineGenerator.test.js` sweeps 100 seeds). `MineDelveSystem` (save v9) owns the delve lifecycle: descending from Landing Site re-rolls the seed and clears mined cells; Mine↔Depths keeps the same cave; blocks mined out stay depleted within a delve (`env.onRockDepleted` → `recordMined`, re-roll/arm gating lives in `zoneManager.js`). Non-mineable cave walls are auto-generated around carved cells and merged into per-row runs; `tests/mineLayout.test.js` flood-fills the baseline map. Narrative flow: entrance adit → main shaft → working cavern (drill rig + Depths shaft) → winding passage → the Breach (ancient portal chamber holding the world gates).
 
 Environment also supports:
 - `env._spinners` — `{ mesh, axis, speed }` entries rotated each frame by `env.update()`, cleared on zone switch (Breach ring, floating shard).
@@ -154,7 +154,9 @@ DATA tab. `HUD` samples effective PP/s every 2s into a 10-minute ring buffer (`_
 | Game constants | `js/config.js` |
 | All systems bootstrap + game loop | `js/main.js` |
 | Zone generation, collision, portals | `js/scene/Environment.js` |
-| Mine cave layout (25×25 tile map) | `js/scene/zones/Mine/layout.js` (re-exported by `js/scene/MineLayout.js`) |
+| Mine cave layout (25×25 tile map + active map) | `js/scene/zones/Mine/layout.js` (re-exported by `js/scene/MineLayout.js`) |
+| Mine seeded generation (anchors + cave fill) | `js/scene/zones/Mine/generator.js`, `js/scene/zones/Mine/anchors.js` |
+| Mine delve lifecycle (re-roll seed, mined cells) | `js/systems/MineDelveSystem.js` + gating in `js/zoneManager.js` |
 | Per-zone sky/fog/light presets | `ZONE_AMBIENCE` in `js/scene/SceneManager.js` |
 | Save/load serialization | `js/systems/SaveSystem.js` |
 | Character stats + derived values | `js/systems/StatsSystem.js` |
