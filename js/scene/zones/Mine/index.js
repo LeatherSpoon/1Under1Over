@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { createToonMaterial, addOutline, addOutlineToGroup, createRevealToonMaterial, createRevealOutlineMaterial } from '../../ToonMaterials.js';
 import { CONFIG } from '../../../config.js';
 import {
@@ -21,6 +22,12 @@ function seededRandom(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+// Deep Core Drill hero prop — preloaded once, cloned per build. Not rigged or
+// animated; falls back to the procedural derrick in _buildDrillRig if the GLB
+// hasn't finished loading yet (same convention as ResourceNode._nodeModels).
+const _drillModel = {};
+new GLTFLoader().load('./models/Drill.glb', (gltf) => { _drillModel.rig = gltf.scene; }, undefined, () => {});
 
 // Solid walls share one immortal "rock" so getCollisionBoxes() keeps them forever.
 const SOLID = { alive: true };
@@ -583,11 +590,32 @@ function _buildShaftDressing(env) {
   }
 }
 
-// ── Central drill rig (unchanged silhouette, relocated) ──────────────────────
+// ── Central drill rig (Deep Core Drill hero prop, procedural fallback) ──────
 function _buildDrillRig(env, x, z) {
   env._drillPos = { x, z };
   const rigGroup = new THREE.Group();
   rigGroup.position.set(x, 0, z);
+
+  if (_drillModel.rig) {
+    // Native bbox ~1.85m footprint × 0.92m tall; baked-shade material (black
+    // base color + emissive map) carries all the art, same as the boulder/rock.
+    const DRILL_SCALE = 1.6;
+    const model = _drillModel.rig.clone(true);
+    model.scale.setScalar(DRILL_SCALE);
+    model.traverse((n) => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
+    rigGroup.add(model);
+
+    const indicator = new THREE.Mesh(
+      new THREE.SphereGeometry(0.18, 8, 8),
+      new THREE.MeshBasicMaterial({ color: 0xffaa00 })
+    );
+    indicator.position.y = 0.92 * DRILL_SCALE + 0.5;
+    rigGroup.add(indicator);
+
+    env.group.add(rigGroup);
+    env._collisionCircles.push({ x, z, r: 1.4 });
+    return;
+  }
 
   // Octagonal base platform
   const base = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.6, 0.5, 8), createToonMaterial(0x252525));
