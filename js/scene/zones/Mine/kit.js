@@ -68,7 +68,7 @@ function _mapMaterials(obj, mapFn) {
 }
 
 /** Walls: every GLB material → reveal toon of the same color; vein names glow. */
-export function applyWallMaterials(obj, env, kitMats, revealR = 2.4) {
+export function applyWallMaterials(obj, env, kitMats, revealR = 1.7) {
   _mapMaterials(obj, (mat, vc) => {
     const color = mat.color ? mat.color.getHex() : 0x5d5348;
     return materialKindFor(mat.name) === 'emissive'
@@ -78,7 +78,7 @@ export function applyWallMaterials(obj, env, kitMats, revealR = 2.4) {
 }
 
 /** Ore chunks: rock takes the tier color, veins take the tier's glow color. */
-export function applyOreMaterials(obj, env, kitMats, props, revealR = 1.8) {
+export function applyOreMaterials(obj, env, kitMats, props, revealR = 1.5) {
   _mapMaterials(obj, (mat, vc) =>
     materialKindFor(mat.name) === 'emissive'
       ? _basicFor(kitMats, props.veinColor)
@@ -91,7 +91,7 @@ export function applyOreMaterials(obj, env, kitMats, props, revealR = 1.8) {
  * the same player circle as the piece's reveal material, or the reveal hole
  * exposes the shell interior as a solid black blob.
  */
-export function addRevealOutlines(obj, env, kitMats, thickness = 0.03, revealR = 2.4) {
+export function addRevealOutlines(obj, env, kitMats, thickness = 0.03, revealR = 1.7) {
   const key = `o:${revealR}`;
   if (!kitMats[key]) {
     const m = createRevealOutlineMaterial({ revealR });

@@ -2,13 +2,15 @@
  * ZoneAssets.js — Data-driven GLB prop placements per zone.
  *
  * To add or move an asset in a zone, edit the array for that zone below.
- * Each entry shape: { model, x, z, scale, rotY?, r? }
+ * Each entry shape: { model, x, z, scale, rotY?, r?, tint? }
  *   model  — key matching a loaded GLB in Environment._glb
  *   x / z  — world-space position on the XZ plane
  *   scale  — uniform scale applied to the cloned model
  *   rotY   — (optional) Y-axis rotation in radians, defaults to 0
  *   r      — (optional) collision circle radius in world units; omit for
  *             purely decorative props the player can walk through
+ *   tint   — (optional) hex color multiplied into the model's materials,
+ *             e.g. darken bright surface rocks for cave zones
  *
  * Typical radii by model type:
  *   boulder  0.75   tower  0.9   rock (cluster)  0.75
@@ -47,9 +49,9 @@ export const ZONE_ASSETS = {
     { model: 'barrel',  x: -3.8,  z: -31,   scale: 0.55, rotY: 1.8,  r: 0.35 },
     { model: 'crate',   x: -4.6,  z: -29,   scale: 0.5,  rotY: 0.9,  r: 0.5  },
     { model: 'barrel',  x: -12.6, z: 1.2,   scale: 0.5,  rotY: 0.9,  r: 0.35 },
-    { model: 'rock',    x: 19.2,  z: 0,     scale: 0.7,  rotY: 0.2,  r: 0.75 },
-    { model: 'rock',    x: -16,   z: 3.2,   scale: 0.65, rotY: 1.5,  r: 0.75 },
-    { model: 'boulder', x: -6.4,  z: -8,    scale: 0.8,  rotY: 0.6,  r: 0.75 },
+    { model: 'rock',    x: 19.2,  z: 0,     scale: 0.7,  rotY: 0.2,  r: 0.75, tint: 0x5f574c },
+    { model: 'rock',    x: -16,   z: 3.2,   scale: 0.65, rotY: 1.5,  r: 0.75, tint: 0x5f574c },
+    { model: 'boulder', x: -6.4,  z: -8,    scale: 0.8,  rotY: 0.6,  r: 0.75, tint: 0x5f574c },
     { model: 'redRock', x: 15.4,  z: 8.4,   scale: 0.75, rotY: 1.1,  r: 0.75 },
   ],
 

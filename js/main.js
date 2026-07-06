@@ -1,5 +1,6 @@
 import { SceneManager } from './scene/SceneManager.js';
 import { Environment } from './scene/Environment.js';
+import { LootPopups } from './scene/LootPopups.js';
 import { Player } from './entities/Player.js';
 import { EntityManager } from './entities/EntityManager.js';
 import { PPSystem } from './systems/PPSystem.js';
@@ -505,6 +506,7 @@ const saveSystem = new SaveSystem({
 
 // World-space effects (offload burst, etc.)
 const worldEffects = new WorldEffects(sceneManager.scene);
+const lootPopups = new LootPopups(sceneManager.scene);
 // TODO: SECRET_UNLOCKS — deferred. When designed, fire `worldEffects.triggerSecretUnlock(player.position)`
 // from the achievement check loop and skip the toast for those entries.
 
@@ -710,15 +712,21 @@ function handleExtendedGather(delta) {
           questSystem.recordGather(env.currentZone, inventorySystem.materials);
         }
       } else if (_gatherType === 'rock') {
-        const result = env.drillRock(_gatherTarget, techTree?.owned.has('deepVeins') ? 1.5 : 1.0);
+        const rock = _gatherTarget;
+        const result = env.drillRock(rock, techTree?.owned.has('deepVeins') ? 1.5 : 1.0);
         _nearestRock = null;
         if (result) {
+          const pretty = (key) => key.split('_').map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
+          let line = 0;
           inventorySystem.addMaterial('stone', result.stone);
+          lootPopups.spawn(rock.x, rock.z, `+${result.stone} Stone`, 0xd8cfc0, line++);
           let extraLoot = '';
           for (let key in result) {
             if (key !== 'stone') {
               inventorySystem.addMaterial(key, result[key]);
               extraLoot += ` +${result[key]} ${key}`;
+              const color = rock.props && key === rock.props.ore ? rock.props.veinColor : 0xffcc66;
+              lootPopups.spawn(rock.x, rock.z, `+${result[key]} ${pretty(key)}`, color, line++);
             }
           }
           hud.showInteractHint(`+${result.stone} stone${extraLoot}`);
@@ -1274,6 +1282,10 @@ function gameLoop(now) {
 
   // Update environment (growing trees, etc.)
   env.update(delta);
+  lootPopups.update(delta);
+
+  // Mine chunked view — materialize rock visuals near the player, tear down far ones
+  if (env._mineChunks) env._mineChunks.update(player.position);
 
   // Cave reveal shader — walls open up around the player so tunnels stay readable
   for (const m of env._revealMaterials) {

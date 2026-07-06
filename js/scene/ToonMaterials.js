@@ -65,10 +65,11 @@ export function addOutlineToGroup(group, thickness = 0.04) {
 }
 
 /**
- * MeshToonMaterial variant that discards fragments within a world-space XZ
- * circle centred on uPlayerPos. Radius is uRevealR (metres, override via
- * options.revealR). Used by the mine so tall cave walls open up around the
- * player — unrelated to player-visibility occlusion.
+ * Reveal cut used by the mine so tall rock never hides the player: fragments
+ * are discarded only when they sit between the camera and the player — inside
+ * a uRevealR circle around the player in view-space XY (world metres under
+ * the ortho camera) and closer to the camera than the player. Rock beside the
+ * player in an open corridor is NOT cut.
  *
  * After the material compiles, update the player position each frame via:
  *   mat.userData.shader.uniforms.uPlayerPos.value.copy(playerPos)
@@ -93,9 +94,15 @@ function _addRevealDiscard(mat, revealR) {
       'uniform float uRevealR;',
       shader.fragmentShader,
     ].join('\n');
+    // Occlusion-aware cut: only open fragments that actually sit between the
+    // camera and the player — inside the player's screen-space circle (view
+    // XY, world-scaled under the ortho camera) AND nearer the camera than the
+    // player's torso. Rock merely *beside* the player stays solid.
     shader.fragmentShader = shader.fragmentShader.replace(
       'vec4 diffuseColor = vec4( diffuse, opacity );',
-      `{ float _rd = length(vWorldPos.xz - uPlayerPos.xz); if (_rd < uRevealR) discard; }
+      `{ vec3 _fv = (viewMatrix * vec4(vWorldPos, 1.0)).xyz;
+         vec3 _pv = (viewMatrix * vec4(uPlayerPos + vec3(0.0, 0.9, 0.0), 1.0)).xyz;
+         if (distance(_fv.xy, _pv.xy) < uRevealR && _fv.z > _pv.z + 0.3) discard; }
       vec4 diffuseColor = vec4( diffuse, opacity );`
     );
   };

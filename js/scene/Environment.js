@@ -142,6 +142,8 @@ export class Environment {
     this._collisionBoxes = [];
     this._trees = [];
     this._rocks = [];
+    this._mineChunks = null; // Mine-only chunked view — stale after a switch
+    this._mineDig = null;
     this._growingTrees = [];
     this._treePlacedPositions = [];
     this._revealMaterials = [];
@@ -293,9 +295,9 @@ export class Environment {
     }
 
     if (rock.richness <= 0) {
-      // Depleted — remove block
+      // Depleted — remove block (mesh may be chunked out while far away)
       rock.alive = false;
-      rock.mesh.visible = false;
+      if (rock.mesh) rock.mesh.visible = false;
       const idx = this._collisionCircles.indexOf(rock.collision);
       if (idx !== -1) this._collisionCircles.splice(idx, 1);
       if (this.onRockDepleted) this.onRockDepleted(rock);
@@ -322,10 +324,27 @@ export class Environment {
     const entries = ZONE_ASSETS[zoneName];
     if (!entries) return;
 
-    for (const { model, x, z, scale, rotY = 0, r } of entries) {
+    for (const { model, x, z, scale, rotY = 0, r, tint } of entries) {
       const src = g[model];
       if (!src) continue; // model file not loaded yet (graceful skip)
       const m = cloneModel(src, scale);
+      if (tint !== undefined) {
+        // Per-placement recolor (e.g. bright surface rocks darkened for the
+        // mine). Clones share materials, so clone before tinting. Baked-shade
+        // GLBs (Rodin-style) carry their art in the emissive channel with a
+        // black base color, so the tint must multiply both.
+        const t = new THREE.Color(tint);
+        m.traverse((n) => {
+          if (!n.isMesh || n.material?.side === THREE.BackSide) return;
+          const apply = (mat) => {
+            const c = mat.clone();
+            c.color.multiply(t);
+            if (c.emissive) c.emissive.multiply(t);
+            return c;
+          };
+          n.material = Array.isArray(n.material) ? n.material.map(apply) : apply(n.material);
+        });
+      }
       m.position.set(x, 0, z);
       m.rotation.y = rotY;
       this.group.add(m);

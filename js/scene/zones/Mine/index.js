@@ -69,15 +69,26 @@ export function build(env) {
 
   const kitMats = {}; // per-build shader cache for kit clones (reveal/glow/toon)
 
+  // Chunked view (Minecraft-style): rock/wall/dressing VISUALS materialize
+  // only in chunks near the player and are torn down behind them, so draw
+  // calls stay flat no matter how large the map grows. All gameplay state
+  // (map cells, rock logic, collision) stays global — only rendering windows.
+  // The pre-kit primitive fallback builds everything up front as before.
+  const view = kitReady()
+    ? { seed, kitMats, chunks: new Map(), update: null }
+    : null;
+  env._mineChunks = view;
+
   _buildFloors(env);
-  _buildWalls(env, rng, kitMats);
-  _buildMineableBlocks(env, rng, kitMats);
+  _buildWalls(env, rng, kitMats, view);
+  _buildMineableBlocks(env, rng, kitMats, view);
   _buildEntrance(env);
   _buildShaftDressing(env);
   _buildDrillRig(env, MINE_DRILL_POS.x, MINE_DRILL_POS.z);
   _buildDepthsShaft(env);
   _buildBreach(env, rng);
-  _scatterCaveDetail(env, rng, kitMats);
+  _scatterCaveDetail(env, rng, kitMats, view);
+  if (view) _wireChunkView(env, view);
 
   // ── Zone portals ──────────────────────────────────────────────────────────
   const mp = MINE_ZONE_PORTALS;
@@ -130,8 +141,76 @@ function _buildFloors(env) {
   env.group.add(mesh);
 }
 
+// ── Chunked view ─────────────────────────────────────────────────────────────
+// The grid partitions into CHUNK_CELLS² chunks. A chunk materializes its
+// visuals when the player comes within CHUNK_ACTIVATE_R of its bounds and
+// tears them down beyond CHUNK_DEACTIVATE_R (hysteresis avoids thrash at the
+// border). Rock *logic* objects live in env._rocks permanently; only their
+// meshes come and go — partial drill damage survives a round trip because
+// richness lives on the logic object and crack visibility is re-derived.
+const CHUNK_CELLS = 8;
+const CHUNK_ACTIVATE_R = 36;
+const CHUNK_DEACTIVATE_R = 44;
+
+// Per-cell deterministic rolls: same cell → same variant/rotation within a
+// delve, no matter in which order (or how many times) chunks materialize.
+function cellRng(seed, c, r) {
+  return seededRandom((seed ^ Math.imul(c + 1, 73856093) ^ Math.imul(r + 1, 19349663)) | 0);
+}
+
+function _chunkFor(view, c, r) {
+  const cx = Math.floor(c / CHUNK_CELLS), cz = Math.floor(r / CHUNK_CELLS);
+  const key = `${cx},${cz}`;
+  let ch = view.chunks.get(key);
+  if (!ch) {
+    const a = mineCellToWorld(cx * CHUNK_CELLS, cz * CHUNK_CELLS);
+    const b = mineCellToWorld(cx * CHUNK_CELLS + CHUNK_CELLS - 1, cz * CHUNK_CELLS + CHUNK_CELLS - 1);
+    ch = {
+      key, active: false,
+      minX: a.x - 1.6, maxX: b.x + 1.6, minZ: a.z - 1.6, maxZ: b.z + 1.6,
+      wallCells: [], rocks: [], dressCells: [], objects: [],
+    };
+    view.chunks.set(key, ch);
+  }
+  return ch;
+}
+
+function _wireChunkView(env, view) {
+  view.update = (pos) => {
+    for (const ch of view.chunks.values()) {
+      const dx = Math.max(ch.minX - pos.x, 0, pos.x - ch.maxX);
+      const dz = Math.max(ch.minZ - pos.z, 0, pos.z - ch.maxZ);
+      const d = Math.hypot(dx, dz);
+      if (!ch.active && d < CHUNK_ACTIVATE_R) _activateChunk(env, view, ch);
+      else if (ch.active && d > CHUNK_DEACTIVATE_R) _deactivateChunk(env, view, ch);
+    }
+  };
+}
+
+function _activateChunk(env, view, ch) {
+  ch.active = true;
+  for (const cell of ch.wallCells) {
+    const p = _materializeWallCell(env, view, cell);
+    if (p) ch.objects.push(p);
+  }
+  for (const rock of ch.rocks) {
+    if (rock.alive) _materializeRock(env, view, rock);
+  }
+  for (const cell of ch.dressCells) {
+    const p = _materializeDressing(env, view, cell);
+    if (p) ch.objects.push(p);
+  }
+}
+
+function _deactivateChunk(env, view, ch) {
+  ch.active = false;
+  for (const o of ch.objects) env.group.remove(o);
+  ch.objects.length = 0;
+  for (const rock of ch.rocks) _dematerializeRock(env, rock);
+}
+
 // ── Solid cave walls (non-mineable) ─────────────────────────────────────────
-function _buildWalls(env, rng, kitMats) {
+function _buildWalls(env, rng, kitMats, view) {
   // Collision always comes from the merged runs — identical to the pre-kit
   // behavior and independent of which visual path builds below.
   for (const run of getMineWallRuns()) {
@@ -142,28 +221,34 @@ function _buildWalls(env, rng, kitMats) {
     });
   }
 
-  if (!kitReady()) {
+  if (!view) {
     _buildWallsPrimitive(env, rng);
     return;
   }
 
   for (const cell of getMineWallCells()) {
-    const piece = getKitPiece(pickWallPiece(cell.region, rng()));
-    if (!piece) continue;
-    applyWallMaterials(piece, env, kitMats);
-    piece.position.set(cell.x, 0, cell.z);
-    piece.rotation.y = Math.floor(rng() * 4) * (Math.PI / 2); // quarter turns keep the footprint
-    piece.scale.y = 0.92 + rng() * 0.2;                        // per-cell crest variation
-    addRevealOutlines(piece, env, kitMats, 0.03, 2.4);
-    env.group.add(piece);
+    _chunkFor(view, cell.c, cell.r).wallCells.push(cell);
   }
+}
+
+function _materializeWallCell(env, view, cell) {
+  const roll = cellRng(view.seed, cell.c, cell.r);
+  const piece = getKitPiece(pickWallPiece(cell.region, roll()));
+  if (!piece) return null;
+  applyWallMaterials(piece, env, view.kitMats);
+  piece.position.set(cell.x, 0, cell.z);
+  piece.rotation.y = Math.floor(roll() * 4) * (Math.PI / 2); // quarter turns keep the footprint
+  piece.scale.y = 0.92 + roll() * 0.2;                       // per-cell crest variation
+  addRevealOutlines(piece, env, view.kitMats, 0.03, 1.7);
+  env.group.add(piece);
+  return piece;
 }
 
 // Pre-kit visual path — kept as the fallback while MineKit.glb loads.
 function _buildWallsPrimitive(env, rng) {
-  const rockMat  = createRevealToonMaterial(0x191410, { revealR: 2.4 });
-  const alienMat = createRevealToonMaterial(0x171126, { revealR: 2.4 });
-  const outlineMat = createRevealOutlineMaterial({ revealR: 2.4 });
+  const rockMat  = createRevealToonMaterial(0x191410, { revealR: 1.7 });
+  const alienMat = createRevealToonMaterial(0x171126, { revealR: 1.7 });
+  const outlineMat = createRevealOutlineMaterial({ revealR: 1.7 });
   env._revealMaterials.push(rockMat, alienMat, outlineMat);
 
   for (const run of getMineWallRuns()) {
@@ -185,10 +270,12 @@ function _buildWallsPrimitive(env, rng) {
 }
 
 // ── Mineable blocks: ore seams + dig-anywhere plain rock ─────────────────────
-// Only exposed blocks are instantiated. Mining one out opens its cell and
+// Only exposed blocks get logic objects. Mining one out opens its cell and
 // spawns the newly-exposed rock behind it (env._mineDig, called by drillRock).
-function _buildMineableBlocks(env, rng, kitMats) {
-  const ctx = { kitMats, rng, live: new Set(), tierMats: {}, veinMats: {} };
+// Logic (rock entry + collision box) is global; the mesh belongs to the
+// chunked view and may not exist while the player is far away.
+function _buildMineableBlocks(env, rng, kitMats, view) {
+  const ctx = { kitMats, rng, view, live: new Set(), tierMats: {}, veinMats: {} };
 
   for (const b of getMineableWallBlocks()) _spawnMineableBlock(env, ctx, b);
 
@@ -210,48 +297,50 @@ function _buildMineableBlocks(env, rng, kitMats) {
 
 function _spawnMineableBlock(env, ctx, b) {
   ctx.live.add(`${b.cellC},${b.cellR}`);
-  const { kitMats, rng } = ctx;
-  const useKit = kitReady();
+  const richness = b.plain ? 1 : 3;
+  const rock = {
+    mesh: null, x: b.x, z: b.z, alive: true, props: b.props, plain: b.plain,
+    richness, maxRichness: richness, crack1: null, crack2: null,
+    cellC: b.cellC, cellR: b.cellR,
+  };
+  env._rocks.push(rock);
   const bw = 3.2, bd = 3.2;
-  let mesh, bh;
-  let crack1 = null, crack2 = null;
+  env._collisionBoxes.push({
+    minX: b.x - bw / 2 + GRID_COLLISION_INSET, maxX: b.x + bw / 2 - GRID_COLLISION_INSET,
+    minZ: b.z - bd / 2 + GRID_COLLISION_INSET, maxZ: b.z + bd / 2 - GRID_COLLISION_INSET,
+    rock,
+  });
 
-  if (b.plain && useKit) {
+  if (ctx.view) {
+    const ch = _chunkFor(ctx.view, b.cellC, b.cellR);
+    ch.rocks.push(rock);
+    if (ch.active) _materializeRock(env, ctx.view, rock); // dug open mid-visit
+  } else {
+    _materializeRockPrimitive(env, ctx, rock);
+  }
+}
+
+function _materializeRock(env, view, rock) {
+  const roll = cellRng(view.seed, rock.cellC, rock.cellR);
+  const kitMats = view.kitMats;
+  const bw = 3.2, bh = 3.4, bd = 3.2;
+  let mesh, crack1 = null, crack2 = null;
+
+  if (rock.plain) {
     // Plain rock looks like cave wall — mineable, one hit, stone-only loot.
-    bh = 3.4;
-    mesh = getKitPiece(pickWallPiece(mineRegionForRow(b.cellR), rng()));
+    mesh = getKitPiece(pickWallPiece(mineRegionForRow(rock.cellR), roll()));
+    if (!mesh) return;
     applyWallMaterials(mesh, env, kitMats);
-    mesh.position.set(b.x, 0, b.z);
-    mesh.rotation.y = Math.floor(rng() * 4) * (Math.PI / 2);
-    mesh.scale.y = 0.92 + rng() * 0.2;
-    addRevealOutlines(mesh, env, kitMats, 0.03, 2.4);
-    env.group.add(mesh);
-  } else if (b.plain) {
-    // Primitive fallback: same silhouette the old solid walls had.
-    bh = 3.8 + rng() * 1.4;
-    if (!ctx.plainMat) {
-      ctx.plainMat = createRevealToonMaterial(0x191410, { revealR: 2.4 });
-      ctx.plainOutlineMat = createRevealOutlineMaterial({ revealR: 2.4 });
-      env._revealMaterials.push(ctx.plainMat, ctx.plainOutlineMat);
-    }
-    mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), ctx.plainMat);
-    mesh.position.set(b.x, bh / 2, b.z);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    const outline = new THREE.Mesh(mesh.geometry, ctx.plainOutlineMat);
-    outline.scale.setScalar(1.03);
-    outline.renderOrder = -1;
-    mesh.add(outline);
-    env.group.add(mesh);
-  } else if (useKit) {
-    bh = 3.4;
-    const oreName = ORE_PIECES[Math.floor(rng() * ORE_PIECES.length)];
+    mesh.rotation.y = Math.floor(roll() * 4) * (Math.PI / 2);
+    mesh.scale.y = 0.92 + roll() * 0.2;
+    addRevealOutlines(mesh, env, kitMats, 0.03, 1.7);
+  } else {
+    const oreName = ORE_PIECES[Math.floor(roll() * ORE_PIECES.length)];
     mesh = getKitPiece(oreName);
-    applyOreMaterials(mesh, env, kitMats, b.props);
-    mesh.position.set(b.x, 0, b.z);
-    mesh.rotation.y = Math.floor(rng() * 4) * (Math.PI / 2);
-    addRevealOutlines(mesh, env, kitMats, 0.04, 1.8);
-    env.group.add(mesh);
+    if (!mesh) return;
+    applyOreMaterials(mesh, env, kitMats, rock.props);
+    mesh.rotation.y = Math.floor(roll() * 4) * (Math.PI / 2);
+    addRevealOutlines(mesh, env, kitMats, 0.04, 1.5);
 
     // Blender-authored fissure overlays (fall through to box cracks if the
     // loaded GLB predates them).
@@ -261,65 +350,99 @@ function _spawnMineableBlock(env, ctx, b) {
       if (!kitMats.crack) kitMats.crack = new THREE.MeshBasicMaterial({ color: 0x0a0806, side: THREE.DoubleSide });
       for (const g of [c1, c2]) {
         g.traverse((n) => { if (n.isMesh) n.material = kitMats.crack; });
-        g.visible = false;
         mesh.add(g);
       }
       crack1 = c1;
       crack2 = c2;
-    }
-  } else {
-    bh = 3.2 + rng() * 1.6; // shorter than the cave walls — reads as a workable seam
-    if (!ctx.tierMats[b.props.color]) {
-      ctx.tierMats[b.props.color] = createRevealToonMaterial(b.props.color, { revealR: 1.8 });
-      env._revealMaterials.push(ctx.tierMats[b.props.color]);
-    }
-    if (!ctx.veinMats[b.props.veinColor]) {
-      ctx.veinMats[b.props.veinColor] = new THREE.MeshBasicMaterial({ color: b.props.veinColor });
-    }
-    mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), ctx.tierMats[b.props.color]);
-    mesh.position.set(b.x, bh / 2, b.z);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    addOutline(mesh, 0.04);
-    env.group.add(mesh);
-
-    // Glowing vein studs — the "there's ore in that rock" sparkle
-    const veinMat = ctx.veinMats[b.props.veinColor];
-    const studCount = 2 + Math.floor(rng() * 2);
-    for (let i = 0; i < studCount; i++) {
-      const stud = new THREE.Mesh(new THREE.OctahedronGeometry(0.14 + rng() * 0.1, 0), veinMat);
-      const face = Math.floor(rng() * 4);
-      const along = (rng() - 0.5) * (bw * 0.7);
-      const up = 0.5 + rng() * (bh * 0.55) - bh / 2;
-      if (face === 0)      stud.position.set(along, up,  bd / 2 + 0.02);
-      else if (face === 1) stud.position.set(along, up, -bd / 2 - 0.02);
-      else if (face === 2) stud.position.set( bw / 2 + 0.02, up, along);
-      else                 stud.position.set(-bw / 2 - 0.02, up, along);
-      mesh.add(stud);
-    }
-  }
-
-  if (!b.plain && !crack1) {
-    ({ crack1, crack2 } = env._makeCrackStages(mesh, bw, bh, bd));
-    if (useKit) {
+    } else {
+      ({ crack1, crack2 } = env._makeCrackStages(mesh, bw, bh, bd));
       // Crack overlays assume a center origin; the kit chunk's origin is at its base.
       crack1.position.y += bh / 2;
       crack2.position.y += bh / 2;
     }
+    // Re-derive crack visibility — partial damage survives chunk round trips.
+    const stage = rock.maxRichness - rock.richness;
+    crack1.visible = stage >= 1;
+    crack2.visible = stage >= 2;
   }
 
-  const richness = b.plain ? 1 : 3;
-  const rock = {
-    mesh, x: b.x, z: b.z, alive: true, props: b.props,
-    richness, maxRichness: richness, crack1, crack2,
-    cellC: b.cellC, cellR: b.cellR,
-  };
-  env._rocks.push(rock);
-  env._collisionBoxes.push({
-    minX: b.x - bw / 2 + GRID_COLLISION_INSET, maxX: b.x + bw / 2 - GRID_COLLISION_INSET,
-    minZ: b.z - bd / 2 + GRID_COLLISION_INSET, maxZ: b.z + bd / 2 - GRID_COLLISION_INSET,
-    rock,
-  });
+  mesh.position.set(rock.x, 0, rock.z);
+  env.group.add(mesh);
+  rock.mesh = mesh;
+  rock.crack1 = crack1;
+  rock.crack2 = crack2;
+}
+
+function _dematerializeRock(env, rock) {
+  if (!rock.mesh) return;
+  env.group.remove(rock.mesh);
+  rock.mesh = null;
+  rock.crack1 = null;
+  rock.crack2 = null;
+}
+
+// Pre-kit fallback: builds the mesh immediately and permanently (no chunking).
+function _materializeRockPrimitive(env, ctx, rock) {
+  const { rng } = ctx;
+  const bw = 3.2, bd = 3.2;
+  let mesh, bh;
+  let crack1, crack2;
+
+  if (rock.plain) {
+    // Same silhouette the old solid walls had.
+    bh = 3.8 + rng() * 1.4;
+    if (!ctx.plainMat) {
+      ctx.plainMat = createRevealToonMaterial(0x191410, { revealR: 1.7 });
+      ctx.plainOutlineMat = createRevealOutlineMaterial({ revealR: 1.7 });
+      env._revealMaterials.push(ctx.plainMat, ctx.plainOutlineMat);
+    }
+    mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), ctx.plainMat);
+    mesh.position.set(rock.x, bh / 2, rock.z);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    const outline = new THREE.Mesh(mesh.geometry, ctx.plainOutlineMat);
+    outline.scale.setScalar(1.03);
+    outline.renderOrder = -1;
+    mesh.add(outline);
+    env.group.add(mesh);
+    rock.mesh = mesh;
+    return;
+  }
+
+  bh = 3.2 + rng() * 1.6; // shorter than the cave walls — reads as a workable seam
+  if (!ctx.tierMats[rock.props.color]) {
+    ctx.tierMats[rock.props.color] = createRevealToonMaterial(rock.props.color, { revealR: 1.5 });
+    env._revealMaterials.push(ctx.tierMats[rock.props.color]);
+  }
+  if (!ctx.veinMats[rock.props.veinColor]) {
+    ctx.veinMats[rock.props.veinColor] = new THREE.MeshBasicMaterial({ color: rock.props.veinColor });
+  }
+  mesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), ctx.tierMats[rock.props.color]);
+  mesh.position.set(rock.x, bh / 2, rock.z);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  addOutline(mesh, 0.04);
+  env.group.add(mesh);
+
+  // Glowing vein studs — the "there's ore in that rock" sparkle
+  const veinMat = ctx.veinMats[rock.props.veinColor];
+  const studCount = 2 + Math.floor(rng() * 2);
+  for (let i = 0; i < studCount; i++) {
+    const stud = new THREE.Mesh(new THREE.OctahedronGeometry(0.14 + rng() * 0.1, 0), veinMat);
+    const face = Math.floor(rng() * 4);
+    const along = (rng() - 0.5) * (bw * 0.7);
+    const up = 0.5 + rng() * (bh * 0.55) - bh / 2;
+    if (face === 0)      stud.position.set(along, up,  bd / 2 + 0.02);
+    else if (face === 1) stud.position.set(along, up, -bd / 2 - 0.02);
+    else if (face === 2) stud.position.set( bw / 2 + 0.02, up, along);
+    else                 stud.position.set(-bw / 2 - 0.02, up, along);
+    mesh.add(stud);
+  }
+
+  ({ crack1, crack2 } = env._makeCrackStages(mesh, bw, bh, bd));
+  rock.mesh = mesh;
+  rock.crack1 = crack1;
+  rock.crack2 = crack2;
 }
 
 // ── Entrance: adit frame, rails, cart ────────────────────────────────────────
@@ -695,15 +818,15 @@ function _buildWorldGate(env, pos, rotY) {
 }
 
 // ── Scattered stalagmites and glow crystals ──────────────────────────────────
-function _scatterCaveDetail(env, rng, kitMats) {
-  const palettes = {
-    rock:   { rock: 0x55493d, crystal: 0x55e0c8 },
-    breach: { rock: 0x3a2d5e, crystal: 0xbb88ff },
-  };
-  const useKit = kitReady();
-  const stalMat = { rock: createToonMaterial(0x201812), breach: createToonMaterial(0x2a2040) };
-  const crysMat = { rock: new THREE.MeshBasicMaterial({ color: 0x55e0c8 }), breach: new THREE.MeshBasicMaterial({ color: 0xbb88ff }) };
+const DRESS_PALETTES = {
+  rock:   { rock: 0x55493d, crystal: 0x55e0c8 },
+  breach: { rock: 0x3a2d5e, crystal: 0xbb88ff },
+};
+
+function _scatterCaveDetail(env, rng, kitMats, view) {
   const portals = Object.values(MINE_ZONE_PORTALS);
+  const stalMat = view ? null : { rock: createToonMaterial(0x201812), breach: createToonMaterial(0x2a2040) };
+  const crysMat = view ? null : { rock: new THREE.MeshBasicMaterial({ color: 0x55e0c8 }), breach: new THREE.MeshBasicMaterial({ color: 0xbb88ff }) };
 
   const map = getActiveMineMap();
   for (let r = 0; r < map.length; r++) {
@@ -715,32 +838,18 @@ function _scatterCaveDetail(env, rng, kitMats) {
       if (Math.abs(x) < 4.5 && z < -8) continue;                                  // entrance + shaft spine
       if (portals.some(p => Math.hypot(x - p.x, z - p.z) < 4.2)) continue;
       if (Math.hypot(x - MINE_DRILL_POS.x, z - MINE_DRILL_POS.z) < 4.2) continue;
-      if (Math.hypot(x, z - 28.8) < 5.5) continue;                                // dais clearing
+      if (Math.hypot(x, z - 28.8) < 5.5) continue;                                // chamber-centre clearing
 
-      const roll = rng();
-      const breachy = r >= 17;
-      const key = breachy ? 'breach' : 'rock';
-      const ox = (rng() - 0.5) * 2.0;
-      const oz = (rng() - 0.5) * 2.0;
-
-      if (useKit) {
-        let name = null;
-        if (roll < 0.30)      name = STAL_PIECES[Math.floor(rng() * STAL_PIECES.length)];
-        else if (roll < 0.42) name = CRYSTAL_PIECES[Math.floor(rng() * CRYSTAL_PIECES.length)];
-        else if (roll < 0.50) name = RUBBLE_PIECES[0];
-        if (!name) continue;
-        const piece = getKitPiece(name);
-        if (!piece) continue;
-        applyDressingMaterials(piece, kitMats, palettes[key]);
-        piece.position.set(x + ox, 0, z + oz);
-        piece.rotation.y = rng() * Math.PI * 2; // free rotation — dressing is off-grid
-        const s = 0.8 + rng() * 0.6;
-        piece.scale.set(s, s, s);
-        addOutlineToGroup(piece, 0.03);
-        env.group.add(piece);
+      if (view) {
+        _chunkFor(view, c, r).dressCells.push({ c, r, x, z });
         continue;
       }
 
+      // Pre-kit primitive fallback — built up front, never chunked.
+      const roll = rng();
+      const key = r >= 17 ? 'breach' : 'rock';
+      const ox = (rng() - 0.5) * 2.0;
+      const oz = (rng() - 0.5) * 2.0;
       if (roll < 0.30) {
         const h = 0.5 + rng() * 0.9;
         const stal = new THREE.Mesh(
@@ -762,4 +871,24 @@ function _scatterCaveDetail(env, rng, kitMats) {
       }
     }
   }
+}
+
+function _materializeDressing(env, view, cell) {
+  const roll = cellRng(view.seed ^ 0x9e37, cell.c, cell.r);
+  const spawn = roll();
+  let name = null;
+  if (spawn < 0.30)      name = STAL_PIECES[Math.floor(roll() * STAL_PIECES.length)];
+  else if (spawn < 0.42) name = CRYSTAL_PIECES[Math.floor(roll() * CRYSTAL_PIECES.length)];
+  else if (spawn < 0.50) name = RUBBLE_PIECES[0];
+  if (!name) return null;
+  const piece = getKitPiece(name);
+  if (!piece) return null;
+  applyDressingMaterials(piece, view.kitMats, DRESS_PALETTES[cell.r >= 17 ? 'breach' : 'rock']);
+  piece.position.set(cell.x + (roll() - 0.5) * 2.0, 0, cell.z + (roll() - 0.5) * 2.0);
+  piece.rotation.y = roll() * Math.PI * 2; // free rotation — dressing is off-grid
+  const s = 0.8 + roll() * 0.6;
+  piece.scale.set(s, s, s);
+  addOutlineToGroup(piece, 0.03);
+  env.group.add(piece);
+  return piece;
 }
