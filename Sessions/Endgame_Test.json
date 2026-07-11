@@ -6,81 +6,81 @@
   "playerX": 0,
   "playerZ": 0,
   "pp": {
-    "ppTotal": 50000,
-    "prestigeBonus": 2.5,
+    "ppTotal": 1000000000,
+    "ppCap": 1000000000,
+    "prestigeCount": 100,
+    "prestigeBonus": 1000,
     "rateModifiers": {
-      "prestige": 2.5
+      "prestige": 1000
     }
   },
   "stats": {
     "levels": {
-      "strength": { "level": 15, "exp": 0 },
-      "health": { "level": 25, "exp": 0 },
-      "defense": { "level": 12, "exp": 0 },
-      "constitution": { "level": 8, "exp": 0 },
-      "dexterity": { "level": 10, "exp": 0 },
-      "agility": { "level": 8, "exp": 0 },
-      "perception": { "level": 6, "exp": 0 },
-      "focusRate": { "level": 10, "exp": 0 },
-      "focus": { "level": 8, "exp": 0 },
-      "crafting": { "level": 5, "exp": 0 },
-      "craftingSpeed": { "level": 5, "exp": 0 },
-      "speed": { "level": 8, "exp": 0 }
+      "strength": { "level": 300, "exp": 0 },
+      "health": { "level": 300, "exp": 0 },
+      "defense": { "level": 300, "exp": 0 },
+      "constitution": { "level": 100, "exp": 0 },
+      "dexterity": { "level": 100, "exp": 0 },
+      "agility": { "level": 100, "exp": 0 },
+      "perception": { "level": 100, "exp": 0 },
+      "focusRate": { "level": 100, "exp": 0 },
+      "focus": { "level": 100, "exp": 0 },
+      "crafting": { "level": 100, "exp": 0 },
+      "craftingSpeed": { "level": 100, "exp": 0 },
+      "speed": { "level": 60, "exp": 0 },
+      "energyCap": { "level": 100, "exp": 0 },
+      "gatherSpeed": { "level": 100, "exp": 0 }
     },
-    "currentHP": 250,
-    "currentFP": 0
+    "currentHP": 3050,
+    "currentFP": 5100,
+    "currentEnergy": 1600
   },
   "inventory": {
     "materials": {
-      "copper": 50, "timber": 40, "stone": 30, "iron": 45, "carbon": 20,
-      "quartz": 25, "silica": 15, "fiber": 35, "silver": 10, "gold": 8,
-      "titanium": 5, "tungsten": 3, "resin": 12, "epoxy": 6,
-      "elastomer": 4, "magnet": 3, "glass": 5, "lumber": 10, "seed": 5
+      "copper": 99999, "timber": 99999, "stone": 99999, "iron": 99999, "carbon": 99999,
+      "quartz": 99999, "silica": 99999, "fiber": 99999, "silver": 99999, "gold": 99999,
+      "titanium": 99999, "tungsten": 99999, "resin": 99999, "epoxy": 99999,
+      "elastomer": 99999, "magnet": 99999, "glass": 99999, "lumber": 99999, "seed": 99999,
+      "circuitWire": 99999, "ironSpike": 99999, "powerCore": 99999, "armorPlate": 99999,
+      "burstCapacitor": 99999, "logicChip": 99999,
+      "silica_sand": 99999, "ferrous_ore": 99999, "carbon_biomass": 99999,
+      "silicon_wafer": 99999, "steel_ingot": 99999, "synthetic_resin": 99999,
+      "logic_processor": 99999, "mechanical_servo": 99999, "energy_capacitor": 99999,
+      "quantum_processor_ring": 99999, "exo_servo_harness": 99999, "aegis_capacitor_bank": 99999,
+      "iron_dust": 99999, "alloy_bar": 99999, "metal_strut": 99999, "hull_plating": 99999,
+      "data_cable": 99999, "micro_fastener": 99999,
+      "extractor_unit": 99999, "extractor_unit_adv": 99999, "circuit_board": 99999, "hull_segment": 99999
     },
     "consumables": {
-      "ration": 10, "firstAid": 5, "repairKit": 3, "antidote": 4,
-      "ironPatch": 6, "signalFlare": 3
+      "ration": 999, "firstAid": 999, "repairKit": 999, "antidote": 999,
+      "ironPatch": 999, "signalFlare": 999, "energyCell": 999, "overchargeCell": 999,
+      "dataCache": 999
     },
     "tools": {
       "terrainCutter": true,
-      "chargingStation": true
+      "chargingStation": true,
+      "storageContainer": true,
+      "rockDrill": true,
+      "harvestBlade": true,
+      "diveTool": true,
+      "cryoPick": true
     }
   },
   "pedometer": {
-    "totalSteps": 25000,
-    "ppBonusPerStep": 0.75,
-    "ppBonusPurchases": 5,
+    "totalSteps": 1000000,
+    "ppBonusPerStep": 10,
+    "ppBonusPurchases": 50,
     "nextBonusCost": 1600,
     "trackCount": 30,
     "nextTrackCost": 100,
-    "pendingTracks": 5,
+    "pendingTracks": 30,
     "infiniteTracks": true,
     "placedTracks": [
       { "zone": "landingSite", "x": -2, "z": 0 },
       { "zone": "landingSite", "x": 0, "z": 0 },
       { "zone": "landingSite", "x": 2, "z": 0 },
       { "zone": "landingSite", "x": 4, "z": 0 },
-      { "zone": "landingSite", "x": 6, "z": 0 },
-      { "zone": "landingSite", "x": 8, "z": 0 },
-      { "zone": "landingSite", "x": 10, "z": 0 },
-      { "zone": "landingSite", "x": -4, "z": -4 },
-      { "zone": "landingSite", "x": -6, "z": -6 },
-      { "zone": "landingSite", "x": -8, "z": -8 },
-      { "zone": "landingSite", "x": -10, "z": -10 },
-      { "zone": "mine", "x": -2, "z": -10 },
-      { "zone": "mine", "x": 0, "z": -10 },
-      { "zone": "mine", "x": 2, "z": -10 },
-      { "zone": "mine", "x": 0, "z": -8 },
-      { "zone": "mine", "x": 0, "z": -6 },
-      { "zone": "mine", "x": 0, "z": -4 },
-      { "zone": "verdantMaw", "x": 0, "z": 12 },
-      { "zone": "verdantMaw", "x": 0, "z": 10 },
-      { "zone": "verdantMaw", "x": 0, "z": 8 },
-      { "zone": "verdantMaw", "x": 0, "z": 6 },
-      { "zone": "lagoonCoast", "x": 12, "z": 0 },
-      { "zone": "lagoonCoast", "x": 10, "z": 0 },
-      { "zone": "lagoonCoast", "x": 8, "z": 0 },
-      { "zone": "frozenTundra", "x": 0, "z": -12 }
+      { "zone": "landingSite", "x": 6, "z": 0 }
     ],
     "statStepPurchases": { "strength": 2, "health": 3 },
     "totalStatPurchases": 5,
@@ -89,9 +89,9 @@
   },
   "drones": {
     "list": [
-      { "id": 1, "name": "Drone Alpha", "assignedMaterial": "copper", "efficiency": 4, "gatherTimer": 0 },
-      { "id": 2, "name": "Drone Beta", "assignedMaterial": "iron", "efficiency": 3, "gatherTimer": 0 },
-      { "id": 3, "name": "Drone Gamma", "assignedMaterial": "quartz", "efficiency": 2, "gatherTimer": 0 }
+      { "id": 1, "name": "Drone Alpha", "assignedMaterial": "copper", "efficiency": 50, "gatherTimer": 0 },
+      { "id": 2, "name": "Drone Beta", "assignedMaterial": "iron", "efficiency": 50, "gatherTimer": 0 },
+      { "id": 3, "name": "Drone Gamma", "assignedMaterial": "quartz", "efficiency": 50, "gatherTimer": 0 }
     ],
     "upgradeCost": 313
   },
@@ -113,7 +113,9 @@
     "defeats": 12,
     "actionsTaken": 1543,
     "highestHit": 62,
-    "totalStepsTaken": 25000,
+    "totalStepsTaken": 1000000,
+    "resourcesGathered": 5000,
+    "miningActions": 2000,
     "visitedZones": ["landingSite", "mine", "verdantMaw", "lagoonCoast", "frozenTundra", "spaceship"]
   }
 }
