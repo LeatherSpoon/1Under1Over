@@ -32,14 +32,34 @@ function cloneSkinned(source) {
 
 // GLB replacement for specific boss archetypes — preloaded once, cloned per spawn.
 // Falls back to the procedural boxes/cones body below if not loaded yet.
-const _bossModelPaths = { boss_lagoon: './models/Pirate_Lizard.glb', dunkraza: './models/Scorpion.glb' };
+const _bossModelPaths = {
+  // All six zone bosses share the Pirate Lizard model.
+  boss_landing: './models/Pirate_Lizard.glb',
+  boss_mine:    './models/Pirate_Lizard.glb',
+  boss_verdant: './models/Pirate_Lizard.glb',
+  boss_lagoon:  './models/Pirate_Lizard.glb',
+  boss_tundra:  './models/Pirate_Lizard.glb',
+  boss_depths:  './models/Pirate_Lizard.glb',
+  // Regular creature archetypes, one model each.
+  dunkraza:    './models/Dunkraza.glb',
+  serpendrill: './models/Serpendrill.glb',
+  reptlar:     './models/Reptlar.glb',
+  hardlizzy:   './models/Hard_Lizzy.glb',
+  cavecrab:    './models/Cave_Crab.glb',
+};
 const _bossModels = {};
 const _bossAnimations = {};
 const _bossLoader = new GLTFLoader();
-for (const [archetype, path] of Object.entries(_bossModelPaths)) {
+// Load each unique GLB once, then share the parsed scene across every archetype
+// that references it (all bosses point at the same Pirate Lizard file).
+for (const path of [...new Set(Object.values(_bossModelPaths))]) {
   _bossLoader.load(path, gltf => {
-    _bossModels[archetype] = gltf.scene;
-    _bossAnimations[archetype] = gltf.animations;
+    for (const [archetype, p] of Object.entries(_bossModelPaths)) {
+      if (p === path) {
+        _bossModels[archetype] = gltf.scene;
+        _bossAnimations[archetype] = gltf.animations;
+      }
+    }
   }, undefined, () => {});
 }
 
@@ -62,152 +82,7 @@ for (const [archetype, path] of Object.entries(_bossModelPaths)) {
 //                    HP falls below `at` fraction of max (bosses only)
 
 const ARCHETYPE_CONFIG = {
-  rusher: {
-    name: 'SCRAPPER',
-    hp: 30,
-    damage: 3,
-    attackInterval: 800,  // ms — attacks every 0.8s
-    ppReward: 15,
-    bodyColor: 0xc45a1a,
-    headColor: 0xd9703a,
-    visorColor: 0xff4444,
-    threatColor: 0xff2222,
-    scale: 1.0,
-    speed: 1.2,
-    statusEffect: null,
-    attackPattern: 'melee',
-    visual: 'spikes',
-  },
-  swinger: {
-    name: 'BRUTE',
-    hp: 60,
-    damage: 18,
-    attackInterval: 2400, // 3 ticks of ~800ms each (wind-up)
-    ppReward: 25,
-    bodyColor: 0x8855cc,
-    headColor: 0x9966dd,
-    visorColor: 0xffaa00,
-    threatColor: 0xaa44ff,
-    scale: 1.25,
-    speed: 0.8,
-    statusEffect: null,
-    attackPattern: 'windup', // shows charge animation before hitting
-    visual: 'pauldrons',
-  },
-  burst: {
-    name: 'GLITCH',
-    hp: 45,
-    damage: 5,  // per burst hit (fires 3 times)
-    attackInterval: 3200, // 4 idle ticks then rapid burst
-    ppReward: 20,
-    bodyColor: 0x22ccaa,
-    headColor: 0x33ddbb,
-    visorColor: 0x00ff88,
-    threatColor: 0x00ff88,
-    scale: 0.85,
-    speed: 1.4,
-    statusEffect: null,
-    attackPattern: 'burst', // stores burst count on the enemy
-    visual: 'dualVisor',
-  },
-
-  // ── Expanded roster ────────────────────────────────────────────────────────
-  stinger: {
-    name: 'VESPID',
-    hp: 40, damage: 4, attackInterval: 700, ppReward: 22,
-    bodyColor: 0xaacc22, headColor: 0xbbdd33, visorColor: 0xd0ff00, threatColor: 0xccff22,
-    scale: 0.8, speed: 1.8,
-    statusEffect: 'poison',
-    attackPattern: 'melee',
-    visual: 'spikes',
-  },
-  pyro: {
-    name: 'CINDERLING',
-    hp: 50, damage: 6, attackInterval: 1600, ppReward: 25,
-    bodyColor: 0xcc3311, headColor: 0xee5522, visorColor: 0xffcc00, threatColor: 0xff6600,
-    scale: 0.95, speed: 1.1,
-    statusEffect: 'burn',
-    attackPattern: 'melee',
-    visual: 'crest',
-  },
-  arc: {
-    name: 'VOLTGEIST',
-    hp: 55, damage: 4, attackInterval: 3000, ppReward: 30,
-    bodyColor: 0x2266dd, headColor: 0x3388ee, visorColor: 0x88ddff, threatColor: 0x44aaff,
-    scale: 0.9, speed: 1.5,
-    statusEffect: 'shock',
-    attackPattern: 'burst',
-    visual: 'antenna',
-  },
-  corroder: {
-    name: 'RUSTMAW',
-    hp: 70, damage: 14, attackInterval: 2600, ppReward: 32,
-    bodyColor: 0x886633, headColor: 0x997744, visorColor: 0xcc8833, threatColor: 0xbb7722,
-    scale: 1.15, speed: 0.9,
-    statusEffect: 'corrosion',
-    attackPattern: 'windup',
-    visual: 'plates',
-  },
-  bulwark: {
-    name: 'BULWARK',
-    hp: 120, damage: 10, attackInterval: 2200, ppReward: 40,
-    bodyColor: 0x556677, headColor: 0x667788, visorColor: 0xaabbcc, threatColor: 0x8899bb,
-    scale: 1.35, speed: 0.6,
-    statusEffect: null,
-    armor: 6,
-    attackPattern: 'melee',
-    visual: 'plates',
-  },
-  siphon: {
-    name: 'SIPHON',
-    hp: 45, damage: 3, attackInterval: 1200, ppReward: 28,
-    bodyColor: 0x7722aa, headColor: 0x8833bb, visorColor: 0xdd66ff, threatColor: 0xcc44ff,
-    scale: 0.9, speed: 1.3,
-    statusEffect: null,
-    fpDrainOnHit: 40,
-    attackPattern: 'melee',
-    visual: 'antenna',
-  },
-  regenerator: {
-    name: 'MITOGEL',
-    hp: 65, damage: 5, attackInterval: 1500, ppReward: 34,
-    bodyColor: 0x22aa55, headColor: 0x33bb66, visorColor: 0x88ffaa, threatColor: 0x44ff88,
-    scale: 1.05, speed: 1.0,
-    statusEffect: null,
-    regenOnAttack: 4,
-    attackPattern: 'melee',
-    visual: 'crest',
-  },
-  longshot: {
-    name: 'LONGSHOT',
-    hp: 35, damage: 26, attackInterval: 3600, ppReward: 36,
-    bodyColor: 0xbbaa88, headColor: 0xccbb99, visorColor: 0xff8888, threatColor: 0xff9944,
-    scale: 0.9, speed: 0.8,
-    statusEffect: null,
-    attackPattern: 'windup',
-    visual: 'antenna',
-  },
-  rampant: {
-    name: 'RAMPANT',
-    hp: 80, damage: 4, attackInterval: 1000, ppReward: 38,
-    bodyColor: 0xaa2244, headColor: 0xbb3355, visorColor: 0xff4466, threatColor: 0xff2255,
-    scale: 1.1, speed: 1.4,
-    statusEffect: null,
-    rageRamp: 1.15,
-    attackPattern: 'melee',
-    visual: 'spikes',
-  },
-  specter: {
-    name: 'SPECTER',
-    hp: 40, damage: 7, attackInterval: 1400, ppReward: 36,
-    bodyColor: 0x445566, headColor: 0x556677, visorColor: 0xccddff, threatColor: 0x99aadd,
-    scale: 0.95, speed: 1.6,
-    statusEffect: null,
-    dodgeChance: 0.25,
-    attackPattern: 'melee',
-    visual: 'dualVisor',
-  },
-
+  // ── Regular creatures (GLB-modelled) ────────────────────────────────────────
   // Elite guardian — posted at the Mine's Depths-shaft boundary, the toughest
   // regular (non-boss) enemy in the early game.
   dunkraza: {
@@ -221,6 +96,55 @@ const ARCHETYPE_CONFIG = {
     attackPattern: 'burst',
     burstCount: 2,
     visual: 'spikes',
+  },
+
+  // Drill-nosed cave serpent — fast venomous striker posted in the Mine.
+  serpendrill: {
+    name: 'SERPENDRILL',
+    hp: 70, damage: 9, attackInterval: 1000, ppReward: 45,
+    bodyColor: 0x6b5a2a, headColor: 0x8a7333, visorColor: 0xffcc44, threatColor: 0xffbb22,
+    scale: 1.5, speed: 1.7,
+    statusEffect: 'poison',
+    dodgeChance: 0.18,
+    attackPattern: 'burst',
+    burstCount: 2,
+    visual: 'crest',
+  },
+
+  // Crystal-backed jungle reptile — armored melee bruiser in the Verdant Maw.
+  reptlar: {
+    name: 'REPTLAR',
+    hp: 110, damage: 15, attackInterval: 1700, ppReward: 60,
+    bodyColor: 0x3a7a3a, headColor: 0x4a8a3a, visorColor: 0xff5544, threatColor: 0x66dd44,
+    scale: 1.3, speed: 0.95,
+    statusEffect: 'poison',
+    armor: 4,
+    attackPattern: 'melee',
+    visual: 'crest',
+  },
+
+  // Armored ankylosaur bulwark — high-armor windup tank in the Frozen Tundra.
+  hardlizzy: {
+    name: 'HARD LIZZY',
+    hp: 200, damage: 26, attackInterval: 3000, ppReward: 120,
+    bodyColor: 0x8a8375, headColor: 0x9a9385, visorColor: 0xffcc66, threatColor: 0xccaa66,
+    scale: 0.95, speed: 0.5,
+    armor: 9,
+    attackPattern: 'windup',
+    visual: 'plates',
+  },
+
+  // Rocky claw brute — corrosive, rage-ramping bruiser deep in the Depths.
+  cavecrab: {
+    name: 'CAVE CRAB',
+    hp: 280, damage: 17, attackInterval: 2400, ppReward: 240,
+    bodyColor: 0x55504a, headColor: 0x655e55, visorColor: 0xffaa44, threatColor: 0xdd8844,
+    scale: 1.8, speed: 0.4,
+    statusEffect: 'corrosion',
+    armor: 10,
+    rageRamp: 1.05,
+    attackPattern: 'windup',
+    visual: 'plates',
   },
 
   // ── Zone bosses — unique, no timed respawn, permanent bonus on defeat ─────
@@ -300,14 +224,14 @@ const ARCHETYPE_CONFIG = {
 };
 
 export class Enemy {
-  constructor(scene, x = 6, z = 4, archetype = 'rusher') {
+  constructor(scene, x = 6, z = 4, archetype = 'serpendrill') {
     this.id = ++enemyIdCounter;
     this.scene = scene;
     this.position = new THREE.Vector3(x, 0, z);
     this.spawnPos = new THREE.Vector3(x, 0, z);
     this.archetype = archetype;
 
-    const cfg = ARCHETYPE_CONFIG[archetype] || ARCHETYPE_CONFIG.rusher;
+    const cfg = ARCHETYPE_CONFIG[archetype] || ARCHETYPE_CONFIG.serpendrill;
     this.maxHP = cfg.hp;
     this.hp = this.maxHP;
     this.aggroRadius = cfg.boss ? 1.6 : CONFIG.SCRAPPER_AGGRO_RADIUS;
@@ -342,6 +266,14 @@ export class Enemy {
     this.group = new THREE.Group();
     this._buildMesh(cfg);
     scene.add(this.group);
+
+    if (this.boss) {
+      // Bosses guard their post — no patrol wander, so one can never drift into
+      // a player mid-drill. The floor ring marks the exact engage radius.
+      this._isWaiting = true;
+      this._waitTimer = Infinity;
+      this._addAggroRing();
+    }
     this.group.position.copy(this.position);
     this.group.scale.setScalar(cfg.scale);
   }
@@ -536,6 +468,9 @@ export class Enemy {
       this._threatIndicator.position.y = this._threatBaseY + Math.sin(Date.now() * 0.004) * 0.12;
       this._threatIndicator.rotation.y += delta * 2.0;
     }
+    if (this._aggroRing) {
+      this._aggroRing.material.opacity = 0.3 + Math.sin(Date.now() * 0.003) * 0.15;
+    }
 
     // GLB boss-model Idle/Walk crossfade, keyed off patrol movement state
     if (this._mixer) {
@@ -641,6 +576,17 @@ export class Enemy {
       return hits;
     }
     return [{ damage: this.damage, delay: 0 }];
+  }
+
+  // Danger ring on the floor at the aggro radius — step inside to engage
+  _addAggroRing() {
+    const geo = new THREE.RingGeometry(this.aggroRadius - 0.08, this.aggroRadius, 48);
+    this._aggroRing = new THREE.Mesh(geo,
+      new THREE.MeshBasicMaterial({ color: 0xff3030, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
+    );
+    this._aggroRing.rotation.x = -Math.PI / 2;
+    this._aggroRing.position.y = 0.03;
+    this.group.add(this._aggroRing);
   }
 
   // Show/hide wind-up charge ring (for swinger archetype)

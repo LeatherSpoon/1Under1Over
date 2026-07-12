@@ -7,6 +7,7 @@ import {
   buildLandingSite, buildMine,         buildDepths,    buildVerdantMaw,
   buildLagoonCoast, buildFrozenTundra, buildSpaceship, buildWorkspace,
 } from './zones/index.js';
+import { mineWorldToCell, mineCellToWorld, isMineFloorCell } from './zones/Mine/layout.js';
 
 // Shared GLB model cache — loads each model once then reuses cloned scenes.
 // Failed loads are remembered in sessionStorage so a missing model is requested
@@ -288,6 +289,13 @@ export class Environment {
     const oreChanceMult = ([0, 0.4, 0.7, 1.0][stage] || 1.0) * techOreBoost;
     if (props && props.ore && Math.random() < props.chance * oreChanceMult) {
       loot[props.ore] = 1 + (stage === 3 ? 1 : 0);
+      rock.oreDropped = true;
+    }
+    // Pity: an ore vein always pays out at least once — force the drop on the
+    // depletion hit if every roll missed.
+    if (props && props.ore && rock.richness <= 0 && !rock.oreDropped) {
+      loot[props.ore] = (loot[props.ore] || 0) + 1;
+      rock.oreDropped = true;
     }
     // Ferrous ore drops from any mine block alongside the regular ore
     if (Math.random() < 0.15 * oreChanceMult) {
@@ -469,64 +477,87 @@ export class Environment {
     }
   }
 
+  // The mine cave is re-rolled per delve, so a fixed spawn point can land
+  // inside un-mined rock — an enemy stuck there is invisible and (for the
+  // stationary boss) unreachable. Snap to the nearest carved floor cell.
+  _snapToMineFloor(spawn) {
+    const { c, r } = mineWorldToCell(spawn.x, spawn.z);
+    if (isMineFloorCell(c, r)) return spawn;
+    for (let radius = 1; radius <= 6; radius++) {
+      for (let dr = -radius; dr <= radius; dr++) {
+        for (let dc = -radius; dc <= radius; dc++) {
+          if (Math.max(Math.abs(dc), Math.abs(dr)) !== radius) continue; // ring only
+          if (isMineFloorCell(c + dc, r + dr)) {
+            const w = mineCellToWorld(c + dc, r + dr);
+            return { ...spawn, x: w.x, z: w.z };
+          }
+        }
+      }
+    }
+    return spawn; // no floor nearby — leave as authored
+  }
+
   // ── Enemy spawn positions per zone (with archetype for variety) ───────────
   getEnemySpawns() {
     // Boss spawns carry `boss: true`; main.js filters out already-defeated
     // bosses before spawning, and EntityManager excludes them from timed respawn.
     switch (this.currentZone) {
-      // T1 — Rushers only (safe starter zone) + the Scrap Tyrant in the far corner
+      // T1 — Serpendrills only (safe starter zone) + the Scrap Tyrant in the far corner
       case 'landingSite': return [
-        { x: 14, z: 10,  archetype: 'rusher' },
-        { x: -12, z: 16, archetype: 'rusher' },
+        { x: 14, z: 10,  archetype: 'serpendrill' },
+        { x: -12, z: 16, archetype: 'serpendrill' },
         { x: 18, z: 18,  archetype: 'boss_landing', boss: true },
       ];
-      // T2 — Rushers in the working cavern, a Swinger mid-cavern, a Cinderling
-      // near the drill, a Rustmaw guarding the descent, Dunkraza posted at the
-      // Depths shaft (the toughest regular enemy in the early game), and the
-      // Forge Warden at the mouth of the winding passage to the Breach.
+      // T2 — Serpendrills through the working cavern, Reptlars pressing harder,
+      // Dunkraza posted at the Depths shaft (the toughest regular enemy in the
+      // early game), and the Forge Warden at the mouth of the passage to the Breach.
       case 'mine': return [
-        { x: -12.8, z: -3.2, archetype: 'rusher' },
-        { x: 12.8,  z: 3.2,  archetype: 'rusher' },
-        { x: 6.4,   z: 9.6,  archetype: 'swinger' },
-        { x: -6.4,  z: 6.4,  archetype: 'pyro' },
-        { x: 6.4,   z: 19.2, archetype: 'corroder' },
+        { x: -12.8, z: -3.2, archetype: 'serpendrill' },
+        { x: 12.8,  z: 3.2,  archetype: 'serpendrill' },
+        { x: 6.4,   z: 9.6,  archetype: 'reptlar' },
+        { x: -6.4,  z: 6.4,  archetype: 'serpendrill' },
+        { x: 6.4,   z: 19.2, archetype: 'reptlar' },
         { x: 16,    z: 3.2,  archetype: 'dunkraza' },
+        { x: -9.6,  z: 16,   archetype: 'serpendrill' },
         { x: -3.2,  z: 12.8, archetype: 'boss_mine', boss: true },
-      ];
-      // T3 — venomous jungle pack + the Maw Sovereign
+      ].map(s => this._snapToMineFloor(s));
+      // T3 — armored Reptlars + a Dunkraza elite + the Maw Sovereign
       case 'verdantMaw': return [
-        { x: 10,  z: 8,  archetype: 'rusher' },
-        { x: -8,  z: 10, archetype: 'stinger' },
-        { x: 12,  z: -6, archetype: 'swinger' },
-        { x: -10, z: -8, archetype: 'burst' },
-        { x: 6,   z: -9, archetype: 'regenerator' },
+        { x: 10,  z: 8,  archetype: 'serpendrill' },
+        { x: -8,  z: 10, archetype: 'reptlar' },
+        { x: 12,  z: -6, archetype: 'reptlar' },
+        { x: -10, z: -8, archetype: 'serpendrill' },
+        { x: 6,   z: -9, archetype: 'dunkraza' },
+        { x: -12, z: -4, archetype: 'reptlar' },
         { x: 0,   z: -12, archetype: 'boss_verdant', boss: true },
       ];
-      // T4 — shock + FP-drain pressure + the Tide Oracle
+      // T4 — Reptlar/Dunkraza pressure + the Tide Oracle
       case 'lagoonCoast': return [
-        { x: 12, z: 6,  archetype: 'swinger' },
-        { x: -10, z: 8, archetype: 'arc' },
-        { x: 8, z: -10, archetype: 'burst' },
-        { x: -6, z: -8, archetype: 'siphon' },
+        { x: 12, z: 6,  archetype: 'reptlar' },
+        { x: -10, z: 8, archetype: 'dunkraza' },
+        { x: 8, z: -10, archetype: 'reptlar' },
+        { x: -6, z: -8, archetype: 'dunkraza' },
         { x: -14, z: 0, archetype: 'boss_lagoon', boss: true },
       ];
-      // T5 — armored + sniper pressure + the Cryo Monarch
+      // T5 — Dunkraza + armored Hard Lizzy pressure + the Cryo Monarch
       case 'frozenTundra': return [
-        { x: 10, z: 6,  archetype: 'swinger' },
-        { x: -10, z: 6, archetype: 'burst' },
-        { x: 8, z: -10, archetype: 'longshot' },
-        { x: -8, z: -8, archetype: 'bulwark' },
-        { x: 5, z: 10,  archetype: 'specter' },
+        { x: 10, z: 6,  archetype: 'dunkraza' },
+        { x: -10, z: 6, archetype: 'hardlizzy' },
+        { x: 8, z: -10, archetype: 'dunkraza' },
+        { x: -8, z: -8, archetype: 'hardlizzy' },
+        { x: 5, z: 10,  archetype: 'dunkraza' },
+        { x: -13, z: -12, archetype: 'hardlizzy' },
         { x: 12, z: 12, archetype: 'boss_tundra', boss: true },
       ];
       case 'spaceship': return []; // no enemies in the ship
       case 'workspace': return []; // no enemies in the workspace
-      // T6 — escalating threats + The Unmaker at the heart of the grid
+      // T6 — Hard Lizzy + Cave Crab escalation + The Unmaker at the heart of the grid
       case 'depths': return [
-        { x: 5,  z: 3,  archetype: 'rampant' },
-        { x: -5, z: 3,  archetype: 'swinger' },
-        { x: 0,  z: -6, archetype: 'burst'   },
-        { x: 7,  z: -7, archetype: 'specter' },
+        { x: 5,  z: 3,  archetype: 'hardlizzy' },
+        { x: -5, z: 3,  archetype: 'cavecrab' },
+        { x: 0,  z: -6, archetype: 'hardlizzy' },
+        { x: 7,  z: -7, archetype: 'cavecrab' },
+        { x: -8, z: -3, archetype: 'cavecrab' },
         { x: 0,  z: 0,  archetype: 'boss_depths', boss: true },
       ];
       default: return [];

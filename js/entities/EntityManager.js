@@ -34,11 +34,11 @@ export class EntityManager {
     // Store spawn configs (with archetype) for respawning — bosses are unique
     // and never respawn on the timer.
     this._spawnPositions = enemySpawns.filter(s => !s.boss).map(s => ({
-      x: s.x, z: s.z, archetype: s.archetype || 'rusher'
+      x: s.x, z: s.z, archetype: s.archetype || 'serpendrill'
     }));
 
     for (const s of enemySpawns) {
-      this.enemies.push(new Enemy(this.scene, s.x, s.z, s.archetype || 'rusher'));
+      this.enemies.push(new Enemy(this.scene, s.x, s.z, s.archetype || 'serpendrill'));
     }
     for (const s of nodeSpawns) {
       const node = new ResourceNode(this.scene, s.x, s.z, s.type);
