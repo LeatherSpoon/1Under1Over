@@ -223,6 +223,23 @@ const ARCHETYPE_CONFIG = {
   },
 };
 
+// WoW-style threat tint relative to current player power: compare how fast the
+// player kills the enemy (~1 attack/s, after armor and dodge) vs how fast the
+// enemy kills the player. Recomputed periodically from main.js as stats grow.
+export function threatColorFor(enemy, stats) {
+  const hitDmg = Math.max(1, (stats.damage || 1) - (enemy.armor || 0));
+  const effHit = hitDmg * (1 - (enemy.dodgeChance || 0));
+  const killTime = enemy.maxHP / effHit;
+  const enemyDPS = enemy.damage / ((enemy.attackInterval || 2000) / 1000);
+  const surviveTime = (stats.maxHP || 1) / Math.max(0.1, enemyDPS);
+  const ratio = surviveTime / killTime; // >1 means you win the race
+  if (ratio >= 6) return 0x9e9e9e;    // trivial
+  if (ratio >= 3) return 0x44dd44;    // easy
+  if (ratio >= 1.5) return 0xffee44;  // even
+  if (ratio >= 0.75) return 0xff9922; // dangerous
+  return 0xff2222;                    // deadly
+}
+
 export class Enemy {
   constructor(scene, x = 6, z = 4, archetype = 'serpendrill') {
     this.id = ++enemyIdCounter;
@@ -458,6 +475,11 @@ export class Enemy {
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.02;
     this.group.add(ring);
+  }
+
+  // Tint the overhead threat indicator (bosses keep their authored color).
+  setThreatColor(hex) {
+    if (this._threatIndicator) this._threatIndicator.material.color.setHex(hex);
   }
 
   update(delta, playerPos, skipAggro = false, collisionCircles = null, collisionBoxes = null) {

@@ -12,6 +12,19 @@ function abbrevNum(n) {
   return v.toFixed(v < 10 ? 2 : v < 100 ? 1 : 0) + units[i];
 }
 
+// Progressive tab disclosure — deeper consoles come online as milestones land.
+// Conditions must be monotonic (a tab never re-locks) and derive from state
+// that already persists in saves; nothing extra is serialized.
+const TAB_UNLOCKS = [
+  { tab: 'tech-panel',         label: 'TECH',      unlocked: (h) => (h.pp?.prestigeCount ?? 0) >= 1 },
+  { tab: 'implant-panel',      label: 'IMPLANT',   unlocked: (h) => (h.pp?.prestigeCount ?? 0) >= 1 },
+  { tab: 'data-panel',         label: 'DATA',      unlocked: (h) => (h.pp?.prestigeCount ?? 0) >= 1 },
+  { tab: 'allocation-panel',   label: 'ALLOC',     unlocked: (h) => (h.pp?.prestigeCount ?? 0) >= 2 },
+  { tab: 'optimization-panel', label: 'OPT',       unlocked: (h) => (h.pp?.prestigeCount ?? 0) >= 2 },
+  { tab: 'challenges-panel',   label: 'TRIALS',    unlocked: (h) => (h.pp?.prestigeCount ?? 0) >= 3 },
+  { tab: 'expedition-panel',   label: 'FIELD OPS', unlocked: (h) => (h.gameStats?.enemiesDefeated ?? 0) >= 1 },
+];
+
 // Colored CSS icons for each item type — avoids emoji, uses styled rectangles/circles
 const INV_ICONS = {
   // Materials (square icons)
@@ -178,6 +191,7 @@ export class HUD {
     this._constructAddMode = true;
 
     this._buildStatList();
+    this._refreshTabUnlocks({ silent: true });
     this._wirePanelToggles();
     this._wireAllocationSliders();
     this._wireStatsSidebar();
@@ -200,6 +214,28 @@ export class HUD {
     this.crafting.onCraftProgress = (prog, dur) => {
       this._updateCraftProgressBar(prog, dur);
     };
+  }
+
+  // ── Progressive tab disclosure ───────────────────────────────────────────
+  // Hides menu tabs whose systems haven't come online yet; shows an unlock
+  // toast when a milestone reveals one. `silent` suppresses toasts (boot and
+  // save-load passes, where unlocks aren't new to the player).
+  _refreshTabUnlocks({ silent = false } = {}) {
+    for (const def of TAB_UNLOCKS) {
+      const btn = document.querySelector(`.menu-tab[data-tab="${def.tab}"]`);
+      if (!btn) continue;
+      const unlocked = def.unlocked(this);
+      const wasHidden = btn.style.display === 'none';
+      btn.style.display = unlocked ? '' : 'none';
+      if (unlocked && wasHidden && !silent) {
+        this.showAchievementToast({
+          icon: '🖥',
+          label: `${def.label} console online`,
+          desc: 'A new tab is available in the menu.',
+          reward: 0,
+        });
+      }
+    }
   }
 
   // ── Equipment proximity glow ──────────────────────────────────────────────
@@ -2395,6 +2431,7 @@ export class HUD {
     // Live-refresh the new idle panels while open (1s cadence — they have buttons)
     if (!this._slowRefreshAt || now - this._slowRefreshAt >= 1000) {
       this._slowRefreshAt = now;
+      this._refreshTabUnlocks();
       for (const [id, fn] of [
         ['expedition-panel', () => this._refreshExpedition()],
         ['challenges-panel', () => this._refreshChallenges()],
@@ -2427,7 +2464,7 @@ export class HUD {
     }
 
     const prestigeEl = document.getElementById('prestige-display');
-    if (prestigeEl) prestigeEl.textContent = `${this.pp.ppCap} max`;
+    if (prestigeEl) prestigeEl.textContent = `${Math.round(this.pp.ppCap * 100) / 100} max`;
 
     this.hpDisplay.textContent = `HP: ${Math.ceil(this.stats.currentHP)} / ${this.stats.maxHP}`;
     this.energyDisplay.textContent = `Energy: ${Math.ceil(this.stats.currentEnergy)} / ${this.stats.maxEnergy}`;

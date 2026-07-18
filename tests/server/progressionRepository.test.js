@@ -39,3 +39,18 @@ test('getBootstrap returns definitions and player state', async () => {
   assert.equal(bootstrap.player.inventory.inventory.copper, 4);
   assert.equal(bootstrap.player.version, 2);
 });
+
+test('saveSnapshot upserts the player row, stores the blob, and prunes history', async () => {
+  const pool = fakePool({});
+  const repo = createProgressionRepositoryFromPool(pool);
+
+  const result = await repo.saveSnapshot({ playerId: 'p1', version: 9 });
+
+  assert.equal(result.ok, true);
+  const sqls = pool.queries.map(q => q.sql);
+  assert.ok(sqls[0].includes('insert into players'), 'players row upserted first');
+  assert.ok(sqls[1].includes('insert into player_save_snapshots'), 'snapshot stored');
+  assert.ok(sqls[2].includes('delete from player_save_snapshots'), 'history pruned');
+  assert.equal(pool.queries[1].params[0], 'p1');
+  assert.equal(JSON.parse(pool.queries[1].params[1]).version, 9);
+});

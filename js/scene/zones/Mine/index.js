@@ -32,14 +32,16 @@ new GLTFLoader().load('./models/Drill.glb', (gltf) => { _drillModel.rig = gltf.s
 // Solid walls share one immortal "rock" so getCollisionBoxes() keeps them forever.
 const SOLID = { alive: true };
 
-// Cell-aligned wall runs and ore blocks are full 3.2m squares, so diagonally
-// adjacent cells (e.g. two ore veins touching corner-to-corner) leave zero
-// physical gap between them — less than the player's 0.7m diameter, trapping
-// the player against both boxes at once. Insetting every grid-block collision
-// box by this margin guarantees >= 0.7m of clearance at any diagonal touch
-// (cell centers are MINE_CELL*sqrt(2) ≈ 4.53m apart; 2*(1.6-0.3)*sqrt(2) ≈
-// 3.68m leaves an ~0.85m diagonal gap) without changing the visible geometry.
-const GRID_COLLISION_INSET = 0.3;
+// Grid-block collision boxes must tile with NO inset. Any inset > 0 opens a
+// 2*inset gap at every shared cell face; because AABB resolution at a seam only
+// pushes along the axis toward the nearer box, that gap is a free channel in the
+// perpendicular direction — the player threads straight through a visually-solid
+// wall (the "slipping through cracks" bug). Inset 0 makes adjacent boxes abut,
+// so the wall's z/x face stops the player. The old inset existed to let the
+// player squeeze diagonally between corner-touching cells, but the cave's
+// reachability is validated with 4-connectivity (generator.js reachableGates),
+// so no floor cell ever requires a diagonal move — blocking it traps no one.
+const GRID_COLLISION_INSET = 0;
 
 /**
  * The Mine — a Shadows-of-Brimstone-style descent.

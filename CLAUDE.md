@@ -106,6 +106,8 @@ Environment also supports:
 3. Call `system.load(data.key)` in `apply()`
 4. If the system applies bonuses to other systems on load (e.g., augmentations), implement an `applyBonuses(statsSystem)` method called explicitly during `apply()` rather than relying on the `onPurchase` callback (which isn't set yet at load time)
 
+**Cloud autosave (optional server):** `CloudSaveSystem` (`js/systems/CloudSaveSystem.js`, wired in `main.js`) uploads the full save blob to `player_save_snapshots` every 60s (skipping timestamp-only changes), flushes a `sendBeacon` on tab-hide/`pagehide`, and restores the latest snapshot on boot via `applySessionData()` (shared with the LOAD button in `saveButtons.js`). After a restore, `OfflineSystem.rewindTo(snapshot.timestamp)` re-runs offline gains against the restored state. All paths are silent no-ops while the server is down. The **CLOUD HUD button toggles autosave off** (`localStorage.pp_cloud_saves_enabled`) — pause it before loading god-mode test sessions or they overwrite the real cloud save. Gotchas: `SyncClient.baseUrl` follows `location.hostname` so LAN/phone sessions hit the same server; the beacon posts `text/plain` (a beacon can't run the CORS preflight `application/json` would need cross-port) and the server parses the body as JSON regardless; the repository keeps only the newest 20 snapshots per player.
+
 ### HUD / panels
 
 `HUD.js` manages all panels. Adding a new panel requires:

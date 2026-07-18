@@ -35,6 +35,7 @@ export class CombatUI {
 
     // Wire combat system callbacks
     combatSystem.onLog = (msg) => this._appendLog(msg);
+    combatSystem.onPlayerHit = (hit) => this._showHitFloater(hit);
     combatSystem.onFPUpdate = (cur, max) => this._updateFP(cur, max);
     combatSystem.onHPUpdate = (pHP, pMax, eHP, eMax) => this._updateHP(pHP, pMax, eHP, eMax);
     combatSystem.onCombatEnd = (won, fled) => this._onCombatEnd(won, fled);
@@ -190,6 +191,28 @@ export class CombatUI {
     if (!this.skillsMenu.hidden) {
       this.skillsMenuObj.update(cur);
     }
+  }
+
+  // Floating damage number over the enemy sprite so player hits are
+  // unmistakable — including why they underwhelmed (armor) or missed (dodge).
+  _showHitFloater(hit) {
+    const anchor = document.getElementById('enemy-sprite');
+    if (!anchor) return;
+    const el = document.createElement('div');
+    el.className = 'hit-floater';
+    if (hit.type === 'dodge') {
+      el.textContent = 'PHASED';
+      el.classList.add('hit-dodge');
+    } else {
+      el.textContent = `−${hit.dmg}`;
+      if (hit.absorbed > 0) {
+        el.textContent += ` (${hit.absorbed} blocked)`;
+        el.classList.add('hit-blocked');
+      }
+    }
+    el.style.left = `${30 + Math.random() * 40}%`;
+    anchor.appendChild(el);
+    setTimeout(() => el.remove(), 900);
   }
 
   _appendLog(msg) {

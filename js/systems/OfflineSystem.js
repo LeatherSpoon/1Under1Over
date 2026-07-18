@@ -19,6 +19,13 @@ export class OfflineSystem {
     try { localStorage.setItem(this._storageKey, Date.now().toString()); } catch (_) {}
   }
 
+  /** Rewind the last-active stamp (e.g. to a restored cloud snapshot's
+   *  timestamp) so offline gains can be recomputed for the restored state. */
+  rewindTo(timestamp) {
+    if (!timestamp) return;
+    try { localStorage.setItem(this._storageKey, String(timestamp)); } catch (_) {}
+  }
+
   /** Call every frame to keep the timestamp fresh. */
   tick() {
     if (Date.now() > this._nextStamp) {

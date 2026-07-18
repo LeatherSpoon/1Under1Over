@@ -177,8 +177,8 @@ async function applyMasteryAward(repo, ctx, event) {
 // ── Stat leveling ─────────────────────────────────────────────────────────────
 // Re-derives cost server-side to prevent spoofed PP deductions.
 
-const STAT_UPGRADE_BASE_COST  = 10;
-const STAT_UPGRADE_COST_SCALE = 1.02222;
+const STAT_UPGRADE_BASE_COST  = 15;
+const STAT_UPGRADE_COST_SCALE = 1.08;
 
 function statUpgradeCost(level) {
   return Math.ceil(STAT_UPGRADE_BASE_COST * level * Math.pow(STAT_UPGRADE_COST_SCALE, level - 1));

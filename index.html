@@ -13,6 +13,35 @@
   <link rel="stylesheet" href="css/menu.css" />
   <link rel="stylesheet" href="css/mobile.css" />
 
+  <!-- ── ?headless: drive rAF via MessageChannel when the tab is hidden ──
+       Hidden tabs never fire requestAnimationFrame and throttle timers, which
+       freezes the game loop for automated testing (QA agents, browser panes).
+       Message tasks are not throttled, so this shim paces ~30fps ticks through
+       a MessageChannel. Opt-in only; runs sync before any module loads. -->
+  <script>
+    if (new URLSearchParams(location.search).has('headless')) {
+      (function () {
+        var channel = new MessageChannel();
+        var pending = [];
+        var lastTick = performance.now();
+        channel.port1.onmessage = function () {
+          var now = performance.now();
+          if (now - lastTick < 33) { channel.port2.postMessage(0); return; }
+          lastTick = now;
+          var cbs = pending; pending = [];
+          for (var i = 0; i < cbs.length; i++) cbs[i](now);
+          if (pending.length) channel.port2.postMessage(0);
+        };
+        window.requestAnimationFrame = function (cb) {
+          pending.push(cb);
+          if (pending.length === 1) channel.port2.postMessage(0);
+          return pending.length;
+        };
+        window.cancelAnimationFrame = function () {};
+      })();
+    }
+  </script>
+
   <!-- ── file:// protocol guard ── runs sync before any module loads ── -->
   <script>
     if (window.location.protocol === 'file:') {
@@ -62,6 +91,16 @@
 
         document.body.appendChild(overlay);
       });
+    }
+  </script>
+
+  <!-- ── on-device debug console (append ?debug to the URL) ── iOS Safari has no devtools without a Mac ── -->
+  <script>
+    if (new URLSearchParams(window.location.search).has('debug')) {
+      var erudaScript = document.createElement('script');
+      erudaScript.src = 'https://cdn.jsdelivr.net/npm/eruda@3/eruda.min.js';
+      erudaScript.onload = function () { window.eruda.init(); };
+      document.head.appendChild(erudaScript);
     }
   </script>
 
@@ -323,6 +362,7 @@
       <button id="btn-toggle-minigame" class="panel-toggle-btn" title="PP Minigame" style="background:rgba(20,15,0,0.85);border-color:#ffcc00;color:#ffcc00;">GAME</button>
       <button id="btn-save" class="panel-toggle-btn" title="Save Session" style="background:rgba(20,10,0,0.85);border-color:#ff8800;color:#ffaa44;">SAVE</button>
       <button id="btn-load" class="panel-toggle-btn" title="Load Session" style="background:rgba(0,10,20,0.85);border-color:#4488ff;color:#66aaff;">LOAD</button>
+      <button id="btn-cloud" class="panel-toggle-btn" title="Cloud autosave" style="background:rgba(0,15,18,0.85);border-color:#33ddaa;color:#66ffcc;">CLOUD</button>
       <div id="sync-status" class="sync-status" style="font-size:0.58rem;color:#9ad7ff;text-align:center;margin-top:2px;">Local</div>
       <input type="file" id="session-file-input" accept=".json" hidden />
     </div>

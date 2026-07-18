@@ -33,6 +33,7 @@ export class CombatSystem {
     this.onRescue = null;
     this.onWindup = null;   // fn(isCharging) — called for swinger wind-up
     this.onBurstStart = null; // fn() — for burst attacker animation
+    this.onPlayerHit = null; // fn({type:'hit'|'dodge', dmg, absorbed}) — damage floater
     this.onBossDefeated = null; // fn(archetype) — wired to BossSystem in main.js
   }
 
@@ -234,6 +235,7 @@ export class CombatSystem {
     const enemy = this.enemy;
     if (enemy.dodgeChance > 0 && Math.random() < enemy.dodgeChance) {
       this._log(`${enemy.name} phases through your attack!`);
+      if (this.onPlayerHit) this.onPlayerHit({ type: 'dodge' });
       return 0;
     }
     const dmg = Math.max(1, rawDmg - (enemy.armor || 0));
@@ -241,6 +243,7 @@ export class CombatSystem {
       this._log(`${enemy.name}'s armor absorbs ${rawDmg - dmg}.`);
     }
     this._dealDamageToEnemy(dmg);
+    if (this.onPlayerHit) this.onPlayerHit({ type: 'hit', dmg, absorbed: rawDmg - dmg });
     return dmg;
   }
 

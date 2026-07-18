@@ -62,7 +62,7 @@ const CHAINS = [
         requires: 'bootSequence',
         steps: [
           { id: 'doOffload',  desc: 'Offload PP once to expand your cap' },
-          { id: 'earn500pp',  desc: 'Accumulate 500 PP' },
+          { id: 'earn500pp',  desc: 'Accumulate 500 PP Cap' },
         ],
       },
       {
@@ -73,7 +73,7 @@ const CHAINS = [
         requires: 'capacityExpansion',
         steps: [
           { id: 'offload3x',   desc: 'Offload PP 3 times total' },
-          { id: 'earn5000pp',  desc: 'Accumulate 5,000 PP' },
+          { id: 'earn5000pp',  desc: 'Accumulate 5,000 PP Cap' },
         ],
       },
     ],
@@ -344,7 +344,7 @@ const CHAINS = [
         desc: 'Your ship is more than transport. Accumulate enough PP to bring its deeper systems online.',
         reward: { pp: 500, label: '500 PP' },
         steps: [
-          { id: 'earn5000ppShip', desc: 'Accumulate 5,000 PP' },
+          { id: 'earn5000ppShip', desc: 'Accumulate 5,000 PP Cap' },
           { id: 'visitShip',      desc: 'Visit the Spaceship zone' },
         ],
       },
@@ -390,7 +390,7 @@ const SIDE_QUESTS = [
   { id: 'sq_stat10',      cat: 'Stats',        icon: '📈', title: 'Specialist',         desc: 'Level any stat to 10.',       reward: { pp: 150 }, steps: [{ id: 'statLv10',   desc: 'Level any stat to 10' }] },
   { id: 'sq_stat25',      cat: 'Stats',        icon: '📊', title: 'Expert',             desc: 'Level any stat to 25.',       reward: { pp: 500 }, steps: [{ id: 'statLv25',   desc: 'Level any stat to 25' }] },
   // Power
-  { id: 'sq_pp1000',      cat: 'Power',        icon: '⚡', title: 'Power Surge',        desc: 'Accumulate 1,000 PP.',        reward: { pp: 50 },  steps: [{ id: 'pp1000',     desc: 'Accumulate 1,000 PP' }] },
+  { id: 'sq_pp1000',      cat: 'Power',        icon: '⚡', title: 'Power Surge',        desc: 'Accumulate 1,000 PP Cap.',    reward: { pp: 50 },  steps: [{ id: 'pp1000',     desc: 'Accumulate 1,000 PP Cap' }] },
   { id: 'sq_offload5',    cat: 'Power',        icon: '♻', title: 'Recurring Revenue',  desc: 'Offload PP 5 times.',         reward: { pp: 200 }, steps: [{ id: 'offload5',   desc: 'Offload PP 5 times' }] },
   // Drones
   { id: 'sq_drones3',     cat: 'Drones',       icon: '🤖', title: 'Mini Swarm',         desc: 'Own 3 drones.',               reward: { pp: 150 }, steps: [{ id: 'drones3',    desc: 'Own 3 drones' }] },
@@ -430,6 +430,7 @@ export class QuestSystem {
     this._counters = {
       steps: 0,
       pp: 0,
+      ppCap: 0,
       offloads: 0,
       enemiesDefeated: 0,
       drillCount: 0,
@@ -614,14 +615,17 @@ export class QuestSystem {
     if (total >= 25000) this._completeSideStep('sq_steps25k',  'steps25000');
   }
 
-  recordPP(total) {
+  recordPP(total, cap) {
     this._counters.pp = total;
-    if (total >= 100)  this._completeChainStep('powerCore',     'bootSequence',      'earn100pp');
-    if (total >= 500)  this._completeChainStep('powerCore',     'capacityExpansion', 'earn500pp');
-    if (total >= 5000) this._completeChainStep('powerCore',     'powerOverflow',     'earn5000pp');
-    if (total >= 5000) this._completeChainStep('transcendence', 'shipAccess',        'earn5000ppShip');
+    this._counters.ppCap = cap;
+    if (total >= 100) this._completeChainStep('powerCore', 'bootSequence', 'earn100pp');
+    // "Accumulate N PP Cap" steps track the cap itself — monotonic, so progress
+    // never appears to reset when an offload spends the held PP.
+    if (cap >= 500)  this._completeChainStep('powerCore',     'capacityExpansion', 'earn500pp');
+    if (cap >= 5000) this._completeChainStep('powerCore',     'powerOverflow',     'earn5000pp');
+    if (cap >= 5000) this._completeChainStep('transcendence', 'shipAccess',        'earn5000ppShip');
     // Side quest
-    if (total >= 1000) this._completeSideStep('sq_pp1000', 'pp1000');
+    if (cap >= 1000) this._completeSideStep('sq_pp1000', 'pp1000');
     // World explorer unlocks (unlock = first visit to zone means PP was >= threshold)
     // — handled via recordZoneVisit
   }

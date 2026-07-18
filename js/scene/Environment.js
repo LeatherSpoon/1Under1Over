@@ -153,6 +153,7 @@ export class Environment {
     this._offloadStationPos = null;
     this._fabricatorPos = null;
     this._chargingStationPos = null;
+    this._combatSimPos = null;
     this._craftTerminalPos = null;
     this._droneMonitorPos = null;
     this._ascensionTerminalPos = null;
@@ -1320,6 +1321,49 @@ export class Environment {
     this._chargingStationPos = { x, z };
   }
 
+  // Sparring rig — simulated combat trains STR/DEF passively (no drops)
+  _addCombatSimRig(x, z) {
+    const g = new THREE.Group();
+
+    // Base mat (sparring pad)
+    const baseGeo = new THREE.CylinderGeometry(0.85, 0.95, 0.12, 10);
+    const base = new THREE.Mesh(baseGeo, createToonMaterial(0x3a2a3a));
+    base.position.y = 0.06;
+    base.castShadow = true;
+    g.add(base);
+
+    // Holo-opponent silhouette (translucent orange sparring dummy)
+    const holoMat = new THREE.MeshBasicMaterial({ color: 0xff8844, transparent: true, opacity: 0.45 });
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.6, 0.3), holoMat);
+    torso.position.y = 0.95;
+    g.add(torso);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 6), holoMat);
+    head.position.y = 1.45;
+    g.add(head);
+
+    // Emitter pylon behind the dummy
+    const pylon = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, 1.7, 8), createToonMaterial(0x2a3a4a));
+    pylon.position.set(0, 0.85, -0.55);
+    pylon.castShadow = true;
+    addOutline(pylon, 0.04);
+    g.add(pylon);
+
+    // Projection ring (orange glow)
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(0.65, 0.05, 8, 20),
+      new THREE.MeshBasicMaterial({ color: 0xff8844 })
+    );
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = 0.16;
+    g.add(ring);
+
+    g.position.set(x, 0, z);
+    this.group.add(g);
+    this._collisionCircles.push({ x, z, r: 1.0 });
+
+    this._combatSimPos = { x, z };
+  }
+
   _addCraftTerminal(x, z) {
     const g = new THREE.Group();
 
@@ -1397,6 +1441,7 @@ export class Environment {
   getOffloadStationPos() { return this._offloadStationPos || null; }
   getFabricatorPos() { return this._fabricatorPos || null; }
   getChargingStationPos() { return this._chargingStationPos || null; }
+  getCombatSimPos() { return this._combatSimPos || null; }
   getCraftTerminalPos() { return this._craftTerminalPos || null; }
   getDroneMonitorPos() { return this._droneMonitorPos || null; }
   getAscensionTerminalPos() { return this._ascensionTerminalPos || null; }

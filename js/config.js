@@ -13,12 +13,12 @@ export const CONFIG = {
   // PP System
   INITIAL_PP_RATE: 1.0,      // PP per second
   INITIAL_PP_CAP: 150,       // starting max PP
-  OFFLOAD_CAP_MULTIPLIER: 4, // capGain = floor(sqrt(ppOffloaded) * multiplier)
+  OFFLOAD_CAP_MULTIPLIER: 4, // capGain = floor(sqrt(pp) * multiplier * fillFraction) — see PPSystem.offload
   PP_PER_STEP: 0.25,         // PP gained per step (increased from 0.05)
 
   // Stats
-  STAT_UPGRADE_BASE_COST: 10,
-  STAT_UPGRADE_COST_SCALE: 1.02222, // cost = base * level * scale^(level-1)  (near-linear)
+  STAT_UPGRADE_BASE_COST: 15,
+  STAT_UPGRADE_COST_SCALE: 1.08, // cost = base * level * scale^(level-1) — mirrored in server/services/transactionService.js
 
   // Derived stat formulas
   BASE_MAX_HP: 50,            // base HP before health level scaling
@@ -37,6 +37,7 @@ export const CONFIG = {
   SCRAPPER_HP: 40,
   SCRAPPER_PP_REWARD: 15,
   RUN_BASE_CHANCE: 0.5,
+  COMBAT_GRACE_MS: 1500,     // enemy holds its first attack until the player acts (or this elapses)
 
   // FP costs and damage multipliers
   SKILLS: {
@@ -83,6 +84,9 @@ export const CONFIG = {
   BASE_GATHER_TIME: 2.0,    // seconds
   GATHER_INTERACT_RADIUS: 2.0,
   GATHER_SPEED_PER_LEVEL: 0.08, // 8% faster per gatherSpeed level above 1
+
+  // Combat Simulator (Spaceship sparring rig)
+  COMBAT_SIM_RATE: 0.3,     // PP-equivalent XP/s banked into each of STR and DEF while enabled
 
   // Environments PP unlock thresholds
   ENV_UNLOCK: {
