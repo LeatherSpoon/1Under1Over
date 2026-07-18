@@ -17,7 +17,7 @@ export class SaveSystem {
       techTree, mastery, sync, factory, codex, augmentations,
       mathematician, timeWarp, modifiers, missionTracker, questSystem, assembly,
       extractor, processingNodes, tripartite, bosses, expedition, challenges,
-      neuralImplant, mineDelve,
+      neuralImplant, combatSim, mineDelve,
     } = this.systems;
 
     const data = {
@@ -124,6 +124,7 @@ export class SaveSystem {
       expedition:    expedition    ? expedition.serialize()    : null,
       challenges:    challenges    ? challenges.serialize()    : null,
       neuralImplant: neuralImplant ? neuralImplant.serialize() : null,
+      combatSim:     combatSim     ? combatSim.serialize()     : null,
       mineDelve:     mineDelve     ? mineDelve.serialize()     : null,
     };
 
@@ -138,6 +139,16 @@ export class SaveSystem {
       data.equipment.slots[slot] = item ? { ...item } : null;
     }
 
+    return data;
+  }
+
+  /**
+   * Build the same snapshot saveToFile writes, without downloading it.
+   * Used by the cloud autosave.
+   */
+  buildSaveData(currentZone, playerX, playerZ, sessionName = 'Cloud Autosave') {
+    const data = this._buildSaveData(currentZone, playerX, playerZ);
+    data.sessionName = sessionName;
     return data;
   }
 
@@ -200,7 +211,7 @@ export class SaveSystem {
       techTree, mastery, sync, factory, codex, augmentations,
       mathematician, timeWarp, modifiers, missionTracker, questSystem, assembly,
       extractor, processingNodes, tripartite, bosses, expedition, challenges,
-      neuralImplant, mineDelve,
+      neuralImplant, combatSim, mineDelve,
     } = this.systems;
 
     // Drill System
@@ -334,6 +345,7 @@ export class SaveSystem {
       challenges.applyBonuses();
     }
     if (neuralImplant && data.neuralImplant) neuralImplant.deserialize(data.neuralImplant);
+    if (combatSim && data.combatSim) combatSim.deserialize(data.combatSim);
     if (mineDelve && data.mineDelve) mineDelve.load(data.mineDelve);
     // Legacy: migrate old taskSystem saves (no-op if not present)
 

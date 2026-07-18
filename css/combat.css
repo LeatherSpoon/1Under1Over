@@ -69,6 +69,15 @@
     0 4px 20px rgba(196,90,26,0.3);
 }
 
+/* Live 3D snapshot replaces the stylized square when available */
+#enemy-sprite.has-portrait {
+  background-size: cover;
+  background-position: center;
+}
+#enemy-sprite.has-portrait::before {
+  display: none;
+}
+
 /* Enemy face detail */
 #enemy-sprite::before {
   content: '';
@@ -81,6 +90,27 @@
   background: #ff4444;
   border-radius: 2px;
   box-shadow: 0 0 8px #ff4444;
+}
+
+/* Floating player-hit damage numbers over the enemy sprite */
+.hit-floater {
+  position: absolute;
+  top: 10px;
+  transform: translateX(-50%);
+  font-weight: bold;
+  font-size: 1.05rem;
+  color: #ffee66;
+  text-shadow: 0 0 6px rgba(0,0,0,0.9);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: hit-float 0.9s ease-out forwards;
+  z-index: 2;
+}
+.hit-floater.hit-blocked { color: #ff9944; font-size: 0.85rem; }
+.hit-floater.hit-dodge { color: #88aacc; font-size: 0.85rem; letter-spacing: 0.1em; }
+@keyframes hit-float {
+  from { opacity: 1; margin-top: 0; }
+  to   { opacity: 0; margin-top: -34px; }
 }
 
 /* ── Player combat panel (right) ─────────────────────────────────── */

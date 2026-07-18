@@ -15,17 +15,29 @@ export class PPSystem {
 
   /**
    * Offload: sacrifice current PP for a permanent cap increase.
-   * capGain = floor(sqrt(ppTotal) * OFFLOAD_CAP_MULTIPLIER * rateMult)
+   * capGain = floor(sqrt(pp) * OFFLOAD_CAP_MULTIPLIER * rateMult * fill)
+   * where fill = pp / ppCap. The fill factor makes splitting an offload
+   * strictly worse than waiting (spam at tiny amounts rounds to 0 gain),
+   * so offloading at full cap is always the optimal play.
+   * Returns null (and takes nothing) when the gain would round to 0.
    */
   offload(rateMult = 1) {
     const taken = Math.floor(this.ppTotal);
-    if (taken < 1) return null;
-    const capGain = Math.floor(Math.sqrt(taken) * CONFIG.OFFLOAD_CAP_MULTIPLIER * (rateMult || 1));
+    const capGain = this.previewOffloadGain(rateMult);
+    if (taken < 1 || capGain < 1) return null;
     this._baseCap += capGain;
     this._recomputeCap();
     this.ppTotal = 0;
     this.prestigeCount++;
     return { taken, capGain, newCap: this.ppCap, rateMult: rateMult || 1 };
+  }
+
+  /** Cap gain the current PP total would yield — shared by the interact hint. */
+  previewOffloadGain(rateMult = 1) {
+    const taken = Math.floor(this.ppTotal);
+    if (taken < 1) return 0;
+    const fill = this.ppCap > 0 ? Math.min(1, taken / this.ppCap) : 1;
+    return Math.floor(Math.sqrt(taken) * CONFIG.OFFLOAD_CAP_MULTIPLIER * (rateMult || 1) * fill);
   }
 
   /** Set the raw cap directly (used by AscensionSystem reset, SaveSystem load). */

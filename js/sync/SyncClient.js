@@ -121,6 +121,60 @@ export class SyncClient {
     }
   }
 
+  // ── Cloud save snapshots (player_save_snapshots) ──────────────────────────
+
+  async uploadSnapshot(snapshot) {
+    if (!this.fetch) return false;
+    try {
+      const response = await this.fetch(`${this.baseUrl}/api/save-snapshot`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ...snapshot, playerId: this.playerId })
+      });
+      const body = await response.json();
+      return !!(response.ok && body.ok);
+    } catch {
+      return false;
+    }
+  }
+
+  async fetchLatestSnapshot() {
+    if (!this.fetch) return null;
+    try {
+      const response = await this.fetch(`${this.baseUrl}/api/save-snapshot/${encodeURIComponent(this.playerId)}`);
+      if (!response.ok) return null;
+      return await response.json();
+    } catch {
+      return null;
+    }
+  }
+
+  // Best-effort upload while the page is closing. text/plain keeps sendBeacon
+  // CORS-safelisted (a beacon can't run the preflight a cross-port
+  // application/json request requires); the server parses the body as JSON
+  // regardless of content-type.
+  beaconSnapshot(snapshot) {
+    const json = JSON.stringify({ ...snapshot, playerId: this.playerId });
+    const nav = globalThis.navigator;
+    if (nav?.sendBeacon) {
+      try {
+        return nav.sendBeacon(`${this.baseUrl}/api/save-snapshot`, new Blob([json], { type: 'text/plain' }));
+      } catch {
+        return false;
+      }
+    }
+    if (this.fetch) {
+      this.fetch(`${this.baseUrl}/api/save-snapshot`, {
+        method: 'POST',
+        keepalive: true,
+        headers: { 'content-type': 'application/json' },
+        body: json
+      }).catch(() => {});
+      return true;
+    }
+    return false;
+  }
+
   async uploadTelemetrySession(report) {
     try {
       await this.fetch(`${this.baseUrl}/api/telemetry/sessions`, {

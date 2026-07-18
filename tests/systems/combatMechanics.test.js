@@ -8,7 +8,7 @@ import { InventorySystem } from '../../js/systems/InventorySystem.js';
 function makeEnemy(overrides = {}) {
   return {
     name: 'TEST DUMMY',
-    archetype: 'rusher',
+    archetype: 'serpendrill',
     maxHP: 100,
     damage: 5,
     attackInterval: 60000, // effectively never attacks during a test

@@ -3,6 +3,7 @@ import { Environment } from './scene/Environment.js';
 import { LootPopups } from './scene/LootPopups.js';
 import { Player } from './entities/Player.js';
 import { EntityManager } from './entities/EntityManager.js';
+import { threatColorFor } from './entities/Enemy.js';
 import { PPSystem } from './systems/PPSystem.js';
 import { StatsSystem } from './systems/StatsSystem.js';
 import { CombatSystem } from './systems/CombatSystem.js';
@@ -19,6 +20,7 @@ import { SaveSystem } from './systems/SaveSystem.js';
 import { OfflineSystem } from './systems/OfflineSystem.js';
 import { AchievementSystem } from './systems/AchievementSystem.js';
 import { AutoCombatSystem } from './systems/AutoCombatSystem.js';
+import { CombatSimSystem } from './systems/CombatSimSystem.js';
 import { MinigameSystem } from './systems/MinigameSystem.js';
 import { DrillSystem } from './systems/DrillSystem.js';
 import { AscensionSystem } from './systems/AscensionSystem.js';
@@ -44,7 +46,8 @@ import { createSwitchZone } from './zoneManager.js';
 import { MINE_BREACH_Z, mineWorldToCell } from './scene/zones/Mine/layout.js';
 import { MineDelveSystem } from './systems/MineDelveSystem.js';
 import { initMenuController } from './menuController.js';
-import { initSaveButtons } from './saveButtons.js';
+import { initSaveButtons, applySessionData } from './saveButtons.js';
+import { CloudSaveSystem } from './systems/CloudSaveSystem.js';
 import { initMissionTracker } from './missionTracker.js';
 import { QuestSystem } from './systems/QuestSystem.js';
 import { BossSystem } from './systems/BossSystem.js';
@@ -53,6 +56,12 @@ import { ChallengeSystem } from './systems/ChallengeSystem.js';
 import { NeuralImplantSystem } from './systems/NeuralImplantSystem.js';
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
+
+// Cave "transparency radius": feed the mine reveal shader the player position so
+// rock opens a hole around them. Redundant with Player.js's through-wall ghost;
+// left off so tall rock stays solid (no "slipping through cracks"). See the feed
+// loop in gameLoop().
+const MINE_WALL_REVEAL = false;
 
 const canvas = document.getElementById('game-canvas');
 
@@ -74,7 +83,12 @@ const ppSystem        = new PPSystem();
 const statsSystem     = new StatsSystem();
 const inventorySystem = new InventorySystem();
 const definitions     = createLocalDefinitions();
-const syncClient      = new SyncClient({ playerId: 'local-player' });
+// API host follows the page host so LAN/phone sessions reach the same server
+// (and the same cloud saves) as the desktop.
+const syncClient      = new SyncClient({
+  playerId: 'local-player',
+  baseUrl: `http://${globalThis.location?.hostname || 'localhost'}:3000`,
+});
 const techTree        = new TechTreeSystem({ nodes: definitions.techNodes, sync: syncClient });
 const mastery         = new CraftingMasterySystem({ tracks: definitions.masteryTracks, sync: syncClient });
 const combatSystem    = new CombatSystem(statsSystem, ppSystem, inventorySystem);
@@ -87,6 +101,14 @@ const craftingSystem  = new CraftingSystem(inventorySystem, statsSystem, {
 });
 const droneSystem     = new DroneSystem(inventorySystem, ppSystem, { sync: syncClient });
 const equipmentSystem = new EquipmentSystem(statsSystem);
+// Every pilot starts armed — a blade ground from landing-pod scrap. Loading a
+// save replaces it with the save's own equipment in SaveSystem.apply().
+equipmentSystem.equip({
+  label: 'Scrap Blade',
+  slot: 'weapon',
+  tier: 'Basic',
+  statBonuses: { strength: 1 },
+});
 const gameStats       = new GameStatistics();
 const offlineSystem   = new OfflineSystem(ppSystem, droneSystem, inventorySystem);
 const achievements    = new AchievementSystem();
@@ -109,6 +131,7 @@ const bossSystem      = new BossSystem(ppSystem);
 const expedition      = new ExpeditionSystem(ppSystem, statsSystem, inventorySystem);
 const challenges      = new ChallengeSystem(ppSystem);
 const neuralImplant   = new NeuralImplantSystem(ppSystem, statsSystem);
+const combatSim       = new CombatSimSystem(statsSystem);
 
 // Apply ascension multiplier to PP system (challenge rewards fold in each frame)
 ppSystem.globalMultiplier = ascension.ppMultiplier * challenges.ppRateMult;
@@ -128,9 +151,24 @@ offlineSystem.setReturnContext({ stats: statsSystem, ascension, timeWarp, expedi
 const offlineSummary = offlineSystem.applyAndSummarize();
 offlineSystem.stamp();
 
-// Wire rescue drone — switches zone back to Landing Site after defeat
+// Wire rescue drone — switches zone back to Landing Site after defeat.
+// Flavor lines: add new sayings here; one is picked at random per rescue.
+const RESCUE_SAYINGS = [
+  'Rescue drone deployed — pilot recovered.',
+  'Vitals critical. Extraction complete.',
+  'Recovered at the edge of shutdown.',
+  'The drone always comes back for you.',
+];
 combatSystem.onRescue = () => {
-  setTimeout(() => switchZone('landingSite'), 1200);
+  setTimeout(() => {
+    switchZone('landingSite');
+    hud.showAchievementToast({
+      icon: '🛟',
+      label: RESCUE_SAYINGS[Math.floor(Math.random() * RESCUE_SAYINGS.length)],
+      desc: 'Returned to base — HP restored. Nothing was lost.',
+      reward: 0,
+    });
+  }, 1200);
 };
 
 // Track player damage dealt for highest hit
@@ -221,7 +259,7 @@ const hud = new HUD(
   { bosses: bossSystem, expedition, challenges, implant: neuralImplant }
 );
 const combatUI = new CombatUI(
-  combatSystem, statsSystem, entityManager, player, inventorySystem, ppSystem
+  combatSystem, statsSystem, entityManager, player, inventorySystem, ppSystem, sceneManager
 );
 
 // Augmentations — apply stat bonuses on purchase
@@ -267,6 +305,14 @@ challenges.onFail = (def, reason) => {
   hud.showAchievementToast({
     icon: '✖', label: `Trial Failed: ${def.label}`,
     desc: `${reason}. Restart it from the TRIALS panel.`, reward: 0,
+  });
+};
+
+// Combat Simulator — sparring-rig stat levels announce themselves
+combatSim.onLevelUp = (statName, newLevel) => {
+  hud.showAchievementToast({
+    icon: '🥊', label: `Combat Sim: ${statsSystem.getStatLabel(statName)} Lv ${newLevel}`,
+    desc: 'Trained in the sparring simulator', reward: 0,
   });
 };
 
@@ -501,6 +547,7 @@ const saveSystem = new SaveSystem({
   expedition,
   challenges,
   neuralImplant,
+  combatSim,
   mineDelve,
 });
 
@@ -569,7 +616,34 @@ const switchZone = createSwitchZone({
   },
 });
 
-initSaveButtons({ saveSystem, env, player, hud, switchZone });
+// ── Cloud saves — autosave to the optional server + boot restore ────────────
+const cloudSaves = new CloudSaveSystem({
+  sync: syncClient,
+  saveSystem,
+  getZone: () => env.currentZone,
+  getPlayerPos: () => ({ x: player.position.x, z: player.position.z }),
+});
+cloudSaves.start();
+cloudSaves.fetchLatest().then(snap => {
+  if (!snap) return;
+  const result = applySessionData(snap, { saveSystem, player, hud, switchZone });
+  if (!result) return;
+  // Credit offline gains for the time since the snapshot was taken, now that
+  // the restored state (PP rate, drones, expedition) is live.
+  offlineSystem.rewindTo(snap.timestamp);
+  const summary = offlineSystem.applyAndSummarize();
+  offlineSystem.stamp();
+  if (summary) hud.showOfflineBanner(summary);
+  const info = SaveSystem.getSaveInfo(snap);
+  hud.showAchievementToast({
+    icon: '☁',
+    label: 'Cloud save restored',
+    desc: `${info.sessionName} — ${info.zone}, ${info.pp} PP`,
+    reward: 0,
+  });
+});
+
+initSaveButtons({ saveSystem, env, player, hud, switchZone, cloudSaves });
 window.__debugSwitchZone = switchZone;
 
 let _pendingZone = null;
@@ -612,11 +686,6 @@ document.addEventListener('keydown', e => {
   // [F] key — plant seed
   if (e.code === 'KeyF' && !player.isInCombat && !player.isGathering) {
     _tryPlantSeed();
-  }
-  // [Q] key — toggle auto-combat
-  if (e.code === 'KeyQ') {
-    const on = autoCombat.toggle();
-    hud.showAutoCombatStatus(on);
   }
 });
 
@@ -776,7 +845,11 @@ function handleExtendedGather(delta) {
           _gatherDuration = 2.5 * (techTree?.owned.has('swiftHarvest') ? 0.8 : 1) / (statsSystem.gatherSpeedMult * modifiers.gatherMult);
           _gatherType = 'tree';
         }
+      } else {
+        hud.showInteractHint(`Clear Tree – need ${_energyCost(CONFIG.ENERGY_COST_TREE)} energy`);
       }
+    } else {
+      hud.showInteractHint('Need Terrain Cutter to clear trees');
     }
     return true;
   }
@@ -956,22 +1029,51 @@ function handleSpaceshipInteractions() {
       const ppAvail = Math.floor(ppSystem.ppTotal);
       if (ppAvail >= 1) {
         const rateMult = tripartite.currentRateMultiplier;
-        const previewGain = Math.floor(Math.sqrt(ppAvail) * CONFIG.OFFLOAD_CAP_MULTIPLIER * rateMult);
+        const previewGain = ppSystem.previewOffloadGain(rateMult);
         const rateLabel = rateMult > 1.005 ? ` ×${rateMult.toFixed(2)}` : '';
-        candidates.push({
-          dist,
-          hint: `[E/ACT] Offload: −${ppAvail} PP → +${previewGain} cap${rateLabel}`,
-          act: () => {
-            const result = ppSystem.offload(tripartite.currentRateMultiplier);
-            if (result) {
-              hud.showInteractHint(`Offloaded! −${result.taken} PP → +${result.capGain} cap (now ${Math.floor(result.newCap)})`);
-              questSystem.recordOffload(ppSystem.prestigeCount);
-              challenges.recordOffload(result.taken);
-              worldEffects.triggerOffload(player.position);
-            }
-          },
-        });
+        if (previewGain >= 1) {
+          candidates.push({
+            dist,
+            hint: `[E/ACT] Offload: −${ppAvail} PP → +${previewGain} cap${rateLabel}`,
+            act: () => {
+              const result = ppSystem.offload(tripartite.currentRateMultiplier);
+              if (result) {
+                hud.showInteractHint(`Offloaded! −${result.taken} PP → +${result.capGain} cap (now ${Math.floor(result.newCap)})`);
+                questSystem.recordOffload(ppSystem.prestigeCount);
+                challenges.recordOffload(result.taken);
+                worldEffects.triggerOffload(player.position);
+              }
+            },
+          });
+        } else {
+          // Gain scales with cap fill — too little banked to convert yet.
+          candidates.push({
+            dist,
+            hint: `Offload: gain scales with cap fill — bank more PP`,
+            act: () => {},
+          });
+        }
       }
+    }
+  }
+
+  // Combat Simulator — simulated sparring trains STR/DEF passively (no drops)
+  const simPos = env.getCombatSimPos();
+  if (simPos) {
+    const dist = Math.hypot(px - simPos.x, pz - simPos.z);
+    if (dist < RANGE) {
+      candidates.push({
+        dist,
+        hint: combatSim.enabled
+          ? '[E/ACT] Combat Sim: TRAINING STR/DEF — stop'
+          : '[E/ACT] Combat Sim: start sparring (trains STR/DEF)',
+        act: () => {
+          if (_actionCooldown > 0) return;
+          _actionCooldown = 0.5;
+          const on = combatSim.toggle();
+          hud.showInteractHint(on ? 'Combat Sim engaged — STR/DEF training online' : 'Combat Sim stopped');
+        },
+      });
     }
   }
 
@@ -1123,7 +1225,7 @@ function handleGathering(delta) {
 let lastTime = performance.now();
 let _actionCooldown = 0; // prevents instant re-trigger of [E] across interaction types
 let _portalRefreshTimer = 0;
-window.__debugSystems = { inventorySystem, codexSystem, questSystem, hud, ppSystem };
+window.__debugSystems = { inventorySystem, codexSystem, questSystem, hud, ppSystem, combatSim };
 window.__debugSnapshot = () => {
   const hint = document.getElementById('interact-hint');
   const nearestNode = entityManager.findNearestNode(player.position);
@@ -1248,8 +1350,9 @@ function gameLoop(now) {
   }
 
   // Periodically notify quest system of PP total (every ~2 seconds via HUD throttle)
-  if (Math.floor(ppSystem.ppTotal) !== questSystem._counters.pp) {
-    questSystem.recordPP(Math.floor(ppSystem.ppTotal));
+  if (Math.floor(ppSystem.ppTotal) !== questSystem._counters.pp ||
+      Math.floor(ppSystem.ppCap) !== questSystem._counters.ppCap) {
+    questSystem.recordPP(Math.floor(ppSystem.ppTotal), Math.floor(ppSystem.ppCap));
   }
 
   // Update entities (pass collision circles AND boxes so enemies respect walls)
@@ -1287,10 +1390,16 @@ function gameLoop(now) {
   // Mine chunked view — materialize rock visuals near the player, tear down far ones
   if (env._mineChunks) env._mineChunks.update(player.position);
 
-  // Cave reveal shader — walls open up around the player so tunnels stay readable
-  for (const m of env._revealMaterials) {
-    const sh = m.userData.shader;
-    if (sh) sh.uniforms.uPlayerPos.value.copy(player.position);
+  // Cave reveal ("transparency radius") — walls open a hole around the player.
+  // Now redundant with the always-on through-wall ghost silhouette (Player.js),
+  // which keeps the player visible behind rock WITHOUT cutting holes — the cut
+  // is what read as the player "slipping through cracks" between rocks. Left off
+  // by default; flip MINE_WALL_REVEAL to true to feed the shader and compare.
+  if (MINE_WALL_REVEAL) {
+    for (const m of env._revealMaterials) {
+      const sh = m.userData.shader;
+      if (sh) sh.uniforms.uPlayerPos.value.copy(player.position);
+    }
   }
 
   // Lore discovery — the first time the player breaks through into the Breach
@@ -1302,6 +1411,10 @@ function gameLoop(now) {
   _portalRefreshTimer -= delta;
   if (_portalRefreshTimer <= 0) {
     _portalRefreshTimer = 0.5;
+    // Threat indicators track player power on the same cadence; bosses keep red
+    for (const e of entityManager.enemies) {
+      if (!e.boss) e.setThreatColor(threatColorFor(e, statsSystem));
+    }
     env.refreshPortalAccess((portal) =>
       ppSystem.ppTotal >= portal.ppRequired
       || pedometer.isZoneUnlocked(portal.targetZone)
@@ -1311,7 +1424,9 @@ function gameLoop(now) {
 
   // ── New busy-box systems ────────────────────────────────────────────────────
   offlineSystem.tick();
-  autoCombat.update(delta);
+  // Field auto-combat retired — combat automation lives in the Spaceship
+  // sparring rig (CombatSimSystem); real fights stay manual.
+  combatSim.update(delta);
   minigame.update(delta);
   mathematician.update(delta);
   expedition.update(delta);

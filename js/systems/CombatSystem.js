@@ -18,6 +18,8 @@ export class CombatSystem {
     this._enemyInterval = null;
     this._fpInterval = null;
     this._windupTimer = null;
+    this._graceActive = false;
+    this._graceTimer = null;
 
     // Status effects on player: { type, remainingTicks }
     this.playerEffects = [];
@@ -31,6 +33,7 @@ export class CombatSystem {
     this.onRescue = null;
     this.onWindup = null;   // fn(isCharging) — called for swinger wind-up
     this.onBurstStart = null; // fn() — for burst attacker animation
+    this.onPlayerHit = null; // fn({type:'hit'|'dodge', dmg, absorbed}) — damage floater
     this.onBossDefeated = null; // fn(archetype) — wired to BossSystem in main.js
   }
 
@@ -56,8 +59,18 @@ export class CombatSystem {
       if (this.onFPUpdate) this.onFPUpdate(this.stats.currentFP, this.stats.maxFP);
     }, CONFIG.FP_TICK_MS);
 
-    // Enemy attack pattern
-    this._scheduleNextAttack();
+    // Opening grace — the enemy holds its first attack until the player acts
+    // (or the grace elapses), so the combat transition never costs free hits.
+    this._graceActive = true;
+    this._graceTimer = setTimeout(() => this._endGrace(), CONFIG.COMBAT_GRACE_MS);
+  }
+
+  _endGrace() {
+    if (!this._graceActive) return;
+    this._graceActive = false;
+    clearTimeout(this._graceTimer);
+    this._graceTimer = null;
+    if (this.active) this._scheduleNextAttack();
   }
 
   _scheduleNextAttack() {
@@ -222,6 +235,7 @@ export class CombatSystem {
     const enemy = this.enemy;
     if (enemy.dodgeChance > 0 && Math.random() < enemy.dodgeChance) {
       this._log(`${enemy.name} phases through your attack!`);
+      if (this.onPlayerHit) this.onPlayerHit({ type: 'dodge' });
       return 0;
     }
     const dmg = Math.max(1, rawDmg - (enemy.armor || 0));
@@ -229,11 +243,13 @@ export class CombatSystem {
       this._log(`${enemy.name}'s armor absorbs ${rawDmg - dmg}.`);
     }
     this._dealDamageToEnemy(dmg);
+    if (this.onPlayerHit) this.onPlayerHit({ type: 'hit', dmg, absorbed: rawDmg - dmg });
     return dmg;
   }
 
   fight() {
     if (!this.active) return;
+    this._endGrace();
     const raw = Math.floor(this.stats.damage * this.damageMult * this.permDamageMult);
     const dmg = this._playerAttack(raw);
     if (dmg > 0) this._log(`You attack for ${dmg} damage!`);
@@ -241,6 +257,7 @@ export class CombatSystem {
 
   useSkill(skillKey) {
     if (!this.active) return;
+    this._endGrace();
     const skill = CONFIG.SKILLS[skillKey];
     if (!skill) return;
 
@@ -260,6 +277,7 @@ export class CombatSystem {
 
   useItem(itemKey) {
     if (!this.active || !this.inventory) return;
+    this._endGrace();
     const result = this.inventory.useConsumable(itemKey, this.stats, this.pp);
     if (!result) { this._log('No item to use!'); return; }
     this._log(`Used ${result.label}!${result.healed > 0 ? ` +${result.healed} HP.` : ''}${result.ppBoosted ? ' PP rate boosted!' : ''}${result.ppGranted > 0 ? ` +${result.ppGranted} PP.` : ''}`);
@@ -272,6 +290,7 @@ export class CombatSystem {
 
   tryRun() {
     if (!this.active) return;
+    this._endGrace();
     const chance = CONFIG.RUN_BASE_CHANCE + (this.stats.agility - 1) * 0.05;
     if (Math.random() < chance) {
       this._log('You got away safely!');
@@ -312,9 +331,12 @@ export class CombatSystem {
     clearInterval(this._fpInterval);
     clearTimeout(this._enemyInterval);
     clearTimeout(this._windupTimer);
+    clearTimeout(this._graceTimer);
     this._fpInterval = null;
     this._enemyInterval = null;
     this._windupTimer = null;
+    this._graceTimer = null;
+    this._graceActive = false;
 
     if (this.enemy && this.enemy.setCharging) this.enemy.setCharging(false);
 
@@ -350,32 +372,14 @@ export class CombatSystem {
 
   static get DROP_TABLES() {
     return {
-      rusher:      [{ mat: 'circuitWire',    label: 'Circuit Wire',    chance: 0.60 },
-                    { mat: 'ironSpike',      label: 'Iron Spike',      chance: 0.30 }],
-      swinger:     [{ mat: 'powerCore',      label: 'Power Core',      chance: 0.40 },
-                    { mat: 'armorPlate',     label: 'Armor Plate',     chance: 0.20 }],
-      burst:       [{ mat: 'burstCapacitor', label: 'Burst Capacitor', chance: 0.60 },
-                    { mat: 'logicChip',      label: 'Logic Chip',      chance: 0.30 }],
-      stinger:     [{ mat: 'resin',          label: 'Resin',           chance: 0.50 },
-                    { mat: 'fiber',          label: 'Fiber',           chance: 0.40 }],
-      pyro:        [{ mat: 'carbon',         label: 'Carbon',          chance: 0.50 },
-                    { mat: 'epoxy',          label: 'Epoxy',           chance: 0.25 }],
-      arc:         [{ mat: 'burstCapacitor', label: 'Burst Capacitor', chance: 0.50 },
-                    { mat: 'magnet',         label: 'Magnet',          chance: 0.25 }],
-      corroder:    [{ mat: 'iron_dust',      label: 'Iron Dust',       chance: 0.50 },
-                    { mat: 'ferrous_ore',    label: 'Ferrous Ore',     chance: 0.40 }],
-      bulwark:     [{ mat: 'armorPlate',     label: 'Armor Plate',     chance: 0.50 },
-                    { mat: 'steel_ingot',    label: 'Steel Ingot',     chance: 0.20 }],
-      siphon:      [{ mat: 'logicChip',      label: 'Logic Chip',      chance: 0.45 },
-                    { mat: 'data_cable',     label: 'Data Cable',      chance: 0.30 }],
-      regenerator: [{ mat: 'resin',          label: 'Resin',           chance: 0.55 },
-                    { mat: 'synthetic_resin', label: 'Synthetic Resin', chance: 0.25 }],
-      longshot:    [{ mat: 'ironSpike',      label: 'Iron Spike',      chance: 0.50 },
+      serpendrill: [{ mat: 'ferrous_ore',    label: 'Ferrous Ore',     chance: 0.55 },
+                    { mat: 'quartz',         label: 'Quartz',          chance: 0.30 }],
+      reptlar:     [{ mat: 'synthetic_resin', label: 'Synthetic Resin', chance: 0.50 },
+                    { mat: 'carbon_biomass', label: 'Carbon Biomass',  chance: 0.30 }],
+      hardlizzy:   [{ mat: 'armorPlate',     label: 'Armor Plate',     chance: 0.55 },
+                    { mat: 'titanium',       label: 'Titanium',        chance: 0.25 }],
+      cavecrab:    [{ mat: 'alloy_bar',      label: 'Alloy Bar',       chance: 0.50 },
                     { mat: 'tungsten',       label: 'Tungsten',        chance: 0.30 }],
-      rampant:     [{ mat: 'powerCore',      label: 'Power Core',      chance: 0.45 },
-                    { mat: 'alloy_bar',      label: 'Alloy Bar',       chance: 0.25 }],
-      specter:     [{ mat: 'quartz',         label: 'Quartz',          chance: 0.50 },
-                    { mat: 'silver',         label: 'Silver',          chance: 0.30 }],
       // Bosses — guaranteed hauls
       boss_landing: [{ mat: 'powerCore',   label: 'Power Core',   chance: 1, qty: 3 },
                      { mat: 'circuitWire', label: 'Circuit Wire', chance: 1, qty: 5 }],

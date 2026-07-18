@@ -66,6 +66,7 @@ export function build(env) {
 
   env._addChargingStation(-5, 3);
   env._addDroneMonitor(5, 3);
+  env._addCombatSimRig(8, 0); // sparring rig — simulated combat trains STR/DEF
   env._addAscensionTerminal(0, -6);
   env._addMasteryTerminal(6, -6);
 

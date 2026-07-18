@@ -132,9 +132,9 @@ export class StatsSystem {
   // ── Stat leveling ──────────────────────────────────────────────────────────
   upgradeCost(statName) {
     const level = this.stats[statName].level;
-    // Near-linear: base * level * scale^(level-1)
-    // The linear `level` term drives most of the growth;
-    // the mild 1.08 exponent adds a gentle upward curve.
+    // cost = base * level * scale^(level-1) — the linear term paces early
+    // levels, the 1.08 exponent makes deep levels a real investment.
+    // Mirrored server-side in transactionService.js statUpgradeCost().
     return Math.ceil(
       CONFIG.STAT_UPGRADE_BASE_COST *
       level *

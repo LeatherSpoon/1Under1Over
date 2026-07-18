@@ -1,15 +1,17 @@
 import { SkillsMenu } from './SkillsMenu.js';
+import { renderEnemyPortrait } from './EnemyPortrait.js';
 
 const CIRCUMFERENCE = 2 * Math.PI * 40; // r=40 matches SVG
 
 export class CombatUI {
-  constructor(combatSystem, statsSystem, entityManager, player, inventorySystem, ppSystem) {
+  constructor(combatSystem, statsSystem, entityManager, player, inventorySystem, ppSystem, sceneManager = null) {
     this.combat = combatSystem;
     this.stats = statsSystem;
     this.entityManager = entityManager;
     this.player = player;
     this.inventory = inventorySystem;
     this.pp = ppSystem;
+    this.sceneManager = sceneManager;
 
     this.overlay = document.getElementById('combat-overlay');
     this.skillsMenu = document.getElementById('skills-menu');
@@ -33,6 +35,7 @@ export class CombatUI {
 
     // Wire combat system callbacks
     combatSystem.onLog = (msg) => this._appendLog(msg);
+    combatSystem.onPlayerHit = (hit) => this._showHitFloater(hit);
     combatSystem.onFPUpdate = (cur, max) => this._updateFP(cur, max);
     combatSystem.onHPUpdate = (pHP, pMax, eHP, eMax) => this._updateHP(pHP, pMax, eHP, eMax);
     combatSystem.onCombatEnd = (won, fled) => this._onCombatEnd(won, fled);
@@ -40,12 +43,8 @@ export class CombatUI {
   }
 
   show(enemy) {
-    const archetypeLabel = {
-      rusher:  'SCRAPPER',
-      swinger: 'BRUTE [Wind-Up]',
-      burst:   'GLITCH [Burst]',
-    };
-    this.enemyNameEl.textContent = archetypeLabel[enemy.archetype] || enemy.name;
+    this.enemyNameEl.textContent = enemy.name;
+    this._setEnemyPortrait(enemy);
     this._clearLog();
     this._updateHP(
       this.stats.currentHP, this.stats.maxHP,
@@ -60,6 +59,24 @@ export class CombatUI {
     // Wire wind-up / burst callbacks
     this.combat.onWindup = (isCharging) => this._showWindupWarning(isCharging);
     this.combat.onBurstStart = () => this._showBurstWarning();
+  }
+
+  // Live 3D snapshot of the enemy in its habitat; the CSS placeholder square
+  // remains as fallback whenever the snapshot fails.
+  _setEnemyPortrait(enemy) {
+    const sprite = document.getElementById('enemy-sprite');
+    if (!sprite) return;
+    const shot = renderEnemyPortrait(
+      enemy, this.sceneManager?.renderer, this.sceneManager?.scene,
+      [this.player?.group]
+    );
+    if (shot) {
+      sprite.style.backgroundImage = `url(${shot})`;
+      sprite.classList.add('has-portrait');
+    } else {
+      sprite.style.backgroundImage = '';
+      sprite.classList.remove('has-portrait');
+    }
   }
 
   _showWindupWarning(isCharging) {
@@ -174,6 +191,28 @@ export class CombatUI {
     if (!this.skillsMenu.hidden) {
       this.skillsMenuObj.update(cur);
     }
+  }
+
+  // Floating damage number over the enemy sprite so player hits are
+  // unmistakable — including why they underwhelmed (armor) or missed (dodge).
+  _showHitFloater(hit) {
+    const anchor = document.getElementById('enemy-sprite');
+    if (!anchor) return;
+    const el = document.createElement('div');
+    el.className = 'hit-floater';
+    if (hit.type === 'dodge') {
+      el.textContent = 'PHASED';
+      el.classList.add('hit-dodge');
+    } else {
+      el.textContent = `−${hit.dmg}`;
+      if (hit.absorbed > 0) {
+        el.textContent += ` (${hit.absorbed} blocked)`;
+        el.classList.add('hit-blocked');
+      }
+    }
+    el.style.left = `${30 + Math.random() * 40}%`;
+    anchor.appendChild(el);
+    setTimeout(() => el.remove(), 900);
   }
 
   _appendLog(msg) {

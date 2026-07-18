@@ -363,9 +363,27 @@ export function createProgressionRepositoryFromPool(pool, config = readConfig())
     },
 
     async saveSnapshot(snapshot) {
+      // The snapshots FK requires a players row; autosave may fire before any
+      // other write has created one.
+      await pool.query(
+        'insert into players (id, display_name) values ($1, $1) on conflict (id) do nothing',
+        [snapshot.playerId]
+      );
       await pool.query(
         'insert into player_save_snapshots (player_id, snapshot) values ($1, $2::jsonb)',
         [snapshot.playerId, JSON.stringify(snapshot)]
+      );
+      // Autosave fires every minute — keep only the newest 20 per player.
+      await pool.query(
+        `delete from player_save_snapshots
+         where player_id = $1
+           and id not in (
+             select id from player_save_snapshots
+             where player_id = $1
+             order by created_at desc, id desc
+             limit 20
+           )`,
+        [snapshot.playerId]
       );
       return { ok: true };
     },
