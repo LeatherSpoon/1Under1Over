@@ -27,7 +27,7 @@ export class PedometerSystem {
   update(newSteps) {
     if (newSteps <= 0) return;
     this.totalSteps += newSteps;
-    this.ppSystem.addStepPP(newSteps);
+    this.ppSystem.addStepPP(newSteps, this._ppBonusPerStep);
   }
 
   // ── PP Bonus ───────────────────────────────────────────────────────────────

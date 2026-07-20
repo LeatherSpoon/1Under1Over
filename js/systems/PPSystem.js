@@ -81,8 +81,8 @@ export class PPSystem {
     return this.ppRate * (this.globalMultiplier || 1);
   }
 
-  addStepPP(steps) {
-    this.ppTotal = Math.min(this.ppCap, this.ppTotal + steps * CONFIG.PP_PER_STEP);
+  addStepPP(steps, ppPerStep = CONFIG.PP_PER_STEP) {
+    this.ppTotal = Math.min(this.ppCap, this.ppTotal + steps * ppPerStep);
   }
 
   /**

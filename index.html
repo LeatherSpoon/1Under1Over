@@ -243,6 +243,7 @@
             <div>Capacity bonus &nbsp;<span id="alloc-cap-bonus">×1.00</span> &nbsp;(invested <span id="alloc-cap-invested">0</span>)</div>
             <div>Power bonus &nbsp;<span id="alloc-power-bonus">+0.00 PP/s</span> &nbsp;(invested <span id="alloc-power-invested">0</span>)</div>
             <div>Rate bonus &nbsp;<span id="alloc-rate-bonus">×1.00</span> &nbsp;(invested <span id="alloc-rate-invested">0</span>)</div>
+            <div>Session momentum &nbsp;<span id="alloc-momentum">×1.00</span> &nbsp;— flow ramps while this session runs</div>
           </div>
         </div>
       </div>
@@ -420,6 +421,26 @@
       </div>
     </div>
 
+    <!-- Training chamber: program console (select the sim before entering) -->
+    <div id="training-panel" hidden>
+      <div id="training-modal">
+        <div class="panel-header">TRAINING CONSOLE <button class="panel-close" onclick="document.getElementById('training-panel').hidden=true">X</button></div>
+        <div id="training-contents" class="panel-body"></div>
+      </div>
+    </div>
+
+    <!-- Training chamber immersion overlay: looping sim feed + live readout -->
+    <div id="training-overlay" hidden>
+      <video id="training-video" loop muted autoplay playsinline hidden></video>
+      <div id="training-holo" hidden><div class="holo-label">SIMULATION RUNNING</div></div>
+      <div id="training-info">
+        <div class="t-title" id="training-title"></div>
+        <div id="training-elapsed"></div>
+        <div class="t-gains" id="training-gains"></div>
+        <div class="t-exit">walk out of the chamber to end the simulation</div>
+      </div>
+    </div>
+
     <!-- Equipment panel -->
     <div id="equipment-panel" class="panel-overlay" hidden>
       <div class="equip-svg-panel">
@@ -547,7 +568,7 @@
     <!-- Ascension panel (centered modal) -->
     <div id="ascension-panel" hidden>
       <div id="ascension-modal">
-        <div class="panel-header" style="background:rgba(40,0,60,0.7);border-color:#cc88ff44;color:#cc88ff;">ASCENSION <button class="panel-close" style="border-color:#cc88ff44;color:#cc88ff;" onclick="document.getElementById('ascension-panel').hidden=true">X</button></div>
+        <div class="panel-header" style="background:rgba(40,0,60,0.7);border-color:#cc88ff44;color:#cc88ff;">RECOMPILE <button class="panel-close" style="border-color:#cc88ff44;color:#cc88ff;" onclick="document.getElementById('ascension-panel').hidden=true">X</button></div>
         <div id="ascension-contents" class="panel-body"></div>
       </div>
     </div>

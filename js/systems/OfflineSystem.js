@@ -9,7 +9,7 @@ export class OfflineSystem {
     this.inventory = inventorySystem;
     this._storageKey = 'pp_last_active';
     this._nextStamp = 0;
-    this._returnContext = null; // optional: { stats, ascension, timeWarp, expedition, implant }
+    this._returnContext = null; // optional: { stats, ascension, timeWarp, expedition, implant, tripartite, trainingAreas }
   }
 
   setReturnContext(ctx) { this._returnContext = ctx; }
@@ -47,7 +47,9 @@ export class OfflineSystem {
     const elapsed = (Date.now() - lastActive) / 1000;
     if (elapsed < 30) return null;
 
-    const seconds = Math.min(elapsed, 86400);
+    // Base cap 24 h; Archive-shop Offline Buffer levels extend it (+12 h each)
+    const capSeconds = this._returnContext?.ascension?.offlineCapSeconds ?? 86400;
+    const seconds = Math.min(elapsed, capSeconds);
 
     // PP gained (50% efficiency offline)
     const ppGained = Math.floor(this.pp.ppRate * seconds * 0.5);
@@ -89,7 +91,22 @@ export class OfflineSystem {
     const highlights = [];
     const ctx = this._returnContext;
     if (ctx) {
-      const { stats, ascension, timeWarp, expedition, implant } = ctx;
+      const { stats, ascension, timeWarp, expedition, implant, tripartite, trainingAreas } = ctx;
+
+      // Allocation legs keep investing offline at 50% efficiency
+      if (tripartite) {
+        const tri = tripartite.simulateOffline(result.seconds, 0.5);
+        if (tri) highlights.push(`✦ Allocation: +${Math.floor(tri.invested)} units invested while away`);
+      }
+
+      // A sim pad keeps training a parked player at 50% efficiency
+      if (trainingAreas) {
+        const tr = trainingAreas.simulateOffline(result.seconds, 0.5);
+        if (tr && Object.keys(tr.deltas).length > 0) {
+          const parts = Object.entries(tr.deltas).map(([s, d]) => `${s} ${d > 0 ? '+' : ''}${d}`).join(', ');
+          highlights.push(`✦ ${tr.station}: ${parts} (parked training)`);
+        }
+      }
 
       // Expedition keeps fighting offline at 50% efficiency
       if (expedition) {

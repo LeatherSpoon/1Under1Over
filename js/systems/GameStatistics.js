@@ -8,14 +8,17 @@ export class GameStatistics {
     this.resourcesGathered = 0;
     this.miningActions = 0;
     this._visitedZones = new Set();
+    this._zonesWithKills = new Set();
+    this.energyDepleted = 0;
   }
 
   // landingSite, mine, depths, verdantMaw, lagoonCoast, frozenTundra, spaceship, workspace
   static get TOTAL_WORLDS() { return 8; }
 
-  recordEnemyDefeated() {
+  recordEnemyDefeated(zone) {
     this.enemiesDefeated++;
     this.actionsTaken++;
+    if (zone) this._zonesWithKills.add(zone);
   }
 
   recordDefeat() {
@@ -53,6 +56,10 @@ export class GameStatistics {
 
   get worldsDiscovered() {
     return this._visitedZones.size;
+  }
+
+  get zonesWithKills() {
+    return this._zonesWithKills;
   }
 
   get totalWorlds() {

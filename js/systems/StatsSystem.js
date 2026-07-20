@@ -30,6 +30,7 @@ export class StatsSystem {
       this.stats[name] = { level: 1, exp: 0 };
     }
     this._augBonuses = { hp: 0, energy: 0, speed: 0, defense: 0, damage: 0 };
+    this.costMult = 1;        // stat upgrade cost multiplier (Minimalist modifier)
     this.currentHP = this.maxHP;
     this.currentFP = 0;
     this.currentEnergy = this.maxEnergy;
@@ -134,11 +135,13 @@ export class StatsSystem {
     const level = this.stats[statName].level;
     // cost = base * level * scale^(level-1) — the linear term paces early
     // levels, the 1.08 exponent makes deep levels a real investment.
-    // Mirrored server-side in transactionService.js statUpgradeCost().
+    // Mirrored server-side in transactionService.js statUpgradeCost()
+    // (base formula only — costMult is a client-side modifier effect).
     return Math.ceil(
       CONFIG.STAT_UPGRADE_BASE_COST *
       level *
-      Math.pow(CONFIG.STAT_UPGRADE_COST_SCALE, level - 1)
+      Math.pow(CONFIG.STAT_UPGRADE_COST_SCALE, level - 1) *
+      this.costMult
     );
   }
 

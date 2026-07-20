@@ -53,7 +53,7 @@ export function createSwitchZone({
     hud.setZoneLabel(env.getZoneLabel());
     env.refreshTrackMarkers(pedometer);
     env.refreshPortalAccess((portal) =>
-      ppSystem.ppTotal >= portal.ppRequired
+      portal.ppRequired === 0
       || pedometer.isZoneUnlocked(portal.targetZone)
       || (bossSystem && bossSystem.hasClearance(portal.targetZone))
     );

@@ -65,10 +65,16 @@ const MODIFIERS = [
   {
     id: 'minimalist',
     label: 'Minimalist',
-    desc: '+1.0 PP/s flat · −10% all stat upgrade efficacy',
+    desc: '+1.0 PP/s flat · +10% stat upgrade costs',
     netEstimate: 0.15,
-    apply: ({ pp }) => { pp.setModifier('mod_minimalist', 1.0); },
-    revert: ({ pp }) => { pp.removeModifier('mod_minimalist'); },
+    apply: ({ pp, statsAccum }) => {
+      pp.setModifier('mod_minimalist', 1.0);
+      statsAccum.statCostMult *= 1.10;
+    },
+    revert: ({ pp, statsAccum }) => {
+      pp.removeModifier('mod_minimalist');
+      statsAccum.statCostMult /= 1.10;
+    },
   },
 ];
 
@@ -76,7 +82,7 @@ export class ModifiersSystem {
   constructor(ppSystem) {
     this.pp = ppSystem;
     this.active = new Set();
-    this.statsAccum = { gatherMult: 1, energyCostMult: 1, damageMult: 1, droneMult: 1 };
+    this.statsAccum = { gatherMult: 1, energyCostMult: 1, damageMult: 1, droneMult: 1, statCostMult: 1 };
     this.onChange = null;
   }
 
@@ -106,6 +112,7 @@ export class ModifiersSystem {
   get energyCostMult() { return this.statsAccum.energyCostMult; }
   get damageMult() { return this.statsAccum.damageMult; }
   get droneMult() { return this.statsAccum.droneMult; }
+  get statCostMult() { return this.statsAccum.statCostMult; }
 
   serialize() {
     return { active: [...this.active] };
@@ -119,7 +126,7 @@ export class ModifiersSystem {
       if (def) def.revert({ pp: this.pp, statsAccum: this.statsAccum });
     }
     this.active.clear();
-    this.statsAccum = { gatherMult: 1, energyCostMult: 1, damageMult: 1, droneMult: 1 };
+    this.statsAccum = { gatherMult: 1, energyCostMult: 1, damageMult: 1, droneMult: 1, statCostMult: 1 };
     for (const id of data.active || []) {
       const def = MODIFIERS.find(m => m.id === id);
       if (def) {

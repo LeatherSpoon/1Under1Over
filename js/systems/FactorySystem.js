@@ -8,6 +8,7 @@ export class FactorySystem {
     this.pedometerSystem = pedometerSystem;
     
     // Global buff tracks
+    this.moduleGlobalMult = 1.0; // ×1.2 once the quantum ring is built; folded into globalMultiplier by main.js each frame
     this.buffs = {
       quantum_processor_ring: false,
       exo_servo_harness: false,
@@ -111,7 +112,7 @@ export class FactorySystem {
     // If it's a global buff module
     if (item === 'quantum_processor_ring' && !this.buffs.quantum_processor_ring) {
       this.buffs.quantum_processor_ring = true;
-      this.ppSystem.globalMultiplier *= 1.20; 
+      this.moduleGlobalMult = 1.20;
       this.inventory.addMaterial(item, qty); // Store record in inventory for visuals
     } else if (item === 'exo_servo_harness' && !this.buffs.exo_servo_harness) {
       this.buffs.exo_servo_harness = true;
@@ -182,7 +183,7 @@ export class FactorySystem {
     if (data.buffs) {
       if (data.buffs.quantum_processor_ring && !this.buffs.quantum_processor_ring) {
         this.buffs.quantum_processor_ring = true;
-        this.ppSystem.globalMultiplier *= 1.20;
+        this.moduleGlobalMult = 1.20;
       }
       if (data.buffs.exo_servo_harness && !this.buffs.exo_servo_harness) {
         this.buffs.exo_servo_harness = true;

@@ -16,12 +16,12 @@ function abbrevNum(n) {
 // Conditions must be monotonic (a tab never re-locks) and derive from state
 // that already persists in saves; nothing extra is serialized.
 const TAB_UNLOCKS = [
-  { tab: 'tech-panel',         label: 'TECH',      unlocked: (h) => (h.pp?.prestigeCount ?? 0) >= 1 },
-  { tab: 'implant-panel',      label: 'IMPLANT',   unlocked: (h) => (h.pp?.prestigeCount ?? 0) >= 1 },
-  { tab: 'data-panel',         label: 'DATA',      unlocked: (h) => (h.pp?.prestigeCount ?? 0) >= 1 },
-  { tab: 'allocation-panel',   label: 'ALLOC',     unlocked: (h) => (h.pp?.prestigeCount ?? 0) >= 2 },
-  { tab: 'optimization-panel', label: 'OPT',       unlocked: (h) => (h.pp?.prestigeCount ?? 0) >= 2 },
-  { tab: 'challenges-panel',   label: 'TRIALS',    unlocked: (h) => (h.pp?.prestigeCount ?? 0) >= 3 },
+  { tab: 'tech-panel',         label: 'TECH',      unlocked: (h) => (h.prog?.chapters?.level ?? 0) >= 1 },
+  { tab: 'implant-panel',      label: 'IMPLANT',   unlocked: (h) => (h.prog?.chapters?.level ?? 0) >= 1 },
+  { tab: 'data-panel',         label: 'DATA',      unlocked: (h) => (h.prog?.chapters?.level ?? 0) >= 1 },
+  { tab: 'allocation-panel',   label: 'ALLOC',     unlocked: (h) => (h.prog?.chapters?.level ?? 0) >= 2 },
+  { tab: 'optimization-panel', label: 'OPT',       unlocked: (h) => (h.prog?.chapters?.level ?? 0) >= 2 },
+  { tab: 'challenges-panel',   label: 'TRIALS',    unlocked: (h) => (h.prog?.chapters?.level ?? 0) >= 4 },
   { tab: 'expedition-panel',   label: 'FIELD OPS', unlocked: (h) => (h.gameStats?.enemiesDefeated ?? 0) >= 1 },
 ];
 
@@ -526,6 +526,7 @@ export class HUD {
       'workshop-panel', 'constructor-panel', 'fabrication-panel', 'assembly-matrix-panel',
       'refinery-panel',
       'expedition-panel', 'challenges-panel', 'implant-panel', 'data-panel',
+      'training-panel',
     ];
     for (const id of ids) {
       if (id === exceptId) continue;
@@ -559,6 +560,7 @@ export class HUD {
       case 'challenges-panel': this._refreshChallenges(); break;
       case 'implant-panel': this._refreshImplant(); break;
       case 'data-panel': this._refreshDataCore(); break;
+      case 'training-panel': this._refreshTraining(); break;
     }
   }
 
@@ -597,20 +599,144 @@ export class HUD {
     setVal('alloc-power',    r.power);
     setVal('alloc-rate',     r.rate);
 
-    // Mirror the log-curve formulas in TripartiteSystem._applyEffects
-    const capScale = CONFIG.TRIPARTITE_CAPACITY_SCALE   ?? 0.04;
-    const powerScale = CONFIG.TRIPARTITE_POWER_SCALE    ?? 0.05;
-    const rateScale = CONFIG.TRIPARTITE_RATE_SCALE      ?? 0.06;
-    const capMult = 1 + Math.log1p(inv.capacity) * capScale;
-    const powerAdd = Math.log1p(inv.power) * powerScale;
-    const rateMult = 1 + Math.log1p(inv.rate) * rateScale;
-
-    setText('alloc-cap-bonus',    '×' + capMult.toFixed(2));
-    setText('alloc-power-bonus',  '+' + powerAdd.toFixed(2) + ' PP/s');
-    setText('alloc-rate-bonus',   '×' + rateMult.toFixed(2));
+    // Read bonuses straight from the system — it owns the curve formulas.
+    setText('alloc-cap-bonus',    '×' + this.tripartite.capacityMultiplier.toFixed(2));
+    setText('alloc-power-bonus',  '+' + this.tripartite.powerBonus.toFixed(2) + ' PP/s');
+    setText('alloc-rate-bonus',   '×' + this.tripartite.currentRateMultiplier.toFixed(2));
     setText('alloc-cap-invested', inv.capacity.toFixed(1));
     setText('alloc-power-invested', inv.power.toFixed(1));
     setText('alloc-rate-invested', inv.rate.toFixed(1));
+    setText('alloc-momentum', '×' + this.tripartite.sessionMomentum.toFixed(2));
+  }
+
+  // ── Training Console + Chamber Overlay ─────────────────────────────────
+  _refreshTraining() {
+    const el = document.getElementById('training-contents');
+    const training = this.trainingAreas;
+    if (!el || !training) return;
+    el.innerHTML = '';
+
+    const intro = document.createElement('div');
+    intro.style.cssText = 'font-size:0.8em;opacity:0.75;margin-bottom:8px;';
+    intro.textContent = 'Choose a sim program, then step into the chamber. Advanced sims drain a stat while they run.';
+    el.appendChild(intro);
+
+    for (const def of training.constructor.STATION_DEFS) {
+      const lv = training.stationLevel(def.id);
+      const selected = training.selectedProgram === def.id;
+      const card = document.createElement('div');
+      card.className = 'training-program' + (selected ? ' selected' : '');
+
+      const legs = Object.entries(def.trains)
+        .map(([s, m]) => m > 0
+          ? `${this.stats.getStatLabel(s)} ×${m}`
+          : `<span class="drain">${this.stats.getStatLabel(s)} −${Math.abs(m)}</span>`)
+        .join(' · ');
+
+      const cost = training.upgradeCost(def.id);
+      const costStr = cost ? Object.entries(cost).map(([m, q]) => `${q} ${m}`).join(', ') : null;
+
+      card.innerHTML =
+        `<div class="tp-name">${def.label}${selected ? ' — LOADED' : ''}</div>` +
+        `<div class="tp-legs">${legs}</div>` +
+        `<div class="tp-meta">Program Lv ${lv} · ${training.effectiveRate(def.id).toFixed(2)} XP/s per leg` +
+        (costStr ? ` · next: ${costStr}` : ' · MAX') + `</div>`;
+
+      const selBtn = document.createElement('button');
+      selBtn.textContent = selected ? 'UNLOAD' : 'LOAD PROGRAM';
+      selBtn.addEventListener('click', () => {
+        training.selectProgram(selected ? null : def.id);
+        this._refreshTraining();
+      });
+      card.appendChild(selBtn);
+
+      if (cost) {
+        const upBtn = document.createElement('button');
+        upBtn.textContent = `UPGRADE (${costStr})`;
+        upBtn.disabled = !training.canUpgrade(def.id);
+        upBtn.addEventListener('click', () => {
+          if (training.upgrade(def.id)) this._refreshTraining();
+        });
+        card.appendChild(upBtn);
+      }
+      el.appendChild(card);
+    }
+  }
+
+  /**
+   * Called every frame from main.js. Shows the chamber immersion overlay while
+   * a program is running (player inside the chamber), hides it on exit.
+   * Video: Assets/Video/training_<programId>.mp4, else Assets/Video/training.mp4,
+   * else the animated holo placeholder.
+   */
+  updateTrainingOverlay(training) {
+    const overlay = document.getElementById('training-overlay');
+    if (!overlay) return;
+    const active = training?.activeId || null;
+
+    if (!active) {
+      if (!overlay.hidden) {
+        overlay.hidden = true;
+        const vid = document.getElementById('training-video');
+        if (vid) { vid.pause(); vid.removeAttribute('src'); vid.load(); vid.hidden = true; }
+        this._trainingOverlayProgram = null;
+      }
+      return;
+    }
+
+    if (overlay.hidden || this._trainingOverlayProgram !== active) {
+      overlay.hidden = false;
+      this._trainingOverlayProgram = active;
+      const def = training.getDef(active);
+      const title = document.getElementById('training-title');
+      if (title) title.textContent = (def?.label || active).toUpperCase() + ' — SIMULATION RUNNING';
+      this._loadTrainingVideo(active);
+      this._trainingOverlayNext = 0;
+    }
+
+    const now = performance.now();
+    if (now < (this._trainingOverlayNext || 0)) return;
+    this._trainingOverlayNext = now + 500;
+
+    const s = Math.floor(training.stint.seconds);
+    const hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60), ss = s % 60;
+    const elapsed = document.getElementById('training-elapsed');
+    if (elapsed) {
+      elapsed.textContent = 'Training time: ' +
+        (hh > 0 ? `${hh}h ` : '') + `${String(mm).padStart(2, '0')}m ${String(ss).padStart(2, '0')}s`;
+    }
+
+    const gains = document.getElementById('training-gains');
+    const def = training.getDef(active);
+    if (gains && def) {
+      gains.innerHTML = Object.entries(def.trains).map(([stat, mult]) => {
+        const label = this.stats ? this.stats.getStatLabel(stat) : stat;
+        const dLv = training.stint.levels[stat] || 0;
+        if (mult > 0) {
+          const pct = Math.floor(Math.min(1, (training.bank[stat] || 0) / this.stats.upgradeCost(stat)) * 100);
+          return `${label} ${dLv > 0 ? '+' + dLv + ' Lv' : ''} (${pct}% to next)`;
+        }
+        return `<span class="drain">${label} ${dLv < 0 ? dLv + ' Lv' : 'draining'}</span>`;
+      }).join(' · ');
+    }
+  }
+
+  _loadTrainingVideo(programId) {
+    const vid = document.getElementById('training-video');
+    const holo = document.getElementById('training-holo');
+    if (!vid || !holo) return;
+    const showHolo = () => { vid.hidden = true; vid.removeAttribute('src'); vid.load(); holo.hidden = false; };
+    const sources = [`Assets/Video/training_${programId}.mp4`, 'Assets/Video/training.mp4'];
+    let i = 0;
+    const tryNext = () => {
+      if (i >= sources.length) { showHolo(); return; }
+      vid.hidden = false;
+      holo.hidden = true;
+      vid.src = sources[i++];
+      vid.play?.().catch(() => {});
+    };
+    vid.onerror = tryNext;
+    tryNext();
   }
 
   _wireRateTooltip() {
@@ -889,30 +1015,33 @@ export class HUD {
     const el = document.getElementById('expedition-contents');
     const exp = this.prog.expedition;
     if (!el || !exp) return;
-    const TIERS = exp.constructor.TIERS;
-    const KILLS = exp.constructor.KILLS_TO_CLEAR;
     el.innerHTML = '';
+
+    const tier = exp.tier;
+    const band = exp.band(tier);
+    const rate = exp.killRate(tier);
+    const danger = exp.tierTooDangerous(tier);
+    const farming = exp.isBandCleared(band);
 
     // Status card
     const status = document.createElement('div');
     status.className = 'fieldops-status';
-    const tier = TIERS[exp.tier];
-    const rate = exp.killRate(exp.tier);
-    const danger = exp.tierTooDangerous(exp.tier);
     status.innerHTML = `
-      <div class="fieldops-title">REMOTE COMBAT FRAME — ${exp.active ? '<span style="color:#66ff66">DEPLOYED</span>' : '<span style="color:#888">DOCKED</span>'}</div>
-      <div class="fieldops-row"><span>Sector</span><span>${tier.label}</span></div>
+      <div class="fieldops-title">SIMULATION LADDER — ${exp.active ? '<span style="color:#66ff66">RUNNING</span>' : '<span style="color:#888">IDLE</span>'}</div>
+      <div class="fieldops-row"><span>Sim tier</span><span>T${tier + 1} · ${exp.bandLabel(band)} ${farming ? '<span style="color:#66ff66">[FARM]</span>' : '<span style="color:#ffaa44">[FRONTIER]</span>'}</span></div>
+      <div class="fieldops-row"><span>Target</span><span>${exp.enemyName(tier)} · HP ${abbrevNum(Math.floor(exp.enemyHP(tier)))}</span></div>
       <div class="fieldops-row"><span>Frame DPS</span><span>${abbrevNum(Math.floor(exp.playerDPS))}</span></div>
-      <div class="fieldops-row"><span>Kill rate</span><span>${danger ? '<span style="color:#ff5555">STALLED</span>' : (rate * 60).toFixed(1) + ' /min'}</span></div>
-      <div class="fieldops-row"><span>Total kills</span><span>${abbrevNum(exp.totalKills)} (+${abbrevNum(exp.totalPP)} PP lifetime)</span></div>
-      ${danger ? '<div class="fieldops-warn">⚠ Sector threat exceeds frame survivability — upgrade Health / Defense</div>' : ''}
+      <div class="fieldops-row"><span>Kill rate</span><span>${danger ? '<span style="color:#ff5555">STALLED</span>' : (rate * 60).toFixed(1) + ' /min · ' + abbrevNum(exp.ppPerKill(tier)) + ' PP/kill'}</span></div>
+      <div class="fieldops-row"><span>Lifetime</span><span>${abbrevNum(exp.totalKills)} kills · +${abbrevNum(exp.totalPP)} PP</span></div>
+      <div class="fieldops-row"><span>Archive Fragments</span><span style="color:#c9a2ff">◈ ${abbrevNum(exp.archiveShards)} <span style="color:#666">(banked for Recompile)</span></span></div>
+      ${danger ? '<div class="fieldops-warn">⚠ Tier threat exceeds frame survivability — upgrade Health / Defense or drop tiers</div>' : ''}
     `;
     el.appendChild(status);
 
-    // Deploy / recall
+    // Run / halt
     const btn = document.createElement('button');
     btn.className = 'construct-buy-btn';
-    btn.textContent = exp.active ? '⏹ RECALL FRAME' : '▶ DEPLOY FRAME';
+    btn.textContent = exp.active ? '⏹ HALT SIMULATION' : '▶ RUN SIMULATION';
     btn.disabled = !exp.active && danger;
     btn.addEventListener('click', () => {
       if (exp.active) exp.stop(); else exp.start();
@@ -920,26 +1049,54 @@ export class HUD {
     });
     el.appendChild(btn);
 
-    // Tier list
-    for (const t of TIERS) {
-      const unlocked = exp.tierUnlocked(t.id);
-      const cleared = exp.tierCleared(t.id);
-      const kills = Math.min(exp.killsIn(t.id), KILLS);
-      const row = document.createElement('div');
-      row.className = 'fieldops-tier' + (t.id === exp.tier ? ' active' : '') + (unlocked ? '' : ' locked');
-      row.innerHTML = `
-        <div class="fieldops-tier-head">
-          <span>${cleared ? '⚑ ' : ''}T${t.id + 1} — ${unlocked ? t.label : '?????'}</span>
-          <span>${unlocked ? `${kills}/${KILLS}` : '🔒'}</span>
-        </div>
-        ${unlocked ? `<div class="fieldops-tier-sub">${t.enemy} · HP ${abbrevNum(t.enemyHP)} · ${t.ppPerKill} PP/kill</div>` : ''}
-        <div class="activity-timer-bar"><div class="activity-timer-fill" style="width:${(kills / KILLS) * 100}%"></div></div>
-      `;
-      if (unlocked) {
-        row.addEventListener('click', () => { exp.setTier(t.id); this._refreshExpedition(); });
-      }
-      el.appendChild(row);
-    }
+    // Tier controls — the ladder is infinite; wardens gate each band of 10
+    const ctrl = document.createElement('div');
+    ctrl.style.cssText = 'display:flex;gap:6px;margin:8px 0;flex-wrap:wrap;';
+    const mkTierBtn = (label, target, title = '') => {
+      const b = document.createElement('button');
+      b.className = 'construct-buy-btn';
+      b.style.cssText = 'flex:1;min-width:52px;margin:0;';
+      b.textContent = label;
+      if (title) b.title = title;
+      b.disabled = target === tier || target < 0 || target > exp.maxTier;
+      b.addEventListener('click', () => { exp.setTier(target); this._refreshExpedition(); });
+      return b;
+    };
+    ctrl.appendChild(mkTierBtn('−10', Math.max(0, tier - 10)));
+    ctrl.appendChild(mkTierBtn('−1', tier - 1));
+    ctrl.appendChild(mkTierBtn('+1', tier + 1));
+    ctrl.appendChild(mkTierBtn('+10', Math.min(exp.maxTier, tier + 10)));
+    const safe = exp.maxSafeTier();
+    ctrl.appendChild(mkTierBtn('MAX SAFE', safe, safe >= 0 ? `Highest idle-safe tier: T${safe + 1}` : 'No safe tier'));
+    el.appendChild(ctrl);
+
+    // Warden gate — transparent attempt math, keys from field kills
+    const p = exp.wardenPreview();
+    const keysShort = p.keysNeed - p.keysHave;
+    const ready = keysShort <= 0;
+    const winnable = p.damageFraction >= 1;
+    const towardKey = exp.killsTowardKey(p.family.id);
+    const perKey = exp.constructor.KILLS_PER_KEY;
+    const warden = document.createElement('div');
+    warden.className = 'fieldops-status';
+    warden.style.borderColor = '#ffaa4466';
+    warden.innerHTML = `
+      <div class="fieldops-title" style="color:#ffaa44">SECTOR WARDEN — GATE T${p.gateTier + 1}</div>
+      <div class="fieldops-row"><span>${p.name}</span><span>HP ${abbrevNum(Math.floor(p.hp))}</span></div>
+      <div class="fieldops-row"><span>Override Keys</span><span>${p.keysHave} / ${p.keysNeed} <span style="color:#666">(${perKey - towardKey} field ${p.family.label} kills → next key)</span></span></div>
+      <div class="fieldops-row"><span>Projected burn</span><span style="color:${p.dpsFraction >= 1 ? '#66ff66' : '#ff8855'}">${Math.round(p.dpsFraction * 100)}%</span></div>
+      <div class="fieldops-row"><span>Survival gate</span><span style="color:${p.survivalFraction >= 1 ? '#66ff66' : '#ff8855'}">${Math.round(p.survivalFraction * 100)}%</span></div>
+      <div class="activity-timer-bar"><div class="activity-timer-fill" style="width:${Math.min(100, p.damageFraction * 100)}%"></div></div>
+    `;
+    const attemptBtn = document.createElement('button');
+    attemptBtn.className = 'construct-buy-btn';
+    attemptBtn.textContent = ready
+      ? (winnable ? `⚔ ATTEMPT WARDEN (−${p.keysNeed} keys)` : `⚔ PUSH ANYWAY (−${p.keysNeed} keys · ~${Math.round(p.damageFraction * 100)}% → salvage fragments)`)
+      : `⚔ NEED ${keysShort} MORE KEY${keysShort === 1 ? '' : 'S'} — field-hunt ${p.family.label}s`;
+    attemptBtn.disabled = !ready;
+    attemptBtn.addEventListener('click', () => { exp.attemptWarden(); this._refreshExpedition(); });
+    warden.appendChild(attemptBtn);
+    el.appendChild(warden);
 
     // Rolling log
     if (exp.log.length > 0) {
@@ -947,6 +1104,19 @@ export class HUD {
       log.className = 'fieldops-log';
       log.innerHTML = exp.log.map(e => `<div>${e.msg}</div>`).join('');
       el.appendChild(log);
+    }
+
+    // Chapter chain — the player's level + next objective
+    const chapters = this.prog.chapters;
+    if (chapters) {
+      const chHead = document.createElement('div');
+      chHead.className = 'fieldops-status';
+      chHead.style.borderColor = '#ffd70044';
+      chHead.innerHTML = `
+        <div class="fieldops-title" style="color:#ffd700">${chapters.headline}</div>
+        <div class="fieldops-row"><span>Next chapter</span><span>${chapters.nextObjective}</span></div>
+      `;
+      el.appendChild(chHead);
     }
 
     // Threat Index — zone bosses
@@ -1098,8 +1268,9 @@ export class HUD {
       ['Avg PP/min', abbrevNum(Math.floor(this._sessionPP / mins))],
       ['Current rate', `${(this.pp.effectiveRate ?? this.pp.ppRate).toFixed(1)} /s`],
       ['Peak rate', `${this._peakRate.toFixed(1)} /s`],
+      ['Chapter', this.prog?.chapters ? this.prog.chapters.headline : '—'],
       ['Offloads', this.pp.prestigeCount],
-      ['Expedition kills', exp ? abbrevNum(exp.totalKills) : '—'],
+      ['Sim ladder kills', exp ? abbrevNum(exp.totalKills) : '—'],
       ['Boss trophies', bosses ? `${bosses.defeated.size} / ${bosses.constructor.BOSS_DEFS.length}` : '—'],
       ['Trials complete', ch ? `${ch.completed.size} / ${ch.constructor.CHALLENGE_DEFS.length}` : '—'],
     ];
@@ -2436,6 +2607,7 @@ export class HUD {
         ['expedition-panel', () => this._refreshExpedition()],
         ['challenges-panel', () => this._refreshChallenges()],
         ['implant-panel',    () => this._refreshImplant()],
+        ['ascension-panel',  () => this._refreshAscension()],
       ]) {
         const p = document.getElementById(id);
         if (p && !p.hidden) fn();
@@ -2841,6 +3013,86 @@ export class HUD {
   // the panels in their existing non-functional state.
   _wireCodexButton()      {}
   _wireAscensionButton()  {}
-  _refreshAscension()     {}
+
+  // ── Recompile terminal (Spaceship) — the rebirth + Archive shop ─────────
+  _refreshAscension() {
+    const el = document.getElementById('ascension-contents');
+    const asc = this.ascension;
+    if (!el || !asc) return;
+    el.innerHTML = '';
+
+    const unlocked = asc.recompileUnlocked;
+    const gain = asc.recompileGain;
+    const mActive = asc.momentumActive;
+
+    // The live NUMBER — gold when momentum is active ("now is a good time")
+    const card = document.createElement('div');
+    card.className = 'fieldops-status';
+    card.style.borderColor = '#cc88ff55';
+    card.innerHTML = `
+      <div class="fieldops-title" style="color:#cc88ff">RECOMPILE — RUN ${asc.ascensionCount + 1}</div>
+      <div style="text-align:center;font-size:28px;padding:6px 0;color:${mActive ? '#ffd700' : '#cc88ff'};text-shadow:0 0 12px ${mActive ? '#ffd70066' : '#cc88ff44'};">◈ ${abbrevNum(gain)}</div>
+      <div style="text-align:center;font-size:10px;color:#888;margin-bottom:6px;">ARCHIVE DATA ON RECOMPILE</div>
+      <div class="fieldops-row"><span>Base — peak T${asc.peakTierThisRun + 1} × ${1 + asc.wardensThisRun} wardens</span><span>◈ ${abbrevNum(asc.archiveNext)}</span></div>
+      <div class="fieldops-row"><span>Momentum</span><span style="color:${mActive ? '#ffd700' : '#666'}">${mActive ? '×' + asc.momentum.toFixed(2) + ' ACTIVE' : 'DORMANT — 2h online or beat a warden'}</span></div>
+      <div class="fieldops-row"><span>Watermark bonus</span><span>${asc.watermarkBonus > 0 ? `◈ ${abbrevNum(asc.watermarkBonus)} — new best tier!` : `— (best ever T${asc.bestTierEver + 1})`}</span></div>
+      <div class="fieldops-row"><span>Fragments banked</span><span style="color:#c9a2ff">◈ ${abbrevNum(asc.fragmentsBanked)}</span></div>
+      <div class="fieldops-row"><span>Run time (online)</span><span>${Math.floor(asc.runHours)}h ${Math.floor((asc.runSeconds % 3600) / 60)}m</span></div>
+    `;
+    el.appendChild(card);
+
+    // Two-tap confirm — armed state lives on the instance so the 1s
+    // live-refresh doesn't disarm it.
+    const btn = document.createElement('button');
+    btn.className = 'construct-buy-btn';
+    if (!unlocked) {
+      btn.textContent = '🔒 BEAT A SECTOR WARDEN TO UNLOCK';
+      btn.disabled = true;
+    } else if (gain < 1) {
+      btn.textContent = 'NOTHING TO ARCHIVE — CLIMB THE LADDER';
+      btn.disabled = true;
+    } else if (this._recompileArmed) {
+      btn.textContent = `⚠ CONFIRM — RESETS PP, CAP & LADDER (+◈ ${abbrevNum(gain)})`;
+      btn.style.borderColor = '#ffd700';
+      btn.style.color = '#ffd700';
+    } else {
+      btn.textContent = `◈ RECOMPILE (+${abbrevNum(gain)} ARCHIVE)`;
+    }
+    btn.addEventListener('click', () => {
+      if (!this._recompileArmed) { this._recompileArmed = true; this._refreshAscension(); return; }
+      this._recompileArmed = false;
+      asc.ascend();
+      this._refreshAscension();
+    });
+    el.appendChild(btn);
+
+    const note = document.createElement('div');
+    note.style.cssText = 'font-size:9px;color:#777;margin:6px 0;line-height:1.5;';
+    note.textContent = 'Resets: PP pool · base cap · ladder tiers, wardens, keys. Keeps: stats · gear · materials · story bosses · tripartite · Archive & shop levels.';
+    el.appendChild(note);
+
+    // Archive shop — levels persist forever (watermarked; never lost)
+    const head = document.createElement('div');
+    head.className = 'fieldops-section-head';
+    head.innerHTML = `ARCHIVE SHOP — <span style="color:#cc88ff">◈ ${abbrevNum(asc.archive)}</span>`;
+    el.appendChild(head);
+    for (const u of asc.getUpgrades()) {
+      const row = document.createElement('div');
+      row.className = 'fieldops-status';
+      row.style.padding = '6px 8px';
+      row.innerHTML = `
+        <div class="fieldops-row"><span>${u.label} <span style="color:#666">Lv ${u.level}</span></span><span>${u.value}</span></div>
+        <div style="font-size:9px;color:#888;">${u.desc}</div>
+      `;
+      const buy = document.createElement('button');
+      buy.className = 'construct-buy-btn';
+      buy.style.cssText = 'margin-top:4px;padding:3px 8px;';
+      buy.textContent = `BUY — ◈ ${abbrevNum(u.cost)}`;
+      buy.disabled = asc.archive < u.cost;
+      buy.addEventListener('click', () => { asc.buyUpgrade(u.id); this._refreshAscension(); });
+      row.appendChild(buy);
+      el.appendChild(row);
+    }
+  }
 
 }
