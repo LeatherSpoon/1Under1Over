@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**Session start: read `STATUS.md` (repo root) before exploring.** It is the live current-state brief — which branch the work is on, what just landed, what's next, open threads — and exists so sessions don't re-derive project state from scratch. If it's missing from the checked-out branch, look for it on other branches before assuming it's gone.
+
 ## Keeping CLAUDE.md current
 
 After completing any feature, ask: **does this change how future work should be done?** If yes, update this file before finishing the task.
@@ -14,6 +16,17 @@ Update when you:
 - Change a checklist (e.g., "adding a zone now requires N steps")
 
 Do not update for: bug fixes, content additions (items, enemies, node positions), minor tweaks, or anything already obvious from reading the code.
+
+## Keeping STATUS.md current
+
+`STATUS.md` is the session-start brief; it is only useful if it never rots. Before finishing any session that changed the project (code, assets, design docs, or a decision):
+
+1. Rewrite **Current focus** / **Next up** if they shifted
+2. Add one line to the **Session log** (date — what landed)
+3. Update **Where the work lives** if branches or HEAD changed, and **Open threads** as threads open or close
+4. Bump **Last updated**; prune so the file stays about one screen (session log ≤10 lines) — anything CLAUDE.md or git history already records doesn't belong there
+
+Sessions that change nothing (pure Q&A or analysis) skip this.
 
 ---
 
