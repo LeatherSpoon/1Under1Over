@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Session start: read `STATUS.md` (repo root) before exploring.** It is the live current-state brief — which branch the work is on, what just landed, what's next, open threads — and exists so sessions don't re-derive project state from scratch. If it's missing from the checked-out branch, look for it on other branches before assuming it's gone.
+**Session start: read `STATUS.md` (repo root) before exploring.** It is the live current-state brief — which branch the work is on, what just landed, what's next, open threads — and exists so sessions don't re-derive project state from scratch. Then cross-check `git status` + `git log --oneline -5`: STATUS.md carries *intent* (which branch to build on, what's pending, why); git is the authority on volatile facts (checked-out branch, ahead/behind, what exists). If they disagree, fixing STATUS.md is the session's first task.
 
 ## Keeping CLAUDE.md current
 
