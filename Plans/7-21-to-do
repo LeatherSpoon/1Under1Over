@@ -1,0 +1,14 @@
+Read STATUS.md, then build Phase E from Plans/Integration-Design.md §13 —
+the Compute allocation board, Al automation modules, factory hoppers, and
+stocked-offline rework (save v13 → v14).
+
+Done means: systems wired per CLAUDE.md checklists; v13 saves migrate
+cleanly; npm test fully green with new coverage; browser-verified via the
+headless rig; STATUS.md refreshed before you finish.
+
+Ground rules: before building, ask me — in one batch — only the decisions
+that genuinely need me; make every other call yourself, vetoable, logged in
+Plans/DESIGN-DECISIONS.md. Keep exploration in subagents so context goes to
+building. If the phase is too big for one session, ship a coherent slice
+with its save migration working, and leave the map accurate for whoever
+comes next.
