@@ -1,39 +1,61 @@
-# STATUS — read me first
+# STATUS — project map (read me first)
 
-Session-start brief for **Processing Power**. CLAUDE.md explains how the project *works*; this file says where things *stand right now*. Any session that changes the project (code, assets, docs, or a decision) must update this file before finishing — rules in CLAUDE.md → "Keeping STATUS.md current".
-
-**Trust git over this file for volatile facts.** After reading, run `git status` + `git log --oneline -5`; if they disagree with anything here, fixing this file is the session's first task.
+One read to see the whole folder: what lives where, which docs are live, and where the work stands. CLAUDE.md (auto-loaded) is the deep guide to *how* systems work — this file is the *where*. Keep-current rules: CLAUDE.md → "Keeping STATUS.md current".
 
 **Last updated:** 2026-07-20
 
-## Where the work lives
+## Where the work stands
 
-- **`main`** — the only work branch (consolidated 2026-07-20: renamed from `remove-old-enemies-creature-assets`, every other branch deleted per owner's single-line-of-work call; origin/main matches). Contains everything, including the **reference-integration build** (`2915315`, saves v10→v13: Simulation Ladder, Recompile/Archive, Chapter Chain).
-- **`master` / origin/master** — stable target. Does **not** have the reference build; GitHub's PR #3 merge was an older, pre-build branch tip — don't let it fool you. Don't build here.
-- **Pending:** PR `main` → `master`, title "Merge the reference integration build". User creates it at github.com/LeatherSpoon/1Under1Over/compare/master...main (agent browser sign-in timed out).
+- **Reference-integration build** — phases A–D pt 1 shipped (saves v10→v13: dead multipliers wired, infinite Simulation Ladder, Recompile/Archive prestige, Chapter Chain level spine). 188/188 tests at last run.
+- **Next:** Phase D remainder — story-boss telegraph/dodge (`Plans/Integration-Design.md` §11) · then Phase E — Compute/Al board, stocked-offline, factory hoppers (save v14).
+- **Git:** single work branch `main`. Open item: PR main→master. For anything else about branches, ask git — not this file.
 
-## Current focus
+## Folder map
 
-Executing the 7-phase build order in `Plans/Integration-Design.md`. Done: **A** wire dead multipliers (v10) · **B** Simulation Ladder (v11) · **C** Recompile/Archive (v12) · **D pt 1** Chapter Chain (v13). All in `2915315`, 188/188 tests at last run.
+```
+index.html            SPA shell — all panel HTML lives here
+js/
+  main.js             bootstrap, game loop, ALL cross-system wiring (callbacks)
+  config.js           every tunable constant
+  systems/            40 gameplay systems, one class per file (save, PP, combat,
+                      crafting, prestige, ladder, chapters…) — CLAUDE.md's
+                      key-files table maps concern → file
+  scene/              3D world: Environment.js (all zone building), zones/ (per-zone
+                      builders + Mine generator), ToonMaterials.js, SceneManager.js
+  entities/           Player, Enemy (archetypes + bosses), ResourceNode, EntityManager
+  ui/                 HUD.js (every panel) + CombatUI, SkillsMenu, portraits
+  input/ fx/ util/    touch/keys · particles/popups · NumberFormat
+  sync/               SyncClient — localStorage queue → optional server
+  vendor/             Three.js (importmap target; no build step)
+css/                  stylesheets
+models/               22 runtime .glb (player, creatures, bosses, portal, MineKit, props)
+Assets/               source art: 3D/ (Blender sources), Inventory/ (1024px icon art +
+                      icons/ 128px served), Video/ (training chamber), SVG/, fonts/
+server/               OPTIONAL Express+Postgres sync API: db/migrations/, definitions/
+                      (seed data = content defs), repositories/, services/
+tests/                npm test → runAll: wiring enforcers (zoneWiring, panelWiring),
+                      mine generator/layout, systems/, ui/, server/, sync/
+Sessions/             test saves: Endgame_Test.json (god save — feature testing ONLY),
+                      Midgame_Test.json
+Plans/                design work — see doc index below
+docs/                 for-future-claude.md + superpowers/ (spec-era plans & specs)
+start-node.bat        serve :8080 (required — file:// is blocked)
+start-mobile.bat      LAN serve for phone + QR; append ?debug for on-device console
+```
 
-## Next up
+Root oddballs: `combine-js-to-md.ps1` regenerates the `*_compact.txt` / `all-in-one.txt` source dumps (for pasting into LLMs); `codebase-explainer.html` is an older visual codebase map (unmaintained); `New Text Document.txt` is empty; `Telemetry.txt` is a scratch log.
 
-1. Phase D remainder — story-boss telegraph/dodge (design §11: every-Nth heavy attack telegraphed, DODGE button in CombatUI; stats = toll baseline, dodge = execution skill).
-2. Phase E — Compute/Al board, stocked-offline, factory hoppers (save v14).
+## Doc index
 
-## Open threads & standing constraints
+**Live — trust these**
+- `CLAUDE.md` — architecture, wiring checklists, gotchas (auto-loaded every session)
+- `Plans/Integration-Design.md` — **build order of record**: 7 phases + formulas
+- `Plans/DESIGN-DECISIONS.md` — every design decision and veto, logged
+- `Plans/ProcessingPower-Systems-Inventory.md` — code-level inventory of every system: formulas + wiring health
 
-- PR main → master not yet created (see above).
-- Owner wants **action over questions** — make calls, mark them vetoable, build (`Plans/DESIGN-DECISIONS.md` logs all decisions).
-- PP economy = flow-with-bottlenecks, never ambient emission; combat-PP issues ON HOLD; Endgame_Test god save is for feature testing only, never balance numbers.
-- Corrosion stays cosmetic (owner vetoed the defense-penalty wiring).
-- Leonardo.ai credits lapsing — burn them on game assets whenever art work comes up.
+**Stable reference**
+- `Plans/*-Design-Reference.md` — six studied games (NGU, FAPI, Idle Spiral, RuneScape, TPT2, Crashlands) that feed Integration-Design
+- `docs/for-future-claude.md` — April 2026; gotcha and working-style sections still good, state sections stale
 
-## Doc freshness
-
-Live: this file · `Plans/Integration-Design.md` + `Plans/DESIGN-DECISIONS.md`. `AGENTS.md` is now a stub deferring to CLAUDE.md (its old body had rotted eras stale). Historical — do **not** trust for current state: `docs/for-future-claude.md` (April 2026; the gotcha/user-style sections are still good), `Plans/game_analysis.md`, `Direction.md`, `implementation_plan.md`, `TRIPARTITE_SESSION_WRITEUP.md`, `docs/superpowers/specs/2026-07-07-ngu-feel-roadmap-design.md` (superseded by Integration-Design).
-
-## Session log (newest first — keep ≤10, prune the rest)
-
-- 2026-07-20 — Branch consolidation: work branch renamed → `main`, force-pushed, all other branches deleted; PR main→master pending. Brief rewritten to carry intent instead of volatile git facts; AGENTS.md stubbed; git cross-check added to the session-start rule.
-- 2026-07-20 — Built the orientation system (STATUS.md + upkeep rules in CLAUDE.md); committed on master (`ce19b77`), merged into the work branch. No game code touched.
+**Historical — do NOT trust for current state**
+`Plans/NEXT-SESSION-KICKOFF.md` (mission complete) · `Plans/game_analysis.md` (superseded by Systems-Inventory) · `Direction.md` · `implementation_plan.md` · `TRIPARTITE_SESSION_WRITEUP.md` · `docs/superpowers/specs/2026-07-07-ngu-feel-roadmap-design.md` (superseded by Integration-Design) · `Plans/*.txt` brainstorms · `July3Plan.docx`

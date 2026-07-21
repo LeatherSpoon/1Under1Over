@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Session start: read `STATUS.md` (repo root) before exploring.** It is the live current-state brief — which branch the work is on, what just landed, what's next, open threads — and exists so sessions don't re-derive project state from scratch. Then cross-check `git status` + `git log --oneline -5`: STATUS.md carries *intent* (which branch to build on, what's pending, why); git is the authority on volatile facts (checked-out branch, ahead/behind, what exists). If they disagree, fixing STATUS.md is the session's first task.
+**Session start: read `STATUS.md` (repo root) before exploring.** It is the project map — an annotated folder map, a doc index (live vs historical), and a short "where the work stands" — so a session orients in one read instead of re-deriving the project from scratch. Git, not STATUS.md, is the authority on branch state; if the map contradicts the folder, fixing it is the session's first task.
 
 ## Keeping CLAUDE.md current
 
@@ -19,12 +19,13 @@ Do not update for: bug fixes, content additions (items, enemies, node positions)
 
 ## Keeping STATUS.md current
 
-`STATUS.md` is the session-start brief; it is only useful if it never rots. Before finishing any session that changed the project (code, assets, design docs, or a decision):
+`STATUS.md` is the project map; it is only useful if it never rots. Before finishing any session that changed the project (code, assets, design docs, or a decision):
 
-1. Rewrite **Current focus** / **Next up** if they shifted
-2. Add one line to the **Session log** (date — what landed)
-3. Update **Where the work lives** if branches or HEAD changed, and **Open threads** as threads open or close
-4. Bump **Last updated**; prune so the file stays about one screen (session log ≤10 lines) — anything CLAUDE.md or git history already records doesn't belong there
+1. Refresh **Where the work stands** (shipped / next) if it moved
+2. Update the **folder map** and **doc index** when files, directories, or docs are added, retired, or go stale
+3. Bump **Last updated**; keep the whole file about one screen
+
+Keep it a *map*: no branch bookkeeping beyond a one-line pointer (git owns that), no session logs (git history owns that), and no owner-preference notes (those live in Claude's private memory — this repo is public).
 
 Sessions that change nothing (pure Q&A or analysis) skip this.
 
