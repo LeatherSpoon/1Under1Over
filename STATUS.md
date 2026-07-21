@@ -8,7 +8,7 @@ One read to see the whole folder: what lives where, which docs are live, and whe
 
 - **Reference-integration build** — phases A–E shipped (saves v10→v14). E (2026-07-20): Compute allocation board in ALLOC (Al's attention pool; 0 units = system paused, extras boost output), Al modules (Key Tracker / Overflow Routing / Farm Director / Foreman), factory input hoppers + processing-queue persistence, drone mission queues, stocked-offline rework (full rate when stocked, DORMANT rows when not; 12 h base buffer). Build calls + deferrals (output buffers, storage caps, Triage) in DESIGN-DECISIONS.md. 229/229 tests at last run.
 - **Next:** Phase F — skill web with use-XP, stat-purchase retirement (`Plans/Integration-Design.md` §6/§13, save v15). Riskiest diff of the plan — touches every interaction site.
-- **Git:** single work branch `main`. Open item: PR main→master. For anything else about branches, ask git — not this file.
+- **Git:** single work branch `main`; PR #4 (main→master) merged 2026-07-20 — master will want a follow-up merge to pick up Phase E. For anything else about branches, ask git — not this file.
 
 ## Folder map
 
@@ -58,4 +58,4 @@ Root oddballs: `combine-js-to-md.ps1` regenerates the `*_compact.txt` / `all-in-
 - `docs/for-future-claude.md` — April 2026; gotcha and working-style sections still good, state sections stale
 
 **Historical — do NOT trust for current state**
-`Plans/NEXT-SESSION-KICKOFF.md` (mission complete) · `Plans/game_analysis.md` (superseded by Systems-Inventory) · `Direction.md` · `implementation_plan.md` · `TRIPARTITE_SESSION_WRITEUP.md` · `docs/superpowers/specs/2026-07-07-ngu-feel-roadmap-design.md` (superseded by Integration-Design) · `Plans/*.txt` brainstorms · `July3Plan.docx`
+`Plans/7-21-to-do` (the Phase E kickoff prompt — executed and shipped 2026-07-20) · `Plans/NEXT-SESSION-KICKOFF.md` (mission complete) · `Plans/game_analysis.md` (superseded by Systems-Inventory) · `Direction.md` · `implementation_plan.md` · `TRIPARTITE_SESSION_WRITEUP.md` · `docs/superpowers/specs/2026-07-07-ngu-feel-roadmap-design.md` (superseded by Integration-Design) · `Plans/*.txt` brainstorms · `July3Plan.docx`
