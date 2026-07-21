@@ -1,6 +1,6 @@
 import { CONFIG } from '../config.js';
 
-const SAVE_VERSION = 9;
+const SAVE_VERSION = 13;
 
 export class SaveSystem {
   constructor(systems) {
@@ -17,7 +17,7 @@ export class SaveSystem {
       techTree, mastery, sync, factory, codex, augmentations,
       mathematician, timeWarp, modifiers, missionTracker, questSystem, assembly,
       extractor, processingNodes, tripartite, bosses, expedition, challenges,
-      neuralImplant, combatSim, mineDelve,
+      neuralImplant, combatSim, mineDelve, trainingAreas, crafting, chapters,
     } = this.systems;
 
     const data = {
@@ -35,7 +35,7 @@ export class SaveSystem {
         ppCap: pp._baseCap ?? pp.ppCap,
         prestigeCount: pp.prestigeCount,
         rateModifiers: Object.fromEntries(
-          Object.entries(pp._rateModifiers).filter(([k]) => !k.startsWith('_tempBoost_') && !k.startsWith('tripartite_'))
+          Object.entries(pp._rateModifiers).filter(([k]) => !k.startsWith('_tempBoost_') && !k.startsWith('_warpBoost_') && !k.startsWith('tripartite_'))
         ),
       },
 
@@ -95,6 +95,8 @@ export class SaveSystem {
         resourcesGathered: gameStats.resourcesGathered,
         miningActions: gameStats.miningActions,
         visitedZones: [...gameStats._visitedZones],
+        zonesWithKills: [...(gameStats._zonesWithKills || [])],
+        energyDepleted: gameStats.energyDepleted || 0,
       },
 
       achievements: achievements ? achievements.serialize() : null,
@@ -103,6 +105,8 @@ export class SaveSystem {
       autoCombatEnabled: autoCombat ? autoCombat.enabled : false,
       techTree: techTree ? techTree.serialize() : null,
       mastery: mastery ? mastery.serialize() : null,
+      crafting: crafting ? crafting.serialize() : null,
+      chapters: chapters ? chapters.serialize() : null,
       factory: factory ? factory.serialize() : null,
       assembly: assembly ? assembly.serialize() : null,
       extractor: extractor ? extractor.serialize() : null,
@@ -126,6 +130,7 @@ export class SaveSystem {
       neuralImplant: neuralImplant ? neuralImplant.serialize() : null,
       combatSim:     combatSim     ? combatSim.serialize()     : null,
       mineDelve:     mineDelve     ? mineDelve.serialize()     : null,
+      trainingAreas: trainingAreas ? trainingAreas.serialize() : null,
     };
 
     for (const name of stats.statNames) {
@@ -211,7 +216,7 @@ export class SaveSystem {
       techTree, mastery, sync, factory, codex, augmentations,
       mathematician, timeWarp, modifiers, missionTracker, questSystem, assembly,
       extractor, processingNodes, tripartite, bosses, expedition, challenges,
-      neuralImplant, combatSim, mineDelve,
+      neuralImplant, combatSim, mineDelve, trainingAreas, crafting, chapters,
     } = this.systems;
 
     // Drill System
@@ -307,6 +312,8 @@ export class SaveSystem {
       gameStats.resourcesGathered = data.gameStats.resourcesGathered || 0;
       gameStats.miningActions = data.gameStats.miningActions || 0;
       gameStats._visitedZones = new Set(data.gameStats.visitedZones || []);
+      gameStats._zonesWithKills = new Set(data.gameStats.zonesWithKills || []);
+      gameStats.energyDepleted = data.gameStats.energyDepleted || 0;
     }
 
     // New systems
@@ -316,6 +323,7 @@ export class SaveSystem {
     if (autoCombat && data.autoCombatEnabled !== undefined) autoCombat.enabled = data.autoCombatEnabled;
     if (techTree && data.techTree) techTree.deserialize(data.techTree);
     if (mastery && data.mastery) mastery.deserialize(data.mastery);
+    if (crafting && data.crafting) crafting.load(data.crafting);
     if (factory && data.factory) factory.deserialize(data.factory);
     if (assembly && data.assembly) assembly.deserialize(data.assembly);
     if (extractor && data.extractor) extractor.deserialize(data.extractor);
@@ -344,9 +352,13 @@ export class SaveSystem {
       if (data.challenges) challenges.deserialize(data.challenges);
       challenges.applyBonuses();
     }
+    // Chapters after bosses/expedition/ascension — seeds from prestigeCount on
+    // pre-v13 saves so no tab ever re-locks (deserialize(null) handles it).
+    if (chapters) chapters.deserialize(data.chapters);
     if (neuralImplant && data.neuralImplant) neuralImplant.deserialize(data.neuralImplant);
     if (combatSim && data.combatSim) combatSim.deserialize(data.combatSim);
     if (mineDelve && data.mineDelve) mineDelve.load(data.mineDelve);
+    if (trainingAreas && data.trainingAreas) trainingAreas.deserialize(data.trainingAreas);
     // Legacy: migrate old taskSystem saves (no-op if not present)
 
 

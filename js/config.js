@@ -88,6 +88,10 @@ export const CONFIG = {
   // Combat Simulator (Spaceship sparring rig)
   COMBAT_SIM_RATE: 0.3,     // PP-equivalent XP/s banked into each of STR and DEF while enabled
 
+  // Training Chamber (Spaceship holodeck sim programs)
+  TRAINING_BASE_XP_RATE: 0.5,        // PP-equivalent stat XP/s per 1x leg at program level 1
+  TRAINING_UPGRADE_RATE_BONUS: 0.25, // +25% XP rate per program level above 1
+
   // Environments PP unlock thresholds
   ENV_UNLOCK: {
     landingSite: 0,
@@ -108,10 +112,19 @@ export const CONFIG = {
 
   // Tripartite Allocation — three legs that split passive PP investment.
   // CAPACITY -> multiplies current-run ppCap. POWER -> adds PP/s. RATE -> multiplies offload capGain.
+  // Power curve (invested^exp * scale) so bonuses keep growing over hundreds of
+  // hours — the old log1p curve effectively finished on day one. Scales are
+  // anchored to match the old curve at ~1 hour of even-split investment (~600).
   TRIPARTITE_FLOW_RATE: 0.5,         // virtual investment units routed into legs per second
-  TRIPARTITE_CAPACITY_SCALE: 0.04,   // log-curve scalar — capMult = 1 + log1p(invested) * scale
-  TRIPARTITE_POWER_SCALE: 0.05,      // log-curve scalar — added PP/s
-  TRIPARTITE_RATE_SCALE: 0.06,       // log-curve scalar — rateMult = 1 + log1p(invested) * scale
+  TRIPARTITE_CURVE_EXP: 0.35,        // shared exponent — bonus term = invested^exp * scale
+  // Session momentum: maintaining a live session ramps investment flow (a player
+  // grinding a wall online earns acceleration; offline flow stays throttled at
+  // 50% with no momentum). momentum = min(MAX, 1 + sessionHours * PER_HOUR).
+  TRIPARTITE_MOMENTUM_PER_HOUR: 0.5,
+  TRIPARTITE_MOMENTUM_MAX: 4,
+  TRIPARTITE_CAPACITY_SCALE: 0.027,  // capMult = 1 + invested^exp * scale
+  TRIPARTITE_POWER_SCALE: 0.034,     // added PP/s = invested^exp * scale
+  TRIPARTITE_RATE_SCALE: 0.041,      // offload rateMult = 1 + invested^exp * scale
   TRIPARTITE_ZONE_BONUS: {
     landingSite: { leg: 'power',    mult: 1.5 },
     mine:        { leg: 'rate',     mult: 1.5 },

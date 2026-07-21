@@ -1605,6 +1605,127 @@ body {
   scrollbar-color: #00cc66 transparent;
 }
 
+/* ── Training Console + Chamber Overlay ────────────────────────── */
+#training-panel {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 150;
+  pointer-events: auto;
+}
+#training-panel[hidden] { display: none !important; }
+
+#training-modal {
+  background: rgba(6,10,20,0.97);
+  border: 1px solid #66ddff;
+  border-radius: 8px;
+  width: min(440px, 92vw);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(102,221,255,0.15);
+}
+
+#training-modal #training-contents {
+  overflow-y: auto;
+  flex: 1;
+  padding: 8px 10px;
+  scrollbar-width: thin;
+  scrollbar-color: #66ddff transparent;
+}
+
+.training-program {
+  border: 1px solid #2a4a66;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+.training-program.selected { border-color: #66ddff; box-shadow: 0 0 12px rgba(102,221,255,0.25); }
+.training-program .tp-name { font-weight: bold; color: #bfeaff; letter-spacing: 1px; }
+.training-program .tp-legs { font-size: 0.85em; margin: 3px 0; }
+.training-program .tp-legs .drain { color: #ff7766; }
+.training-program .tp-meta { font-size: 0.8em; opacity: 0.8; margin-bottom: 6px; }
+.training-program button {
+  font: inherit;
+  font-size: 0.8em;
+  background: #0a2233;
+  color: #bfeaff;
+  border: 1px solid #2a4a66;
+  border-radius: 4px;
+  padding: 3px 10px;
+  margin-right: 6px;
+  cursor: pointer;
+}
+.training-program button:disabled { opacity: 0.45; cursor: default; }
+
+/* Immersion overlay while inside the chamber (below panels at z 150+) */
+#training-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  background: #05070f;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+#training-overlay[hidden] { display: none !important; }
+
+#training-video {
+  max-width: 90vw;
+  max-height: 60vh;
+  border: 1px solid #66ddff;
+  border-radius: 8px;
+  background: #000;
+}
+
+#training-holo {
+  width: min(720px, 90vw);
+  height: 42vh;
+  border: 1px solid #66ddff;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    repeating-linear-gradient(0deg, rgba(102,221,255,0.06) 0 2px, transparent 2px 5px),
+    radial-gradient(ellipse at center, #0e1c33 0%, #05070f 75%);
+}
+#training-holo::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 18%;
+  background: linear-gradient(180deg, transparent, rgba(102,221,255,0.16), transparent);
+  animation: holoScan 3.2s linear infinite;
+}
+@keyframes holoScan {
+  from { top: -20%; }
+  to   { top: 110%; }
+}
+#training-holo .holo-label {
+  color: #66ddff;
+  letter-spacing: 5px;
+  font-size: 1.1em;
+  opacity: 0.85;
+  animation: holoPulse 2.4s ease-in-out infinite;
+}
+@keyframes holoPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+#training-info { margin-top: 16px; text-align: center; color: #bfeaff; }
+#training-info .t-title { font-size: 1.15em; letter-spacing: 3px; color: #66ddff; margin-bottom: 4px; }
+#training-info .t-gains .drain { color: #ff7766; }
+#training-info .t-exit { opacity: 0.55; font-size: 0.8em; margin-top: 8px; }
+
 /* ── Ascension Modal Overlay ───────────────────────────────────── */
 #ascension-panel {
   position: fixed;

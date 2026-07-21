@@ -44,6 +44,9 @@ export class CombatSystem {
     this.enemyCurrentHP = enemy.maxHP;
     this.playerEffects = [];
     this._rageMult = 1;
+    this._attackCounter = 0;
+    this._telegraphActive = false;
+    this._dodgedThisTelegraph = false;
 
     this._log(enemy.boss ? `☠ ${enemy.name} — ZONE BOSS — blocks your path!` : `A wild ${enemy.name} appears!`);
     this._emitHP();
@@ -77,6 +80,46 @@ export class CombatSystem {
     if (!this.active) return;
     const enemy = this.enemy;
     const interval = enemy.attackInterval;
+
+    // Story-boss telegraphed heavy: every Nth attack replaces the normal
+    // pattern with a dodgeable slam. Stats pay the toll on baseline hits;
+    // execution (the DODGE window) decides whether the heavy ever lands —
+    // perfect play clears a chapter boss well under the spreadsheet bar.
+    const tg = enemy.telegraph;
+    if (tg && ++this._attackCounter % tg.every === 0) {
+      const windowMs = tg.windowMs || 900;
+      const leadIn = Math.max(200, interval - windowMs);
+      this._enemyInterval = setTimeout(() => {
+        if (!this.active) return;
+        this._telegraphActive = true;
+        this._dodgedThisTelegraph = false;
+        if (enemy.setCharging) enemy.setCharging(true);
+        this._log(`⚠ ${enemy.name} rears back for a crushing blow — DODGE!`);
+        if (this.onTelegraph) this.onTelegraph(true, windowMs);
+        this._windupTimer = setTimeout(() => {
+          if (!this.active) return;
+          this._telegraphActive = false;
+          if (enemy.setCharging) enemy.setCharging(false);
+          if (this.onTelegraph) this.onTelegraph(false);
+          if (this._dodgedThisTelegraph) {
+            this._log('You sidestep — the heavy attack whiffs!');
+          } else {
+            const dmg = this._enemyStrike(enemy.damage * tg.mult);
+            this._log(`${enemy.name} CRUSHES you for ${dmg}!`);
+            if (enemy.statusEffect && Math.random() < 0.3) this._applyStatus(enemy.statusEffect);
+          }
+          this._tickStatusEffects();
+          this._afterEnemyAttack();
+          this._emitHP();
+          if (this.stats.currentHP <= 0) {
+            this._endCombat(false);
+          } else {
+            this._scheduleNextAttack();
+          }
+        }, windowMs);
+      }, leadIn);
+      return;
+    }
 
     if (enemy.attackPattern === 'windup') {
       // Show charge ring for the first 2/3 of the interval, then hit
@@ -160,6 +203,16 @@ export class CombatSystem {
         }
       }, enemy.attackInterval);
     }
+  }
+
+  get telegraphActive() { return !!this._telegraphActive; }
+
+  /** Player action: only meaningful during a telegraph window. */
+  dodge() {
+    if (!this._telegraphActive || this._dodgedThisTelegraph) return false;
+    this._dodgedThisTelegraph = true;
+    this._log('Perfect read!');
+    return true;
   }
 
   /** Apply one enemy hit to the player, including rage ramp and FP drain. */
@@ -339,6 +392,10 @@ export class CombatSystem {
     this._graceActive = false;
 
     if (this.enemy && this.enemy.setCharging) this.enemy.setCharging(false);
+    if (this._telegraphActive) {
+      this._telegraphActive = false;
+      if (this.onTelegraph) this.onTelegraph(false);
+    }
 
     this._clearStatusEffects();
 
@@ -376,10 +433,14 @@ export class CombatSystem {
                     { mat: 'quartz',         label: 'Quartz',          chance: 0.30 }],
       reptlar:     [{ mat: 'synthetic_resin', label: 'Synthetic Resin', chance: 0.50 },
                     { mat: 'carbon_biomass', label: 'Carbon Biomass',  chance: 0.30 }],
+      dunkraza:    [{ mat: 'burstCapacitor', label: 'Burst Capacitor', chance: 0.40 },
+                    { mat: 'carbon_biomass', label: 'Carbon Biomass',  chance: 0.30 }],
       hardlizzy:   [{ mat: 'armorPlate',     label: 'Armor Plate',     chance: 0.55 },
                     { mat: 'titanium',       label: 'Titanium',        chance: 0.25 }],
       cavecrab:    [{ mat: 'alloy_bar',      label: 'Alloy Bar',       chance: 0.50 },
                     { mat: 'tungsten',       label: 'Tungsten',        chance: 0.30 }],
+      spoonvark:   [{ mat: 'silica',         label: 'Silica',          chance: 0.50 },
+                    { mat: 'carbon_biomass', label: 'Carbon Biomass',  chance: 0.35 }],
       // Bosses — guaranteed hauls
       boss_landing: [{ mat: 'powerCore',   label: 'Power Core',   chance: 1, qty: 3 },
                      { mat: 'circuitWire', label: 'Circuit Wire', chance: 1, qty: 5 }],

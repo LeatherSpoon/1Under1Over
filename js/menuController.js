@@ -2,7 +2,8 @@
 // #menu-screen alongside them — menu-screen z-index 155 sits above these panels
 // (z-index 150) and its transparent backdrop would capture all clicks, closing them.
 const STANDALONE_PANEL_IDS = new Set([
-  'inventory-panel', 'crafting-panel', 'drone-panel', 'ascension-panel', 'drill-panel'
+  'inventory-panel', 'crafting-panel', 'drone-panel', 'ascension-panel', 'drill-panel',
+  'training-panel',
 ]);
 
 export const MENU_PANEL_IDS = [
@@ -13,6 +14,7 @@ export const MENU_PANEL_IDS = [
   'workshop-panel', 'constructor-panel', 'fabrication-panel', 'assembly-matrix-panel',
   'refinery-panel',
   'expedition-panel', 'challenges-panel', 'implant-panel', 'data-panel',
+  'training-panel',
 ];
 
 export function initMenuController({ hud, telemetry, env }) {

@@ -110,6 +110,8 @@ export class Environment {
     // Pre-load all GLB models in parallel so they're ready when zones build
     this._modelsReady = Promise.all([
       loadModel('./models/Ghibli_Tree.glb').catch(() => null),
+      loadModel('./models/Ghibli_Tree_B.glb').catch(() => null),
+      loadModel('./models/Ghibli_Tree_C.glb').catch(() => null),
       loadModel('./models/Rock_Cluster.glb').catch(() => null),
       loadModel('./models/Fuel_Barrel.glb').catch(() => null),
       loadModel('./models/Supply_Crate.glb').catch(() => null),
@@ -121,10 +123,12 @@ export class Environment {
       loadModel('./models/Red_Rock.glb').catch(() => null),
       loadModel('./models/Fire_Plant.glb').catch(() => null),
       loadModel('./models/Portal.glb').catch(() => null),
-    ]).then(([tree, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal]) => {
-      this._glb = { tree, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal };
+    ]).then(([tree, treeB, treeC, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal]) => {
+      this._glb = { tree, treeB, treeC, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal };
       // Place GLB props for the initial zone (already built procedurally)
       this._placeGLBProps(this.currentZone);
+      // Trees built before the GLBs resolved (fresh-load race) get re-skinned
+      this._upgradeProceduralTrees();
       // Attach portal models built before the GLB finished loading (first zone)
       for (const p of this._zonePortals) this._attachPortalModel(p);
     });
@@ -162,6 +166,8 @@ export class Environment {
     this._constructorStationPos = null;
     this._extractorStationPos = null;
     this._assemblyMatrixStationPos = null;
+    this._trainingChamber = null;
+    this._trainingConsolePos = null;
     this.currentZone = zoneName;
 
     switch (zoneName) {
@@ -242,28 +248,19 @@ export class Environment {
     // Spawn a tiny tree that grows to full size over 60s
     this._treePlacedPositions.push({ x, z });
     const treeGroup = new THREE.Group();
-    const h = 1.4 + Math.random() * 0.8;
-    const trunkGeo = new THREE.CylinderGeometry(0.18, 0.22, h, 6);
-    const trunkMat = createToonMaterial(0x6b4226);
-    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-    trunk.position.y = h / 2;
-    treeGroup.add(trunk);
-
-    const crownColors = [0x2d6a2d, 0x3a8c3a, 0x245224];
-    const crownMat = createToonMaterial(crownColors[Math.floor(Math.random() * crownColors.length)]);
-    const crownH = 1.8 + Math.random() * 0.6;
-    const crown = new THREE.Mesh(new THREE.ConeGeometry(0.9, crownH, 7), crownMat);
-    crown.position.y = h + crownH * 0.4;
-    treeGroup.add(crown);
-
     treeGroup.position.set(x, 0, z);
+    treeGroup.rotation.y = Math.random() * Math.PI * 2;
     treeGroup.scale.setScalar(0.1);
     this.group.add(treeGroup);
 
-    const collision = { x, z, r: 0.55 };
-    this._collisionCircles.push(collision);
-
-    const entry = { group: treeGroup, x, z, alive: true, collision, _harvestReady: true, _harvestTimer: 0 };
+    const entry = {
+      group: treeGroup, x, z, alive: true,
+      collision: { x, z, r: 0.55 },
+      _harvestReady: true, _harvestTimer: 0,
+      _variantR: Math.random(), _sizeR: Math.random(), _modeled: false,
+    };
+    this._buildTreeVisual(entry);
+    this._collisionCircles.push(entry.collision);
     this._trees.push(entry);
     this._growingTrees.push({ group: treeGroup, currentScale: 0.1, targetScale: 1.0, x, z });
   }
@@ -532,12 +529,14 @@ export class Environment {
         { x: -12, z: -4, archetype: 'reptlar' },
         { x: 0,   z: -12, archetype: 'boss_verdant', boss: true },
       ];
-      // T4 — Reptlar/Dunkraza pressure + the Tide Oracle
+      // T4 — Reptlar/Dunkraza pressure, shore-digging Spoonvarks + the Tide Oracle
       case 'lagoonCoast': return [
         { x: 12, z: 6,  archetype: 'reptlar' },
         { x: -10, z: 8, archetype: 'dunkraza' },
         { x: 8, z: -10, archetype: 'reptlar' },
         { x: -6, z: -8, archetype: 'dunkraza' },
+        { x: 5, z: 12,  archetype: 'spoonvark' },
+        { x: -12, z: -10, archetype: 'spoonvark' },
         { x: -14, z: 0, archetype: 'boss_lagoon', boss: true },
       ];
       // T5 — Dunkraza + armored Hard Lizzy pressure + the Cryo Monarch
@@ -596,36 +595,70 @@ export class Environment {
     const rand = rng || Math.random;
     this._treePlacedPositions.push({ x, z });
     const treeGroup = new THREE.Group();
-    const h = 1.4 + rand() * 0.8;
-    const trunkGeo = new THREE.CylinderGeometry(0.18, 0.22, h, 6);
-    const trunkMat = createToonMaterial(0x6b4226);
-    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+    treeGroup.position.set(x, 0, z);
+    // Exactly three draws on every path so the seeded forest layout is
+    // identical whether or not the tree GLBs have finished loading yet.
+    const entry = {
+      group: treeGroup, x, z, alive: true,
+      collision: { x, z, r: 0.55 },
+      _harvestReady: true, _harvestTimer: 0,
+      _variantR: rand(), _sizeR: rand(), _modeled: false,
+    };
+    treeGroup.rotation.y = rand() * Math.PI * 2;
+    this._buildTreeVisual(entry);
+    this.group.add(treeGroup);
+    this._collisionCircles.push(entry.collision);
+    this._trees.push(entry);
+  }
+
+  // Weighted variant pick: broad green > tall teal > amber accent
+  _treeModel(r) {
+    const g = this._glb;
+    if (!g) return null;
+    return (r < 0.5 ? g.tree : r < 0.85 ? g.treeB : g.treeC)
+        || g.tree || g.treeB || g.treeC || null;
+  }
+
+  _buildTreeVisual(entry) {
+    const src = this._treeModel(entry._variantR);
+    if (src) {
+      entry.group.add(cloneModel(src, 0.85 + entry._sizeR * 0.3));
+      entry._modeled = true;
+      return;
+    }
+    // Procedural cone fallback — only the first frames of a fresh load, before
+    // the GLBs resolve; _upgradeProceduralTrees() re-skins these in place.
+    const h = 1.4 + entry._sizeR * 0.8;
+    const trunk = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.18, 0.22, h, 6),
+      createToonMaterial(0x6b4226)
+    );
     trunk.position.y = h / 2;
     trunk.castShadow = true;
-    treeGroup.add(trunk);
+    entry.group.add(trunk);
 
     const crownColors = [0x2d6a2d, 0x3a8c3a, 0x245224];
-    const crownColor = crownColors[Math.floor(rand() * crownColors.length)];
-    const crownMat = createToonMaterial(crownColor);
-    const crownH = 1.8 + rand() * 0.6;
-    const crown1Geo = new THREE.ConeGeometry(0.9, crownH, 7);
-    const crown1 = new THREE.Mesh(crown1Geo, crownMat);
+    const crownMat = createToonMaterial(crownColors[Math.floor(entry._variantR * crownColors.length)]);
+    const crownH = 1.8 + entry._sizeR * 0.6;
+    const crown1 = new THREE.Mesh(new THREE.ConeGeometry(0.9, crownH, 7), crownMat);
     crown1.position.y = h + crownH * 0.4;
     crown1.castShadow = true;
-    treeGroup.add(crown1);
+    entry.group.add(crown1);
 
-    const crown2Geo = new THREE.ConeGeometry(0.65, crownH * 0.7, 7);
-    const crown2 = new THREE.Mesh(crown2Geo, crownMat);
+    const crown2 = new THREE.Mesh(new THREE.ConeGeometry(0.65, crownH * 0.7, 7), crownMat);
     crown2.position.y = h + crownH * 0.85;
-    treeGroup.add(crown2);
+    entry.group.add(crown2);
+    addOutlineToGroup(entry.group, 0.035);
+  }
 
-    treeGroup.position.set(x, 0, z);
-    treeGroup.rotation.y = rand() * Math.PI * 2;
-    addOutlineToGroup(treeGroup, 0.035);
-    this.group.add(treeGroup);
-    const collision = { x, z, r: 0.55 };
-    this._collisionCircles.push(collision);
-    this._trees.push({ group: treeGroup, x, z, alive: true, collision, _harvestReady: true, _harvestTimer: 0 });
+  // Re-skin procedural fallback trees once the GLBs arrive (only relevant for
+  // the very first zone build on a fresh page load).
+  _upgradeProceduralTrees() {
+    for (const t of this._trees) {
+      if (t._modeled) continue;
+      while (t.group.children.length) t.group.remove(t.group.children[0]);
+      this._buildTreeVisual(t);
+    }
   }
 
   _addSignpost(x, z, rotY, label) {
@@ -1075,6 +1108,73 @@ export class Environment {
     // Register as interactable station
     this._offloadStationPos = { x, z };
   }
+
+  /**
+   * Holodeck-style training chamber: one walk-in trigger zone (r) plus a
+   * program console placed just outside it. The chamber floor is walkable —
+   * only the emitter pillars collide.
+   */
+  _addTrainingChamber(x, z, r = 2.0) {
+    const g = new THREE.Group();
+
+    // Chamber floor disc + holo ring
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(r, r + 0.15, 0.1, 40), createToonMaterial(0x1c2440));
+    disc.position.y = 0.05;
+    g.add(disc);
+
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.06, 8, 48), new THREE.MeshBasicMaterial({ color: 0x66ddff }));
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.12;
+    g.add(ring);
+
+    // Inner grid circle (holodeck lines)
+    const grid = new THREE.Mesh(
+      new THREE.TorusGeometry(r * 0.55, 0.03, 6, 40),
+      new THREE.MeshBasicMaterial({ color: 0x2a6699, transparent: true, opacity: 0.7 })
+    );
+    grid.rotation.x = -Math.PI / 2;
+    grid.position.y = 0.11;
+    g.add(grid);
+
+    // Four emitter pillars around the rim (the only collision)
+    for (let i = 0; i < 4; i++) {
+      const a = (Math.PI / 4) + i * (Math.PI / 2); // diagonals, keeping N/S/E/W open
+      const ex = Math.cos(a) * (r + 0.4), ez = Math.sin(a) * (r + 0.4);
+      const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.0, 0.3), createToonMaterial(0x223355));
+      pillar.position.set(ex, 1.0, ez);
+      addOutline(pillar, 0.04);
+      g.add(pillar);
+
+      const emitter = new THREE.Mesh(new THREE.OctahedronGeometry(0.14, 0), new THREE.MeshBasicMaterial({ color: 0x66ddff }));
+      emitter.position.set(ex, 2.25, ez);
+      g.add(emitter);
+      this._spinners.push({ mesh: emitter, axis: 'y', speed: 1.5 });
+
+      this._collisionCircles.push({ x: x + ex, z: z + ez, r: 0.4 });
+    }
+
+    g.position.set(x, 0, z);
+    this.group.add(g);
+    this._trainingChamber = { x, z, r };
+
+    // Program console just outside the chamber, toward the ship interior
+    const cz = z - r - 1.4;
+    const cg = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.0, 0.6), createToonMaterial(0x223344));
+    body.position.y = 0.5;
+    addOutline(body, 0.05);
+    cg.add(body);
+    const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.5), new THREE.MeshBasicMaterial({ color: 0x66ddff }));
+    screen.position.set(0, 0.75, 0.31);
+    cg.add(screen);
+    cg.position.set(x, 0, cz);
+    this.group.add(cg);
+    this._collisionCircles.push({ x, z: cz, r: 0.7 });
+    this._trainingConsolePos = { x, z: cz };
+  }
+
+  getTrainingChamber() { return this._trainingChamber || null; }
+  getTrainingConsolePos() { return this._trainingConsolePos || null; }
 
   _addFabricator(x, z) {
     const g = new THREE.Group();

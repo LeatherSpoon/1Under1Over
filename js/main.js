@@ -51,9 +51,11 @@ import { CloudSaveSystem } from './systems/CloudSaveSystem.js';
 import { initMissionTracker } from './missionTracker.js';
 import { QuestSystem } from './systems/QuestSystem.js';
 import { BossSystem } from './systems/BossSystem.js';
+import { ChapterSystem } from './systems/ChapterSystem.js';
 import { ExpeditionSystem } from './systems/ExpeditionSystem.js';
 import { ChallengeSystem } from './systems/ChallengeSystem.js';
 import { NeuralImplantSystem } from './systems/NeuralImplantSystem.js';
+import { TrainingAreaSystem } from './systems/TrainingAreaSystem.js';
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
 
@@ -128,13 +130,17 @@ const modifiers       = new ModifiersSystem(ppSystem);
 const tripartite      = new TripartiteSystem(ppSystem);
 const questSystem     = new QuestSystem();
 const bossSystem      = new BossSystem(ppSystem);
+const chapterSystem   = new ChapterSystem(bossSystem, ppSystem);
 const expedition      = new ExpeditionSystem(ppSystem, statsSystem, inventorySystem);
 const challenges      = new ChallengeSystem(ppSystem);
 const neuralImplant   = new NeuralImplantSystem(ppSystem, statsSystem);
 const combatSim       = new CombatSimSystem(statsSystem);
+const trainingAreas   = new TrainingAreaSystem(statsSystem, inventorySystem);
+// Power leg = how hard PP works at a sink: it amplifies training throughput.
+trainingAreas.getPowerBonus = () => tripartite.powerBonus;
 
 // Apply ascension multiplier to PP system (challenge rewards fold in each frame)
-ppSystem.globalMultiplier = ascension.ppMultiplier * challenges.ppRateMult;
+ppSystem.globalMultiplier = ascension.ppMultiplier * challenges.ppRateMult * factorySystem.moduleGlobalMult;
 
 // Wire minigame perfect hits to achievements
 let _lastMinigamePlay = 0;
@@ -147,7 +153,7 @@ minigame.onStateChange = () => {
 };
 
 // ── Offline progress on boot ──────────────────────────────────────────────
-offlineSystem.setReturnContext({ stats: statsSystem, ascension, timeWarp, expedition, implant: neuralImplant });
+offlineSystem.setReturnContext({ stats: statsSystem, ascension, timeWarp, expedition, implant: neuralImplant, tripartite, trainingAreas });
 const offlineSummary = offlineSystem.applyAndSummarize();
 offlineSystem.stamp();
 
@@ -258,6 +264,7 @@ const hud = new HUD(
   extractorSystem, processingNodes,
   { bosses: bossSystem, expedition, challenges, implant: neuralImplant }
 );
+hud.trainingAreas = trainingAreas; // training console panel + chamber overlay
 const combatUI = new CombatUI(
   combatSystem, statsSystem, entityManager, player, inventorySystem, ppSystem, sceneManager
 );
@@ -288,7 +295,7 @@ bossSystem.onDefeat = (def) => {
     reward: 0,
   });
   env.refreshPortalAccess((portal) =>
-    ppSystem.ppTotal >= portal.ppRequired
+    portal.ppRequired === 0
     || pedometer.isZoneUnlocked(portal.targetZone)
     || bossSystem.hasClearance(portal.targetZone)
   );
@@ -325,8 +332,26 @@ neuralImplant.onLevelUp = (statName, newLevel) => {
   questSystem.recordStatUpgrade(statName, newLevel);
 };
 
+// Training pads — sim-trained levels announce themselves, drains too
+trainingAreas.onLevelUp = (statName, newLevel) => {
+  hud.showAchievementToast({
+    icon: '🏋️', label: `Sim Training: ${statsSystem.getStatLabel(statName)} Lv ${newLevel}`,
+    desc: 'Trained on a Spaceship sim pad', reward: 0,
+  });
+  questSystem.recordStatUpgrade(statName, newLevel);
+};
+trainingAreas.onLevelDown = (statName, newLevel) => {
+  hud.showAchievementToast({
+    icon: '⚠️', label: `Sim Strain: ${statsSystem.getStatLabel(statName)} Lv ${newLevel}`,
+    desc: 'Advanced training drained this stat', reward: 0,
+  });
+};
+
 // Expedition kills feed the Remote War trial
 expedition.onKills = (count) => challenges.recordExpeditionKills(count);
+ascension.expedition = expedition; // the ladder is the Recompile run layer (peak tier, wardens, fragments)
+chapterSystem.expedition = expedition; // warden rungs read the lifetime tier watermark
+chapterSystem.ascension = ascension;
 
 // Award Quantum Crystals on achievement unlock + ascension (premium currency drip)
 achievements.onUnlock = (ach) => {
@@ -356,7 +381,8 @@ ascension.ascend = function () {
 // (this module scope); damageMult/droneMult are pushed into their systems.
 modifiers.onChange = () => {
   combatSystem.damageMult = modifiers.damageMult;
-  droneSystem.efficiencyMult = modifiers.droneMult;
+  droneSystem.efficiencyMult = modifiers.droneMult * ascension.droneMultiplier;
+  statsSystem.costMult = modifiers.statCostMult;
   const panel = document.getElementById('optimization-panel');
   if (panel && !panel.hidden) hud._refreshOptimization();
 };
@@ -408,9 +434,10 @@ combatSystem.onCombatEnd = (won, fled) => {
   if (won && combatSystem.enemy) codexSystem.discover(combatSystem.enemy.archetype);
   if (_origOnCombatEnd) _origOnCombatEnd(won, fled);
   if (won) {
-    gameStats.recordEnemyDefeated();
+    gameStats.recordEnemyDefeated(env.currentZone);
     questSystem.recordEnemyDefeated(gameStats.enemiesDefeated);
     challenges.recordEnemyDefeated();
+    expedition.recordFieldKill(combatSystem.enemy?.archetype); // Override Keys for the sim ladder
   } else if (!fled) {
     gameStats.recordDefeat();
   }
@@ -490,6 +517,7 @@ syncClient.onReconciled = (playerState, serverDefinitions) => {
 };
 syncClient.bootstrap();
 
+hud.prog.chapters = chapterSystem; // chapter chain drives tab gates + identity display
 hud.setZoneLabel(env.getZoneLabel());
 gameStats.recordZoneVisit('landingSite'); // starting zone
 // questSystem.recordZoneVisit fires on switchZone; record start zone explicitly after wiring
@@ -522,6 +550,8 @@ const saveSystem = new SaveSystem({
   pedometer,
   drones: droneSystem,
   equipment: equipmentSystem,
+  crafting: craftingSystem,
+  chapters: chapterSystem,
   gameStats,
   achievements,
   minigame,
@@ -549,6 +579,7 @@ const saveSystem = new SaveSystem({
   neuralImplant,
   combatSim,
   mineDelve,
+  trainingAreas,
 });
 
 // World-space effects (offload burst, etc.)
@@ -842,7 +873,7 @@ function handleExtendedGather(delta) {
           statsSystem.spendEnergy(_energyCost(CONFIG.ENERGY_COST_TREE));
           _gatherTarget = _nearestTree;
           _gatherTimer = 0;
-          _gatherDuration = 2.5 * (techTree?.owned.has('swiftHarvest') ? 0.8 : 1) / (statsSystem.gatherSpeedMult * modifiers.gatherMult);
+          _gatherDuration = 2.5 * (techTree?.owned.has('swiftHarvest') ? 0.8 : 1) / (statsSystem.gatherSpeedMult * modifiers.gatherMult * ascension.gatherMultiplier);
           _gatherType = 'tree';
         }
       } else {
@@ -874,7 +905,7 @@ function handleExtendedGather(delta) {
         statsSystem.spendEnergy(energyCost);
         _gatherTarget = _nearestRock;
         _gatherTimer = 0;
-        _gatherDuration = duration * (techTree?.owned.has('efficientMining') ? 0.75 : 1) / (statsSystem.gatherSpeedMult * modifiers.gatherMult);
+        _gatherDuration = duration * (techTree?.owned.has('efficientMining') ? 0.75 : 1) / (statsSystem.gatherSpeedMult * modifiers.gatherMult * ascension.gatherMultiplier);
         _gatherType = 'rock';
       }
     } else {
@@ -1106,7 +1137,7 @@ function handleSpaceshipInteractions() {
     if (_actionCooldown <= 0) { togglePanel('drone-panel'); _actionCooldown = 0.5; }
   });
 
-  reg(env.getAscensionTerminalPos(), '[E/ACT] Ascension Terminal', () => {
+  reg(env.getAscensionTerminalPos(), '[E/ACT] Recompile Terminal', () => {
     if (_actionCooldown <= 0) {
       togglePanel('ascension-panel');
       _actionCooldown = 0.5;
@@ -1117,6 +1148,20 @@ function handleSpaceshipInteractions() {
   reg(env.getMasteryTerminalPos(), '[E/ACT] Mastery Terminal', () => {
     if (_actionCooldown <= 0) { togglePanel('mastery-panel'); _actionCooldown = 0.5; }
   });
+
+  // Training chamber console — load a sim program before stepping in
+  reg(env.getTrainingConsolePos(), '[E/ACT] Training Console — choose a sim program', () => {
+    if (_actionCooldown <= 0) { togglePanel('training-panel'); _actionCooldown = 0.5; }
+  });
+
+  // Standing in an idle chamber: point the player at the console
+  const trainChamber = env.getTrainingChamber();
+  if (trainChamber && !trainingAreas.selectedProgram) {
+    const dist = Math.hypot(px - trainChamber.x, pz - trainChamber.z);
+    if (dist < trainChamber.r) {
+      candidates.push({ dist: 0, hint: 'Sim chamber idle — load a program at the console', act: () => {} });
+    }
+  }
 
   if (candidates.length === 0) return false;
 
@@ -1224,8 +1269,9 @@ function handleGathering(delta) {
 
 let lastTime = performance.now();
 let _actionCooldown = 0; // prevents instant re-trigger of [E] across interaction types
+let _energyWasEmpty = false; // latch for the energy_empty achievement counter
 let _portalRefreshTimer = 0;
-window.__debugSystems = { inventorySystem, codexSystem, questSystem, hud, ppSystem, combatSim };
+window.__debugSystems = { inventorySystem, codexSystem, questSystem, hud, ppSystem, combatSim, trainingAreas, tripartite, statsSystem, modifiers, ascension, factorySystem, gameStats, pedometer, craftingSystem, chapters: chapterSystem, bossSystem };
 window.__debugSnapshot = () => {
   const hint = document.getElementById('interact-hint');
   const nearestNode = entityManager.findNearestNode(player.position);
@@ -1337,6 +1383,19 @@ function gameLoop(now) {
   // Update PP, then route a slice of progression flow through the tripartite legs
   ppSystem.update(delta);
   tripartite.update(delta);
+
+  // Training chamber: standing inside runs the pre-loaded program; the HUD
+  // swaps to the sim-feed overlay while it runs and drops it on walk-out.
+  if (env.currentZone === 'spaceship') {
+    const chamber = env.getTrainingChamber();
+    const inside = chamber &&
+      Math.hypot(player.position.x - chamber.x, player.position.z - chamber.z) < chamber.r;
+    trainingAreas.setActive(inside ? trainingAreas.selectedProgram : null);
+  } else {
+    trainingAreas.setActive(null);
+  }
+  trainingAreas.update(delta);
+  hud.updateTrainingOverlay(trainingAreas);
   worldEffects.update(delta);
 
   // Update pedometer
@@ -1416,7 +1475,7 @@ function gameLoop(now) {
       if (!e.boss) e.setThreatColor(threatColorFor(e, statsSystem));
     }
     env.refreshPortalAccess((portal) =>
-      ppSystem.ppTotal >= portal.ppRequired
+      portal.ppRequired === 0
       || pedometer.isZoneUnlocked(portal.targetZone)
       || bossSystem.hasClearance(portal.targetZone)
     );
@@ -1430,6 +1489,7 @@ function gameLoop(now) {
   minigame.update(delta);
   mathematician.update(delta);
   expedition.update(delta);
+  ascension.update(delta); // online run-time for the Recompile momentum knee
   neuralImplant.update(delta);
   challenges.tick();
   // Auto-refresh OPT panel while mathematician is active so countdown ticks
@@ -1443,9 +1503,17 @@ function gameLoop(now) {
 
   // Keep permanent multipliers synced: ascension × challenge rewards on PP,
   // boss trophies × challenge rewards on damage (also feeds the expedition sim)
-  ppSystem.globalMultiplier = ascension.ppMultiplier * challenges.ppRateMult;
-  combatSystem.permDamageMult = bossSystem.damageMult * challenges.damageMult;
+  ppSystem.globalMultiplier = ascension.ppMultiplier * challenges.ppRateMult * factorySystem.moduleGlobalMult;
+  combatSystem.permDamageMult = bossSystem.damageMult * challenges.damageMult * ascension.combatMultiplier;
   expedition.damageMult = combatSystem.damageMult * combatSystem.permDamageMult;
+  droneSystem.efficiencyMult = modifiers.droneMult * ascension.droneMultiplier;
+
+  // Latch the energy-empty achievement counter on 0-crossings only
+  if (statsSystem.currentEnergy <= 0) {
+    if (!_energyWasEmpty) { gameStats.energyDepleted++; _energyWasEmpty = true; }
+  } else {
+    _energyWasEmpty = false;
+  }
 
   // Achievement checks
   achievements.update(delta, {
@@ -1514,7 +1582,6 @@ function gameLoop(now) {
         showingHint = true;
         showingPortalHint = true;
         const zoneUnlocked = portal.ppRequired === 0
-          || ppSystem.ppTotal >= portal.ppRequired
           || pedometer.isZoneUnlocked(portal.targetZone)
           || bossSystem.hasClearance(portal.targetZone);
         
@@ -1525,8 +1592,10 @@ function gameLoop(now) {
             _actionCooldown = 0.8; // Prevent accidental double-jump
           }
         } else {
-          // Show why it's locked without prompting an action
-          hud.showInteractHint(`Locked: ${portal.label} (Needs ${portal.ppRequired} PP)`);
+          // Show why it's locked without prompting an action — chapters gate zones now
+          const gateBoss = BossSystem.BOSS_DEFS.find(d => d.unlocks === portal.targetZone);
+          const stepCost = CONFIG.PEDOMETER_ENV_UNLOCK[portal.targetZone];
+          hud.showInteractHint(`Locked: ${portal.label} — defeat ${gateBoss ? gateBoss.label : 'the previous chapter boss'}${stepCost ? ` (or spend ${stepCost.toLocaleString()} steps)` : ''}`);
         }
         break;
       }

@@ -46,6 +46,7 @@ const _bossModelPaths = {
   reptlar:     './models/Reptlar.glb',
   hardlizzy:   './models/Hard_Lizzy.glb',
   cavecrab:    './models/Cave_Crab.glb',
+  spoonvark:   './models/Spoonvark.glb',
 };
 const _bossModels = {};
 const _bossAnimations = {};
@@ -145,6 +146,18 @@ const ARCHETYPE_CONFIG = {
     rageRamp: 1.05,
     attackPattern: 'windup',
     visual: 'plates',
+  },
+
+  // Big-eared shore digger — scoops FP with its spoon snout on the Lagoon Coast.
+  spoonvark: {
+    name: 'SPOONVARK',
+    hp: 160, damage: 18, attackInterval: 2000, ppReward: 90,
+    bodyColor: 0x6b4a33, headColor: 0x7a563c, visorColor: 0x221a14, threatColor: 0xcc8844,
+    scale: 0.5, speed: 1.1,
+    armor: 2,
+    fpDrainOnHit: 15,
+    attackPattern: 'melee',
+    visual: 'crest',
   },
 
   // ── Zone bosses — unique, no timed respawn, permanent bonus on defeat ─────

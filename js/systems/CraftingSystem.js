@@ -225,12 +225,15 @@ export class CraftingSystem {
           ? (!this.inventory.hasTool(r.key) && this.inventory.hasMaterials(r.materials))
           : this.inventory.hasMaterials(r.materials),
         alreadyOwned: r.type === 'tool' && this.inventory.hasTool(r.key),
-        craftTime: this._calcCraftTime(r.baseTime),
+        craftTime: this._calcCraftTime(r.baseTime, r.masteryCategory),
       }));
   }
 
-  _calcCraftTime(baseTime) {
-    return baseTime / (1 + this.stats.stats.craftingSpeed.level * 0.2);
+  _calcCraftTime(baseTime, masteryCategory) {
+    const masteryMult = (masteryCategory && this.mastery)
+      ? this.mastery.getCraftTimeMultiplier(masteryCategory)
+      : 1;
+    return (baseTime * masteryMult) / (1 + this.stats.stats.craftingSpeed.level * 0.2);
   }
 
   _createLocalJobId(recipeId) {
@@ -254,7 +257,7 @@ export class CraftingSystem {
     this._isCrafting = true;
     this._craftingRecipe = { id: recipeId, localJobId, ...recipe };
     this._craftingProgress = 0;
-    this._craftingDuration = this._calcCraftTime(recipe.baseTime);
+    this._craftingDuration = this._calcCraftTime(recipe.baseTime, recipe.masteryCategory);
     this.sync?.recordTransaction('crafting.start', {
       localJobId,
       recipeId,
@@ -341,7 +344,39 @@ export class CraftingSystem {
     this._isCrafting = true;
     this._craftingRecipe = next;
     this._craftingProgress = 0;
-    this._craftingDuration = this._calcCraftTime(next.baseTime);
+    this._craftingDuration = this._calcCraftTime(next.baseTime, next.masteryCategory);
+  }
+
+  // ── Persistence ─────────────────────────────────────────────────────────
+  // In-flight craft + queue survive reload (materials were consumed on start/queue).
+  serialize() {
+    return {
+      active: this._isCrafting && this._craftingRecipe
+        ? { id: this._craftingRecipe.id, progress: this._craftingProgress }
+        : null,
+      queue: this._queue.map(q => q.id),
+    };
+  }
+
+  load(data) {
+    if (!data) return;
+    this._queue = [];
+    for (const id of data.queue || []) {
+      const recipe = this.recipes[id];
+      if (recipe) this._queue.push({ id, localJobId: this._createLocalJobId(id), ...recipe });
+    }
+    const activeRecipe = data.active ? this.recipes[data.active.id] : null;
+    if (activeRecipe) {
+      this._isCrafting = true;
+      this._craftingRecipe = { id: data.active.id, localJobId: this._createLocalJobId(data.active.id), ...activeRecipe };
+      this._craftingDuration = this._calcCraftTime(activeRecipe.baseTime, activeRecipe.masteryCategory);
+      this._craftingProgress = Math.min(data.active.progress || 0, this._craftingDuration);
+    } else {
+      this._isCrafting = false;
+      this._craftingRecipe = null;
+      this._processQueue();
+    }
+    if (this.onQueueUpdate) this.onQueueUpdate(this._queue);
   }
 
   get queue() { return this._queue; }
