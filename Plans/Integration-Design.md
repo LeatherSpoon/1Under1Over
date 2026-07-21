@@ -148,7 +148,7 @@ The NGU juggling pillar, unified with the Pre-Logout Puzzle (G3):
 
 ## 11. Story bosses (hybrid feel)
 
-Keep phase2 rewrites; add per-boss **one or two telegraphed AoEs** (broad windup animation → ground decal → dodge by moving; the toon aesthetic is built for readable sweeps). Baseline attacks stay unavoidable (the stat toll). Tuning target: perfect dodging beats the chapter at ~70% of the "spreadsheet" stat bar; clumsy hands over-level and win anyway a day later. Difficulty tuning raises *damage*, not HP (Crashlands), so fights stay short and readable. Death: time only, as today.
+**VETOED 2026-07-20** — owner: "I am not interested in a dodge mechanic. Please do not recommend it again." The telegraphed-AoE / dodge-by-moving execution layer is cut (original design in git history). Story bosses stay stat-toll fights with their existing phase2 behaviors; tuning difficulty via damage rather than HP remains good practice. Phase D therefore completed with the Chapter Chain (v13).
 
 ## 12. Conflicts & resolutions (explicit)
 
@@ -171,7 +171,7 @@ Each phase = one save-version bump, tests extended (`runAll`), one playtest. Siz
 | **A. Trust the chain** | Wire or delete every dead emitter (3 AP multis → wire as interim, they migrate in C; pedometer PP-bonus; mastery bonus; Minimalist drawback; dunkraza drops; 2 dead achievements; corrosion stays cosmetic — owner veto); serialize craft queue; fix warp-boost persistence | v9→v10 | Everything after composes multipliers — the chain must be honest first. Small, pure-fix diff |
 | **B. Simulation Ladder** | Infinite tiers/bands/wardens, keys, farms, death-harvest shards; expedition UI → ladder UI | v11 | The spine's demand side; self-contained rework of one system |
 | **C. Recompile + Archive** | Rebirth loop, live NUMBER + momentum knee UI, watermark, Archive shop, AP migration | v12 | Needs B's ladder to re-climb |
-| **D. Chapter Chain** | `highestChapterEver`, re-keyed gates/tabs/zones, chapter HUD identity, story-boss telegraphs | v13 | Needs B+C rungs live before re-gating |
+| **D. Chapter Chain** | `highestChapterEver`, re-keyed gates/tabs/zones, chapter HUD identity (story-boss telegraphs vetoed — §11) | v13 | Needs B+C rungs live before re-gating |
 | **E. Compute + stocked offline** | Compute board, Al modules, hoppers, extractor offline, drone queues, offline buffer, away-report rework | v14 | Pairs with B's farms; delivers the Pre-Logout Puzzle |
 | **F. Skill web** | Use-XP hooks, dead-stat jobs, Total Level + milestones, retire stat purchase, breakdown panel | v15 | Touches every interaction site — riskiest diff, wants the stable base above |
 | **G. Loot layer** | Biome gear sets, merge/boost, grid, shredder, badge engine, fragments | v16 | Pure content+systems layer on a finished spine |

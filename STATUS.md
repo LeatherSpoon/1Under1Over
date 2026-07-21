@@ -6,8 +6,8 @@ One read to see the whole folder: what lives where, which docs are live, and whe
 
 ## Where the work stands
 
-- **Reference-integration build** — phases A–D pt 1 shipped (saves v10→v13: dead multipliers wired, infinite Simulation Ladder, Recompile/Archive prestige, Chapter Chain level spine). 188/188 tests at last run.
-- **Next:** Phase D remainder — story-boss telegraph/dodge (`Plans/Integration-Design.md` §11) · then Phase E — Compute/Al board, stocked-offline, factory hoppers (save v14).
+- **Reference-integration build** — phases A–D shipped (saves v10→v13: dead multipliers wired, infinite Simulation Ladder, Recompile/Archive prestige, Chapter Chain level spine; D's telegraph/dodge item vetoed 2026-07-20 — see DESIGN-DECISIONS.md). 188/188 tests at last run.
+- **Next:** Phase E — Compute/Al board, factory hoppers, stocked-offline rework (`Plans/Integration-Design.md` §13, save v14).
 - **Git:** single work branch `main`. Open item: PR main→master. For anything else about branches, ask git — not this file.
 
 ## Folder map

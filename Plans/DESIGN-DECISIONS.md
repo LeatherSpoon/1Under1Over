@@ -98,3 +98,7 @@ Made in `Plans/Integration-Design.md` §1, each vetoable with one line:
 ## Phase 3 complete
 
 `Plans/Integration-Design.md` (2026-07-19) — full synthesis: Chapter Chain spine, infinite Simulation Ladder (×1.18/tier), deterministic Override Keys, Recompile + watermarked Archive Data with the momentum-knee live NUMBER, skill web with use-XP map, Compute allocation board, stocked-offline/hoppers, crafted-gear merge economy, badge engine, 7-phase build order (A: trust the chain → B: ladder first).
+
+## Build vetoes (2026-07-20)
+
+- **No dodge mechanic, ever** — owner: "I am not interested in a dodge mechanic. Please do not recommend it again." Cuts §11's telegraph/dodge execution layer; story bosses stay stat-toll fights with their existing phase2 behaviors. Phase D closed complete with the Chapter Chain (v13); next phase is E. Standing veto — do not re-propose. ✔
