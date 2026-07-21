@@ -6,11 +6,9 @@ Session-start brief for **Processing Power**. CLAUDE.md explains how the project
 
 ## Where the work lives (branch map)
 
-- **`remove-old-enemies-creature-assets` ← ACTIVE WORK BRANCH** (tip `2915315`) = master + 5 commits: god-mode Endgame_Test save, Serpendrill re-rig, 5-creature roster replacing robot archetypes, cloud autosave + playtest round, and the **reference-integration build** (saves v10→v13: dead multipliers wired, infinite Simulation Ladder, Recompile/Archive prestige, Chapter Chain level spine, hold-PP zone gates deleted). `ChapterSystem.js` and `TrainingAreaSystem.js` exist only here, as do the mission docs: `Plans/Integration-Design.md` (build order of record), `Plans/DESIGN-DECISIONS.md`, `Plans/ProcessingPower-Systems-Inventory.md`, six design references.
-- **`master`** — Mine-overhaul era; tip `1634b7d` (NGU-feel roadmap spec), **1 commit ahead of origin/master (unpushed)**. Currently checked out, which is why none of the above is visible in the working tree.
+- **`remove-old-enemies-creature-assets` ← ACTIVE WORK BRANCH — currently checked out.** Everything master has plus: god-mode Endgame_Test save, Serpendrill re-rig, 5-creature roster replacing robot archetypes, cloud autosave + playtest round, and the **reference-integration build** (commit `2915315`, saves v10→v13: dead multipliers wired, infinite Simulation Ladder, Recompile/Archive prestige, Chapter Chain level spine, hold-PP zone gates deleted). `ChapterSystem.js` and `TrainingAreaSystem.js` exist only here, as do the mission docs: `Plans/Integration-Design.md` (build order of record), `Plans/DESIGN-DECISIONS.md`, `Plans/ProcessingPower-Systems-Inventory.md`, six design references.
+- **`master`** — Mine-overhaul era + the orientation commit (`ce19b77`); **2 commits ahead of origin/master (unpushed)**. Has none of the v10+ systems — don't build systems here.
 - `endgame-test-godmode` — points mid-branch (`724a8b4`); superseded by the work branch.
-
-⚠ Before continuing systems work, check out `remove-old-enemies-creature-assets` (or merge it) — building on master forks the reference-integration work.
 
 ## Current focus
 
@@ -34,4 +32,4 @@ Live: this file · `Plans/Integration-Design.md` + `Plans/DESIGN-DECISIONS.md` (
 
 ## Session log (newest first — keep ≤10, prune the rest)
 
-- 2026-07-20 — Built this orientation system (STATUS.md + upkeep rule in CLAUDE.md/AGENTS.md) after mapping the branch split: v10–v13 work lives on `remove-old-enemies-creature-assets`, not master. No game code touched.
+- 2026-07-20 — Built this orientation system (STATUS.md + upkeep rule in CLAUDE.md/AGENTS.md) after mapping the branch split; committed on master (`ce19b77`) and merged into the work branch (`333ce80`), HEAD left on the work branch. No game code touched.
