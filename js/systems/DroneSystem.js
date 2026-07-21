@@ -39,8 +39,29 @@ export class DroneSystem {
     this.efficiencyMult = 1;
 
     this._missions = []; // active/completed missions
+    this._missionQueues = {}; // droneId -> [zoneName, ...] queued after the active mission (Phase E)
     this.onMissionComplete = null; // fn(missionResult)
   }
+
+  /** Pre-logout mission queue depth: 3, +1 per efficiency tier past 3. */
+  missionQueueDepth(droneId) {
+    const drone = this.drones.find(d => d.id === droneId);
+    return drone ? 3 + Math.max(0, drone.efficiency - 3) : 0;
+  }
+
+  queuedMissions(droneId) { return this._missionQueues[droneId] || []; }
+
+  /** Queue a mission behind the active one (or dispatch now if idle). */
+  queueMission(droneId, zoneName) {
+    if (!MISSION_ZONES[zoneName] || !this.drones.find(d => d.id === droneId)) return false;
+    if (!this.isDroneOnMission(droneId)) return this.sendOnMission(droneId, zoneName);
+    const q = this._missionQueues[droneId] || (this._missionQueues[droneId] = []);
+    if (q.length >= this.missionQueueDepth(droneId)) return false;
+    q.push(zoneName);
+    return true;
+  }
+
+  clearMissionQueue(droneId) { delete this._missionQueues[droneId]; }
 
   static get MISSION_ZONES() { return MISSION_ZONES; }
 
@@ -104,6 +125,7 @@ export class DroneSystem {
   recallDrone(droneId) {
     const idx = this._missions.findIndex(m => m.droneId === droneId && !m.done);
     if (idx !== -1) this._missions.splice(idx, 1);
+    this.clearMissionQueue(droneId); // recall means "come home", not "run the rest"
   }
 
   getMissions() { return this._missions; }
@@ -131,6 +153,44 @@ export class DroneSystem {
     // Clean up old done missions (keep last 5)
     const done = this._missions.filter(m => m.done);
     if (done.length > 5) this._missions.splice(this._missions.indexOf(done[0]), 1);
+
+    // Chain the next queued mission (Phase E pre-logout queue)
+    const queue = this._missionQueues[mission.droneId];
+    if (queue && queue.length > 0) {
+      const next = queue.shift();
+      if (queue.length === 0) delete this._missionQueues[mission.droneId];
+      this.sendOnMission(mission.droneId, next);
+    }
+    return lootResult;
+  }
+
+  /**
+   * Stocked-offline mission resolution (Phase E): the active mission and its
+   * queue run in closed form at `mult` speed (completion toasts suppressed).
+   * Returns { completed, loot } or null when nothing was running.
+   */
+  simulateOfflineMissions(seconds, mult = 1) {
+    if (mult <= 0 || seconds <= 0) return null;
+    const savedCb = this.onMissionComplete;
+    this.onMissionComplete = null;
+    const summary = { completed: 0, loot: {} };
+    for (const drone of this.drones) {
+      let budget = seconds * mult;
+      let mission = this._missions.find(m => m.droneId === drone.id && !m.done);
+      while (mission && budget > 0) {
+        const remaining = mission.duration - mission.elapsed;
+        if (remaining > budget) { mission.elapsed += budget; break; }
+        budget -= remaining;
+        const loot = this._completeMission(mission); // chains the queue
+        summary.completed++;
+        for (const [mat, qty] of Object.entries(loot || {})) {
+          summary.loot[mat] = (summary.loot[mat] || 0) + qty;
+        }
+        mission = this._missions.find(m => m.droneId === drone.id && !m.done);
+      }
+    }
+    this.onMissionComplete = savedCb;
+    return summary.completed > 0 ? summary : null;
   }
 
   update(delta) {

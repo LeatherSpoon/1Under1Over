@@ -87,6 +87,7 @@ export class ProcessingNodeSystem {
 
     this.onNodeComplete = null;  // fn(nodeType, outputKey, qty)
     this.onNodeUpdate = null;    // fn() — any state change
+    this.computeMult = 1;        // compute gate: 0 pauses all nodes, >1 speeds them (set per frame in main.js)
   }
 
   // ── Queries ─────────────────────────────────────────────────────────────────
@@ -147,11 +148,12 @@ export class ProcessingNodeSystem {
   // ── Tick ────────────────────────────────────────────────────────────────────
 
   update(delta) {
+    if (this.computeMult <= 0) return;
     let anyChange = false;
     for (const nodeType of Object.keys(this._nodes)) {
       const node = this._nodes[nodeType];
       if (!node.active) continue;
-      node.active.progress += delta;
+      node.active.progress += delta * this.computeMult;
       if (node.active.progress >= node.active.duration) {
         this._completeJob(nodeType);
         anyChange = true;
@@ -192,6 +194,36 @@ export class ProcessingNodeSystem {
     if (node.queue.length > 0) this._startNext(nodeType);
   }
 
+  /**
+   * Stocked-offline resolution (Phase E): the queue IS the bank's stock —
+   * inputs were consumed at enqueue. Completes queued jobs in closed form at
+   * `mult` speed. Returns total jobs completed (toast callbacks suppressed).
+   */
+  simulateOffline(seconds, mult = 1) {
+    if (mult <= 0 || seconds <= 0) return 0;
+    const savedCb = this.onNodeComplete;
+    this.onNodeComplete = null;
+    let completed = 0;
+    for (const nodeType of Object.keys(this._nodes)) {
+      const node = this._nodes[nodeType];
+      let budget = seconds * mult;
+      while (node.active && budget > 0) {
+        const remaining = node.active.duration - node.active.progress;
+        if (remaining <= budget) {
+          budget -= remaining;
+          this._completeJob(nodeType); // auto-starts the next queued job
+          completed++;
+        } else {
+          node.active.progress += budget;
+          budget = 0;
+        }
+      }
+    }
+    this.onNodeComplete = savedCb;
+    if (completed > 0 && this.onNodeUpdate) this.onNodeUpdate();
+    return completed;
+  }
+
   // ── Serialization ────────────────────────────────────────────────────────────
 
   serialize() {
@@ -200,6 +232,10 @@ export class ProcessingNodeSystem {
       nodes[id] = {
         tier: state.tier,
         totalCompleted: state.totalCompleted,
+        // In-flight work (v14): inputs are consumed at enqueue, so losing the
+        // active job + queue on reload was losing real materials (§12 fix).
+        active: state.active ? { ...state.active } : null,
+        queueLen: state.queue.length,
       };
     }
     return { nodes };
@@ -211,6 +247,8 @@ export class ProcessingNodeSystem {
       if (!this._nodes[id]) continue;
       this._nodes[id].tier = saved.tier ?? 1;
       this._nodes[id].totalCompleted = saved.totalCompleted ?? 0;
+      this._nodes[id].active = saved.active ? { ...saved.active } : null;
+      this._nodes[id].queue = Array.from({ length: saved.queueLen || 0 }, () => ({}));
     }
   }
 }

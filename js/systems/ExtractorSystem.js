@@ -15,6 +15,7 @@ export class ExtractorSystem {
     this._slots   = [];   // [{ type: 'basic'|'advanced' }]
     this._accum   = {};   // fractional-material accumulator
     this.onExtract = null; // fn(materialKey, qty) — optional notification hook
+    this.computeMult = 1;  // compute gate: 0 pauses the bank, >1 boosts it (set per frame in main.js)
   }
 
   get slotCount()     { return this._slots.length; }
@@ -49,11 +50,12 @@ export class ExtractorSystem {
 
   // Call each frame with seconds elapsed since last frame
   update(delta) {
-    if (this._slots.length === 0) return;
+    if (this._slots.length === 0 || this.computeMult <= 0) return;
+    const effDelta = delta * this.computeMult;
     for (const slot of this._slots) {
       for (const [mat, rate] of Object.entries(RATES[slot.type])) {
         if (!(mat in this.inventory.materials)) continue;
-        this._accum[mat] = (this._accum[mat] || 0) + rate * delta;
+        this._accum[mat] = (this._accum[mat] || 0) + rate * effDelta;
         if (this._accum[mat] >= 1) {
           const qty    = Math.floor(this._accum[mat]);
           this._accum[mat] -= qty;
@@ -68,10 +70,24 @@ export class ExtractorSystem {
     }
   }
 
-  // Offline catch-up — capped at 8 hours to avoid inventory flooding
+  /** Stocked-offline catch-up (v14): closed-form, no internal time cap —
+   *  OfflineSystem passes effective seconds (already buffer-capped and scaled
+   *  by the compute output multiplier). Returns { mat: added } for the away
+   *  report; stacks still clamp at 99. */
   applyOfflineTime(seconds) {
-    const capped = Math.min(seconds, 8 * 3600);
-    if (capped > 0 && this._slots.length > 0) this.update(capped);
+    const gains = {};
+    if (seconds <= 0 || this._slots.length === 0) return gains;
+    for (const [mat, rate] of Object.entries(this.getRates())) {
+      if (!(mat in this.inventory.materials)) continue;
+      const qty = Math.floor(rate * seconds);
+      const space = Math.max(0, 99 - this.inventory.materials[mat]);
+      const actual = Math.min(qty, space);
+      if (actual > 0) {
+        this.inventory.materials[mat] += actual;
+        gains[mat] = actual;
+      }
+    }
+    return gains;
   }
 
   // Returns combined per-second rates across all installed extractors

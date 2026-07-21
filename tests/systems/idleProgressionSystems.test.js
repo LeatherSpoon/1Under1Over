@@ -192,7 +192,7 @@ test('legacy AP saves convert to Archive (1 AP → 3) with shop levels intact', 
   assert.equal(asc.ascensionCount, 2);
   assert.equal(asc.ppMultiplier, 1.5, '1 + 0.25 × level 2');
   assert.ok(Math.abs(asc.combatMultiplier - 1.15) < 1e-9, 'combat recomputes as 1.15^level');
-  assert.equal(asc.offlineCapSeconds, 24 * 3600);
+  assert.equal(asc.offlineCapSeconds, 12 * 3600, 'v14 stocked-offline base buffer is 12h');
 });
 
 test('archive shop spends and levels; offline buffer extends the cap; round-trips', () => {
@@ -202,7 +202,7 @@ test('archive shop spends and levels; offline buffer extends the cap; round-trip
   assert.equal(asc.ppMultiplier, 1.25);
   assert.equal(asc.archive, 19);
   assert.ok(asc.buyUpgrade('offlineBuffer')); // cost 5
-  assert.equal(asc.offlineCapSeconds, 36 * 3600);
+  assert.equal(asc.offlineCapSeconds, 24 * 3600, '12h base + 12h per level');
   assert.equal(asc.archive, 14);
   assert.equal(asc._cost('offlineBuffer'), 10, 'buffer cost doubles');
 
@@ -210,7 +210,7 @@ test('archive shop spends and levels; offline buffer extends the cap; round-trip
   b.deserialize(JSON.parse(JSON.stringify(asc.serialize())));
   assert.equal(b.archive, 14);
   assert.equal(b.ppMultiplier, 1.25);
-  assert.equal(b.offlineCapSeconds, 36 * 3600);
+  assert.equal(b.offlineCapSeconds, 24 * 3600);
 });
 
 // ── Boss system ────────────────────────────────────────────────────────────────

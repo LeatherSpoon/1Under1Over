@@ -2,12 +2,12 @@
 
 One read to see the whole folder: what lives where, which docs are live, and where the work stands. CLAUDE.md (auto-loaded) is the deep guide to *how* systems work — this file is the *where*. Keep-current rules: CLAUDE.md → "Keeping STATUS.md current".
 
-**Last updated:** 2026-07-20
+**Last updated:** 2026-07-20 (Phase E shipped)
 
 ## Where the work stands
 
-- **Reference-integration build** — phases A–D shipped (saves v10→v13: dead multipliers wired, infinite Simulation Ladder, Recompile/Archive prestige, Chapter Chain level spine; D's telegraph/dodge item vetoed 2026-07-20 — see DESIGN-DECISIONS.md). 188/188 tests at last run.
-- **Next:** Phase E — Compute/Al board, factory hoppers, stocked-offline rework (`Plans/Integration-Design.md` §13, save v14).
+- **Reference-integration build** — phases A–E shipped (saves v10→v14). E (2026-07-20): Compute allocation board in ALLOC (Al's attention pool; 0 units = system paused, extras boost output), Al modules (Key Tracker / Overflow Routing / Farm Director / Foreman), factory input hoppers + processing-queue persistence, drone mission queues, stocked-offline rework (full rate when stocked, DORMANT rows when not; 12 h base buffer). Build calls + deferrals (output buffers, storage caps, Triage) in DESIGN-DECISIONS.md. 229/229 tests at last run.
+- **Next:** Phase F — skill web with use-XP, stat-purchase retirement (`Plans/Integration-Design.md` §6/§13, save v15). Riskiest diff of the plan — touches every interaction site.
 - **Git:** single work branch `main`. Open item: PR main→master. For anything else about branches, ask git — not this file.
 
 ## Folder map
@@ -17,8 +17,8 @@ index.html            SPA shell — all panel HTML lives here
 js/
   main.js             bootstrap, game loop, ALL cross-system wiring (callbacks)
   config.js           every tunable constant
-  systems/            40 gameplay systems, one class per file (save, PP, combat,
-                      crafting, prestige, ladder, chapters…) — CLAUDE.md's
+  systems/            41 gameplay systems, one class per file (save, PP, combat,
+                      crafting, prestige, ladder, chapters, compute…) — CLAUDE.md's
                       key-files table maps concern → file
   scene/              3D world: Environment.js (all zone building), zones/ (per-zone
                       builders + Mine generator), ToonMaterials.js, SceneManager.js

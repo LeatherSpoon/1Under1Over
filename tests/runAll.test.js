@@ -32,5 +32,7 @@ import './systems/mineDigging.test.js';
 import './systems/combatMechanics.test.js';
 import './systems/phaseAWiring.test.js';
 import './systems/chapterSystem.test.js';
+import './systems/computeSystem.test.js';
+import './systems/factoryHoppers.test.js';
 import './systems/zoneWiring.test.js';
 import './ui/panelWiring.test.js';

@@ -80,6 +80,10 @@ export class ExpeditionSystem {
     // kept in sync by main.js alongside CombatSystem.
     this.damageMult = 1;
 
+    // Compute gate (Phase E): 0 pauses the frame (no compute assigned once the
+    // board unlocks), >1 speeds kills. Set per frame in main.js.
+    this.computeMult = 1;
+
     this._killProgress = 0;    // fractional kills carried between frames
     this._log = [];            // rolling event log for the panel (newest first)
 
@@ -246,10 +250,10 @@ export class ExpeditionSystem {
 
   // ── Simulation ticks ───────────────────────────────────────────────────────
   update(delta) {
-    if (!this.active) return;
+    if (!this.active || this.computeMult <= 0) return;
     const rate = this.killRate(this.tier);
     if (rate <= 0) return; // stalled — player got weaker (modifier toggled etc.)
-    this._killProgress += rate * delta;
+    this._killProgress += rate * delta * this.computeMult;
     const whole = Math.floor(this._killProgress);
     if (whole >= 1) {
       this._killProgress -= whole;
@@ -276,7 +280,9 @@ export class ExpeditionSystem {
     if (this.onKills) this.onKills(count);
 
     const pp = Math.floor(this.ppPerKill(t) * count * efficiency);
-    this.pp.ppTotal = Math.min(this.pp.ppCap, this.pp.ppTotal + pp);
+    // deposit() clamps at cap and routes the spill to Overflow Routing (if owned)
+    if (this.pp.deposit) this.pp.deposit(pp);
+    else this.pp.ppTotal = Math.min(this.pp.ppCap, this.pp.ppTotal + pp);
     this.totalPP += pp;
     summary.pp = pp;
 
@@ -302,6 +308,18 @@ export class ExpeditionSystem {
 
     if (this.onEvent) this.onEvent();
     return summary;
+  }
+
+  /** Farm Director (Al module): advance the running frame to the highest safe
+   *  tier. Called on a slow timer from main.js when the module is owned and
+   *  the ladder is stocked. Returns true when it moved. */
+  autoAdvanceFarm() {
+    if (!this.active) return false;
+    const t = this.maxSafeTier();
+    if (t <= this.tier) return false;
+    this.setTier(t);
+    this._pushLog(`◈ Farm Director: advanced to sim tier ${t + 1}.`);
+    return true;
   }
 
   /** Recompile (rebirth) resets the run layer: position, wardens, keys, fragments. */

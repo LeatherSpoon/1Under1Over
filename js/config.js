@@ -16,6 +16,18 @@ export const CONFIG = {
   OFFLOAD_CAP_MULTIPLIER: 4, // capGain = floor(sqrt(pp) * multiplier * fillFraction) — see PPSystem.offload
   PP_PER_STEP: 0.25,         // PP gained per step (increased from 0.05)
 
+  // Compute Allocation (Phase E) — Al's attention pool. A system runs
+  // unattended (online + offline) iff ≥1 unit is assigned, once the board
+  // unlocks. Extras formula: 1 + EXTRA_OUTPUT × (units−1) × (1 + POWER_LEVERAGE × tripartite powerBonus).
+  COMPUTE_UNLOCK_LEVEL: 3,       // chapter level (S2 crossed) that reveals the board
+  COMPUTE_BASE_UNITS: 4,
+  COMPUTE_CAP_STEP: 2,           // +units per cap upgrade
+  COMPUTE_CAP_BASE_COST: 500,    // PP; cost = base × growth^capLevel
+  COMPUTE_CAP_COST_GROWTH: 2.5,
+  COMPUTE_EXTRA_OUTPUT: 0.25,    // output bonus per unit past the first
+  COMPUTE_POWER_LEVERAGE: 0.5,   // tripartite power leg leverage on extra units
+  COMPUTE_AMP_OUTPUT: 0.10,      // Archive shop Compute Amplifier bonus per level
+
   // Stats
   STAT_UPGRADE_BASE_COST: 15,
   STAT_UPGRADE_COST_SCALE: 1.08, // cost = base * level * scale^(level-1) — mirrored in server/services/transactionService.js

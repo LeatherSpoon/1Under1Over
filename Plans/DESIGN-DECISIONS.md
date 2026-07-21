@@ -102,3 +102,16 @@ Made in `Plans/Integration-Design.md` §1, each vetoable with one line:
 ## Build vetoes (2026-07-20)
 
 - **No dodge mechanic, ever** — owner: "I am not interested in a dodge mechanic. Please do not recommend it again." Cuts §11's telegraph/dodge execution layer; story bosses stay stat-toll fights with their existing phase2 behaviors. Phase D closed complete with the Chapter Chain (v13); next phase is E. Standing veto — do not re-propose. ✔
+
+## Phase E build calls (2026-07-20) — each vetoable
+
+- **Strong Compute gating** — once the board unlocks (S2 / level 3), a destination with 0 units is paused online AND offline ("runs unattended iff ≥1 unit"); attended play is never gated (manual PROCESS clicks, chamber training, gathering, offload). Pre-S2 everything behaves as v13. — (§7 text + "setup quality, not presence")
+- **No-rug-pull seeding** — the pool auto-seeds ONCE at first unlock or v13 load: 1 unit each to ladder → drones → extractors → holodeck, only where actually in use. Verified against the v2 god save (seeded exactly `{drones:1}`). ✔
+- **Board lives in ALLOC** under the tripartite sliders — two boards, two frequencies, one console; no 14th tab. — (G3)
+- **Offline buffer base 24h → 12h** (§5/§9 spec) offset by stocked systems running at 100% (Round D kills the 50% haircut); implant + tripartite keep 50% offline — they are flow/investment layers, not compute destinations.
+- **Overflow choke = `PPSystem.deposit()`** — update/steps/ladder/offline clamps route spill through it; **combat's raw `+=` stays untouched** (combat-PP hold, §12) — its excess converts on the next update clamp instead. Conversion needs module + ≥1 unit on the overflow row + an implant target (target-switch zeroing makes untargeted banking hostile).
+- **Compute Amplifier** (+0.10/lvl) multiplies the whole unit-output factor.
+- **Hoppers are per-material capacity** 20×2^n at 250×3^n PP; **manual machines stock too** (TPT2 "stock the machine" is the model, manual or auto); v13 migration auto-stocks each running automated line once from the bag. Foreman = online auto-restock.
+- **Processing bank: the queue IS the stock** (inputs consumed at enqueue); active job + queue now serialize — the §12 "queue loss on reload" chore-friction fixed as a bug. ✔
+- **Drone queue** 3 deep +1/efficiency past 3; recall clears the queue; queued missions resolve offline under the drones gate.
+- **Deferred out of E**: output buffers (§9 — outputs keep flowing to the shared bag; input hoppers are the gating mechanic), storage-cap sink (§8 — not in the §13 E ship list; extractor rows honestly report "storage full"), Triage module (W30 — needs the Phase G shredder).

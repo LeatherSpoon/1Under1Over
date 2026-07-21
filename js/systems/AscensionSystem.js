@@ -27,6 +27,7 @@ const SHOP = [
   { id: 'combatMult',    label: 'Combat Amplifier',  desc: '×1.15 damage per level' },
   { id: 'gatherMult',    label: 'Harvest Amplifier', desc: '×1.15 gather speed per level' },
   { id: 'droneMult',     label: 'Drone Amplifier',   desc: '×1.15 drone efficiency per level' },
+  { id: 'computeAmp',    label: 'Compute Amplifier', desc: '+10% compute unit output per level' },
   { id: 'offlineBuffer', label: 'Offline Buffer',    desc: '+12 h offline cap per level' },
 ];
 
@@ -38,7 +39,7 @@ export class AscensionSystem {
     this.archive = 0;          // spendable Archive Data
     this.bestTierEver = 0;     // watermark — never resets
     this.runSeconds = 0;       // ONLINE seconds this run — offline never counts
-    this._upgradeCounts = { ppMult: 0, combatMult: 0, gatherMult: 0, droneMult: 0, offlineBuffer: 0 };
+    this._upgradeCounts = { ppMult: 0, combatMult: 0, gatherMult: 0, droneMult: 0, computeAmp: 0, offlineBuffer: 0 };
   }
 
   // ── Derived multipliers (recomputed every frame by main.js) ────────────────
@@ -46,7 +47,9 @@ export class AscensionSystem {
   get combatMultiplier()  { return Math.pow(1.15, this._upgradeCounts.combatMult); }
   get gatherMultiplier()  { return Math.pow(1.15, this._upgradeCounts.gatherMult); }
   get droneMultiplier()   { return Math.pow(1.15, this._upgradeCounts.droneMult); }
-  get offlineCapSeconds() { return (24 + 12 * this._upgradeCounts.offlineBuffer) * 3600; }
+  get computeAmpLevel()   { return this._upgradeCounts.computeAmp || 0; }
+  // Stocked-offline (v14): base 12 h, +12 h per Offline Buffer level
+  get offlineCapSeconds() { return (12 + 12 * this._upgradeCounts.offlineBuffer) * 3600; }
 
   update(delta) { this.runSeconds += delta; }
 
@@ -126,6 +129,7 @@ export class AscensionSystem {
       case 'combatMult':    return `${this.combatMultiplier.toFixed(2)}x`;
       case 'gatherMult':    return `${this.gatherMultiplier.toFixed(2)}x`;
       case 'droneMult':     return `${this.droneMultiplier.toFixed(2)}x`;
+      case 'computeAmp':    return `+${this._upgradeCounts.computeAmp * 10}%`;
       case 'offlineBuffer': return `${Math.round(this.offlineCapSeconds / 3600)}h`;
       default:              return '';
     }
@@ -164,7 +168,7 @@ export class AscensionSystem {
   deserialize(data) {
     if (!data) return;
     this.ascensionCount = data.ascensionCount || 0;
-    const counts = { ppMult: 0, combatMult: 0, gatherMult: 0, droneMult: 0, offlineBuffer: 0 };
+    const counts = { ppMult: 0, combatMult: 0, gatherMult: 0, droneMult: 0, computeAmp: 0, offlineBuffer: 0 };
     if (data.archive !== undefined || data.bestTierEver !== undefined) {
       // v12+ Archive format
       this.archive = data.archive || 0;

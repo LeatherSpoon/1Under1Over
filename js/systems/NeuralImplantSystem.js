@@ -59,6 +59,14 @@ export class NeuralImplantSystem {
     return this._applyLevels(true);
   }
 
+  /** External XP deposit (e.g. Overflow Routing converts over-cap PP).
+   *  Silent — levels apply without toast spam. Returns levels gained. */
+  bankXP(amount) {
+    if (!(amount > 0)) return 0;
+    this.xp += amount;
+    return this._applyLevels(true);
+  }
+
   _applyLevels(silent = false) {
     let gained = 0;
     // upgradeCost grows with level, so re-read each iteration

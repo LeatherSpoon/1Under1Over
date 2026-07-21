@@ -70,6 +70,11 @@ export class TrainingAreaSystem {
     this.getPowerBonus = () => 0;  // wired in main.js -> tripartite.powerBonus
     this.onLevelUp = null;         // fn(statName, newLevel)
     this.onLevelDown = null;       // fn(statName, newLevel)
+
+    // Compute gate (Phase E): with ≥1 unit on HOLODECK, Al runs the loaded
+    // program unattended (player not in the chamber) at this multiplier.
+    // Attended chamber sessions (activeId) are never gated. Set per frame in main.js.
+    this.computeMult = 0;
   }
 
   static get STATION_DEFS() { return STATION_DEFS; }
@@ -96,20 +101,28 @@ export class TrainingAreaSystem {
   }
 
   update(delta) {
-    if (this.activeId) this.stint.seconds += delta;
-    this._train(this.activeId, delta);
+    if (this.activeId) {
+      // Attended chamber session — full rate, never compute-gated.
+      this.stint.seconds += delta;
+      this._train(this.activeId, delta);
+    } else if (this.computeMult > 0 && this.selectedProgram) {
+      // Al runs the loaded program unattended (Phase E).
+      this._train(this.selectedProgram, delta * this.computeMult, true);
+    }
   }
 
   /**
-   * Offline: the pad keeps running at `efficiency` if the player was parked.
+   * Offline (v14 stocked model): the loaded program runs at `mult` (the
+   * compute output multiplier; pre-board saves pass 1 when parked inside).
    * Returns { station, deltas: { statName: ±levels } } or null.
    */
-  simulateOffline(seconds, efficiency = 0.5) {
-    const def = this.activeId && this.getDef(this.activeId);
-    if (!def) return null;
+  simulateOffline(seconds, mult = 1) {
+    const programId = this.activeId || this.selectedProgram;
+    const def = programId && this.getDef(programId);
+    if (!def || mult <= 0) return null;
     const before = {};
     for (const stat of Object.keys(def.trains)) before[stat] = this.stats.stats[stat]?.level ?? 1;
-    this._train(this.activeId, seconds * efficiency, true);
+    this._train(programId, seconds * mult, true);
     const deltas = {};
     for (const stat of Object.keys(def.trains)) {
       const d = (this.stats.stats[stat]?.level ?? 1) - before[stat];

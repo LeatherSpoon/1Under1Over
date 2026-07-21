@@ -11,6 +11,20 @@ export class PPSystem {
     this.prestigeCount = 0;
     this._rateModifiers = {};
     this.globalMultiplier = 1; // set by AscensionSystem
+    // Overflow Routing (Phase E): when set, PP that would void at the cap is
+    // reported here instead of silently evaporating. Wired in main.js.
+    this.onOverflow = null; // fn(amount)
+  }
+
+  /** Deposit PP, clamping at cap; routes the voided overflow to onOverflow.
+   *  The single choke point for every clamp site (update, steps, ladder, offline). */
+  deposit(amount) {
+    if (!(amount > 0)) return 0;
+    const before = this.ppTotal;
+    this.ppTotal = Math.min(this.ppCap, before + amount);
+    const overflow = before + amount - this.ppTotal;
+    if (overflow > 0 && this.onOverflow) this.onOverflow(overflow);
+    return this.ppTotal - before;
   }
 
   /**
@@ -71,7 +85,7 @@ export class PPSystem {
     this._accumulator += effectiveRate * delta;
     if (this._accumulator >= 1) {
       const gained = Math.floor(this._accumulator);
-      this.ppTotal = Math.min(this.ppCap, this.ppTotal + gained);
+      this.deposit(gained);
       this._accumulator -= gained;
     }
   }
@@ -82,7 +96,7 @@ export class PPSystem {
   }
 
   addStepPP(steps, ppPerStep = CONFIG.PP_PER_STEP) {
-    this.ppTotal = Math.min(this.ppCap, this.ppTotal + steps * ppPerStep);
+    this.deposit(steps * ppPerStep);
   }
 
   /**

@@ -1,6 +1,6 @@
 import { CONFIG } from '../config.js';
 
-const SAVE_VERSION = 13;
+const SAVE_VERSION = 14;
 
 export class SaveSystem {
   constructor(systems) {
@@ -18,6 +18,7 @@ export class SaveSystem {
       mathematician, timeWarp, modifiers, missionTracker, questSystem, assembly,
       extractor, processingNodes, tripartite, bosses, expedition, challenges,
       neuralImplant, combatSim, mineDelve, trainingAreas, crafting, chapters,
+      compute,
     } = this.systems;
 
     const data = {
@@ -80,6 +81,7 @@ export class SaveSystem {
         })),
         upgradeCost: drones.upgradeCost,
         missions: drones.getMissions().filter(m => !m.done).map(m => ({ ...m })),
+        missionQueues: JSON.parse(JSON.stringify(drones._missionQueues || {})),
       },
 
       equipment: {
@@ -131,6 +133,7 @@ export class SaveSystem {
       combatSim:     combatSim     ? combatSim.serialize()     : null,
       mineDelve:     mineDelve     ? mineDelve.serialize()     : null,
       trainingAreas: trainingAreas ? trainingAreas.serialize() : null,
+      compute:       compute       ? compute.serialize()       : null,
     };
 
     for (const name of stats.statNames) {
@@ -217,6 +220,7 @@ export class SaveSystem {
       mathematician, timeWarp, modifiers, missionTracker, questSystem, assembly,
       extractor, processingNodes, tripartite, bosses, expedition, challenges,
       neuralImplant, combatSim, mineDelve, trainingAreas, crafting, chapters,
+      compute,
     } = this.systems;
 
     // Drill System
@@ -296,6 +300,7 @@ export class SaveSystem {
     }));
     drones.upgradeCost = data.drones.upgradeCost;
     if (data.drones.missions) drones._missions = data.drones.missions.map(m => ({ ...m }));
+    drones._missionQueues = JSON.parse(JSON.stringify(data.drones.missionQueues || {}));
 
     // Equipment — re-equip after stats are set to raw levels (slots cleared above, no displacement)
     for (const [slot, item] of Object.entries(data.equipment.slots)) {
@@ -359,6 +364,10 @@ export class SaveSystem {
     if (combatSim && data.combatSim) combatSim.deserialize(data.combatSim);
     if (mineDelve && data.mineDelve) mineDelve.load(data.mineDelve);
     if (trainingAreas && data.trainingAreas) trainingAreas.deserialize(data.trainingAreas);
+    // Compute board (v14). Pre-v14 saves have no compute blob — deserialize(null)
+    // leaves the pool unseeded and ComputeSystem.maybeSeed() auto-assigns on the
+    // first frame the board is unlocked (migration + fresh saves share one path).
+    if (compute) compute.deserialize(data.compute ?? null);
     // Legacy: migrate old taskSystem saves (no-op if not present)
 
 

@@ -1,5 +1,6 @@
 import { formatBig, formatRate, formatDuration } from '../util/NumberFormat.js';
 import { CONFIG } from '../config.js';
+import { AL_MODULES } from '../systems/ComputeSystem.js';
 
 // Compact number formatting for big idle-RPG values (PP, Steps, etc.)
 function abbrevNum(n) {
@@ -607,6 +608,226 @@ export class HUD {
     setText('alloc-power-invested', inv.power.toFixed(1));
     setText('alloc-rate-invested', inv.rate.toFixed(1));
     setText('alloc-momentum', '×' + this.tripartite.sessionMomentum.toFixed(2));
+
+    this._renderComputeBoard();
+  }
+
+  // ── Al Compute allocation board (Phase E) ────────────────────────────────
+  // Structure rebuilds only when the assignment signature changes (buttons
+  // survive the 100ms allocation refresh); rate previews update every pass.
+  _renderComputeBoard() {
+    const host = document.getElementById('compute-board');
+    const compute = this.compute;
+    if (!host || !compute) return;
+
+    if (!compute.unlocked) {
+      const teaser = '<div style="border-top:1px solid #44ffcc33;padding-top:0.8em;opacity:0.55;font-size:0.85em;">AL COMPUTE — core dormant. Comes online at Chapter 3.</div>';
+      if (host.innerHTML !== teaser) host.innerHTML = teaser;
+      this._computeBoardSig = null;
+      return;
+    }
+
+    const rows = this._computeBoardRows();
+    const sig = [compute.capLevel, compute.totalUnits(), compute.freeUnits(),
+      rows.map(r => `${r.key}:${compute.unitsOn(r.key)}:${r.shown ? 1 : 0}`).join('|'),
+      AL_MODULES.map(m => `${m.id}:${compute.hasModule(m.id) ? 1 : 0}:${compute.moduleAvailable(m.id) ? 1 : 0}`).join('|'),
+      this.pp.ppTotal >= compute.capUpgradeCost() ? 1 : 0].join('~');
+
+    if (sig !== this._computeBoardSig) {
+      this._computeBoardSig = sig;
+      this._buildComputeBoard(host, rows);
+    }
+    this._updateComputePreviews(rows);
+  }
+
+  _computeBoardRows() {
+    const machines = this.factory?.machines || {};
+    return [
+      { key: 'ladder',     label: 'SIM LADDER',      shown: true },
+      { key: 'drones',     label: 'DRONE ROUTES',    shown: true },
+      { key: 'extractors', label: 'EXTRACTOR BANK',  shown: true },
+      { key: 'holodeck',   label: 'HOLODECK',        shown: true },
+      { key: 'processing', label: 'PROCESSING BANK', shown: true },
+      { key: 'factory:smelter',    label: 'LINE: ARC SMELTER',  shown: !!machines.smelter?.unlocked },
+      { key: 'factory:assembler',  label: 'LINE: CONSTRUCTOR',  shown: !!machines.assembler?.unlocked },
+      { key: 'factory:fabricator', label: 'LINE: FABRICATOR',   shown: !!machines.fabricator?.unlocked },
+      { key: 'overflow',           label: 'OVERFLOW ROUTING',   shown: this.compute.hasModule('overflowRouting') },
+    ].filter(r => r.shown);
+  }
+
+  _buildComputeBoard(host, rows) {
+    const compute = this.compute;
+    host.innerHTML = '';
+
+    const head = document.createElement('div');
+    head.style.cssText = 'border-top:1px solid #44ffcc33;padding-top:0.8em;display:flex;justify-content:space-between;align-items:center;gap:0.5em;flex-wrap:wrap;';
+    head.innerHTML = `<span style="color:#44ffcc;font-weight:bold;">AL COMPUTE</span>
+      <span style="font-size:0.85em;">free <span id="compute-free" style="color:#ffd700;font-weight:bold;">${compute.freeUnits()}</span> / ${compute.totalUnits()} units</span>`;
+    const capBtn = document.createElement('button');
+    capBtn.className = 'construct-buy-btn';
+    const capCost = compute.capUpgradeCost();
+    capBtn.textContent = `+${2} CAP (${abbrevNum(capCost)} PP)`;
+    capBtn.disabled = this.pp.ppTotal < capCost;
+    capBtn.title = 'Expand the compute pool';
+    capBtn.addEventListener('click', () => {
+      if (compute.buyCapUpgrade()) this._renderComputeBoard();
+    });
+    head.appendChild(capBtn);
+    host.appendChild(head);
+
+    const hint = document.createElement('div');
+    hint.style.cssText = 'font-size:0.75em;opacity:0.6;margin:0.3em 0 0.6em;';
+    hint.textContent = 'A system runs unattended — including offline — only while ≥1 unit is assigned. Extra units boost output.';
+    host.appendChild(hint);
+
+    this._computeRowEls = {};
+    for (const row of rows) {
+      const units = compute.unitsOn(row.key);
+      const line = document.createElement('div');
+      line.style.cssText = 'display:flex;align-items:center;gap:0.45em;margin:0.25em 0;flex-wrap:wrap;';
+
+      const label = document.createElement('span');
+      label.style.cssText = 'flex:1 1 9em;min-width:9em;font-size:0.85em;';
+      label.textContent = row.label;
+      line.appendChild(label);
+
+      const unitsEl = document.createElement('span');
+      unitsEl.style.cssText = `min-width:1.6em;text-align:center;font-weight:bold;color:${units > 0 ? '#44ffcc' : '#666'};`;
+      unitsEl.textContent = units;
+      line.appendChild(unitsEl);
+
+      const mkBtn = (txt, fn, disabled, title) => {
+        const b = document.createElement('button');
+        b.className = 'construct-buy-btn';
+        b.textContent = txt;
+        b.disabled = disabled;
+        if (title) b.title = title;
+        b.addEventListener('click', () => { fn(); this._renderComputeBoard(); });
+        line.appendChild(b);
+      };
+      mkBtn('−', () => compute.adjust(row.key, -1), units <= 0);
+      mkBtn('+', () => compute.adjust(row.key, +1), compute.freeUnits() <= 0);
+      mkBtn('MAX', () => compute.assignMax(row.key), compute.freeUnits() <= 0, 'Assign all free units');
+
+      const preview = document.createElement('span');
+      preview.style.cssText = 'flex:1 1 100%;font-size:0.72em;opacity:0.65;padding-left:0.2em;';
+      line.appendChild(preview);
+
+      this._computeRowEls[row.key] = { unitsEl, preview };
+      host.appendChild(line);
+    }
+
+    this._buildModuleShop(host);
+  }
+
+  // ── Al module shop (G1/G2: chapters unlock the right to buy) ─────────────
+  _buildModuleShop(host) {
+    const compute = this.compute;
+    const shopHead = document.createElement('div');
+    shopHead.style.cssText = 'margin-top:0.9em;padding-top:0.6em;border-top:1px solid #44ffcc33;color:#44ffcc;font-weight:bold;font-size:0.85em;';
+    shopHead.textContent = 'AL CAPABILITY MODULES';
+    host.appendChild(shopHead);
+
+    this._computeModuleBtns = {};
+    for (const def of AL_MODULES) {
+      const owned = compute.hasModule(def.id);
+      const available = compute.moduleAvailable(def.id);
+      const line = document.createElement('div');
+      line.style.cssText = 'display:flex;align-items:center;gap:0.45em;margin:0.3em 0;flex-wrap:wrap;';
+
+      const label = document.createElement('span');
+      label.style.cssText = `flex:1 1 10em;min-width:10em;font-size:0.85em;${owned ? 'color:#44ffcc;' : available ? '' : 'opacity:0.45;'}`;
+      label.textContent = `${owned ? '✔ ' : ''}${def.label}`;
+      line.appendChild(label);
+
+      if (owned) {
+        const on = document.createElement('span');
+        on.style.cssText = 'font-size:0.75em;color:#44ffcc;opacity:0.8;';
+        on.textContent = 'ONLINE';
+        line.appendChild(on);
+      } else if (!available) {
+        const lock = document.createElement('span');
+        lock.style.cssText = 'font-size:0.75em;color:#888;';
+        lock.textContent = `LOCKED — Chapter ${def.level}`;
+        line.appendChild(lock);
+      } else {
+        const matsStr = Object.entries(def.mats || {}).map(([m, q]) => `${q} ${m}`).join(' + ');
+        const btn = document.createElement('button');
+        btn.className = 'construct-buy-btn';
+        btn.textContent = `BUY — ${abbrevNum(def.pp)} PP${matsStr ? ' + ' + matsStr : ''}`;
+        btn.addEventListener('click', () => {
+          if (compute.buyModule(def.id)) {
+            this.showAchievementToast({ icon: '🤖', label: `Al: ${def.label} online`, desc: def.teach, reward: 0 });
+            this._renderComputeBoard();
+          }
+        });
+        this._computeModuleBtns[def.id] = btn;
+        line.appendChild(btn);
+      }
+
+      const desc = document.createElement('span');
+      desc.style.cssText = 'flex:1 1 100%;font-size:0.72em;opacity:0.6;padding-left:0.2em;';
+      desc.textContent = def.desc;
+      line.appendChild(desc);
+
+      host.appendChild(line);
+    }
+  }
+
+  _updateComputePreviews(rows) {
+    const compute = this.compute;
+    const els = this._computeRowEls;
+    if (!els) return;
+    for (const row of rows) {
+      const el = els[row.key];
+      if (!el) continue;
+      el.preview.textContent = this._computePreviewText(row.key);
+    }
+    const freeEl = document.getElementById('compute-free');
+    if (freeEl) freeEl.textContent = compute.freeUnits();
+    // Module BUY buttons: affordability changes constantly — update disabled
+    // state here instead of churning the board signature.
+    if (this._computeModuleBtns) {
+      for (const [id, btn] of Object.entries(this._computeModuleBtns)) {
+        btn.disabled = !compute.canBuyModule(id);
+      }
+    }
+  }
+
+  /** Honest per-row rate previews; falls back to the output multiplier. */
+  _computePreviewText(key) {
+    const compute = this.compute;
+    const units = compute.unitsOn(key);
+    if (units <= 0) return 'PAUSED — no compute assigned';
+    const mult = compute.outputMult(key);
+    const multStr = `×${mult.toFixed(2)} output`;
+    if (key === 'ladder' && this.prog?.expedition) {
+      const exp = this.prog.expedition;
+      if (!exp.active) return `${multStr} — frame halted`;
+      const kph = exp.killRate(exp.tier) * mult * 3600;
+      return kph > 0 ? `${multStr} — ~${abbrevNum(Math.floor(kph))} kills/hr @ T${exp.tier + 1}` : `${multStr} — stalled`;
+    }
+    if (key === 'drones' && this.drones) {
+      const n = this.drones.drones.filter(d => d.assignedMaterial).length;
+      return n > 0 ? `${multStr} — ${n} route${n > 1 ? 's' : ''} live` : `${multStr} — no routes assigned`;
+    }
+    if (key === 'extractors' && this.extractor) {
+      const rates = this.extractor.getRates();
+      const perHr = Object.values(rates).reduce((a, b) => a + b, 0) * mult * 3600;
+      return perHr > 0 ? `${multStr} — ~${abbrevNum(Math.floor(perHr))} ore/hr` : `${multStr} — no extractors installed`;
+    }
+    if (key === 'holodeck' && this.trainingAreas) {
+      const t = this.trainingAreas;
+      const prog = t.activeId || t.selectedProgram;
+      return prog ? `${multStr} — running ${t.getDef(prog)?.label || prog}` : `${multStr} — no program loaded`;
+    }
+    if (key === 'overflow') {
+      const implant = this.prog?.implant;
+      if (!implant?.target) return `${multStr} — set an implant target to receive routed XP`;
+      const rate = 0.25 * (1 + (this.tripartite?.powerBonus || 0)) * mult;
+      return `${multStr} — over-cap PP → ${implant.target} XP at ${(rate * 100).toFixed(0)}%`;
+    }
+    return multStr;
   }
 
   // ── Training Console + Chamber Overlay ─────────────────────────────────
@@ -949,6 +1170,49 @@ export class HUD {
       const outStr = Object.entries(recipeDef.outputs).map(([k,v])=>`${v * machine.yieldRatio}x ${_matLabel(k)}`).join(', ');
       io.innerHTML = `<span>${inStr} &rarr;</span><span>${outStr}</span>`;
       body.appendChild(io);
+
+      // Input hopper (Phase E): the machine feeds from here, online and offline
+      const size = this.factory.hopperSize(machineId);
+      const hopperWrap = document.createElement('div');
+      hopperWrap.style.cssText = 'margin:4px 0;padding:4px 6px;border:1px dashed #44ffcc33;font-size:0.78em;';
+      const hopperHead = document.createElement('div');
+      hopperHead.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:4px;';
+      hopperHead.innerHTML = `<span style="color:#44ffcc;">HOPPER <span style="opacity:0.6">(${size}/mat)</span></span>`;
+      const hopUp = document.createElement('button');
+      hopUp.className = 'construct-buy-btn';
+      const hopCost = this.factory.hopperUpgradeCost(machineId);
+      hopUp.textContent = `×2 SIZE (${abbrevNum(hopCost)} PP)`;
+      hopUp.disabled = this.pp.ppTotal < hopCost;
+      hopUp.onclick = () => { if (this.factory.upgradeHopper(machineId)) refreshFn(); };
+      hopperHead.appendChild(hopUp);
+      hopperWrap.appendChild(hopperHead);
+
+      for (const mat of Object.keys(recipeDef.inputs)) {
+        const line = document.createElement('div');
+        line.style.cssText = 'display:flex;align-items:center;gap:4px;margin-top:2px;';
+        const have = machine.hopper[mat] || 0;
+        const bag = this.inventory.materials[mat] || 0;
+        const label = document.createElement('span');
+        label.style.cssText = 'flex:1;';
+        label.textContent = `${_matLabel(mat)}: ${have}/${size} (bag ${bag})`;
+        line.appendChild(label);
+        const stockBtn = document.createElement('button');
+        stockBtn.className = 'construct-buy-btn';
+        stockBtn.textContent = 'STOCK';
+        stockBtn.title = 'Fill the hopper from your bag';
+        stockBtn.disabled = bag <= 0 || have >= size;
+        stockBtn.onclick = () => { if (this.factory.stock(machineId, mat) > 0) refreshFn(); };
+        line.appendChild(stockBtn);
+        const unstockBtn = document.createElement('button');
+        unstockBtn.className = 'construct-buy-btn';
+        unstockBtn.textContent = '↩';
+        unstockBtn.title = 'Return hopper contents to your bag';
+        unstockBtn.disabled = have <= 0;
+        unstockBtn.onclick = () => { if (this.factory.unstock(machineId, mat) > 0) refreshFn(); };
+        line.appendChild(unstockBtn);
+        hopperWrap.appendChild(line);
+      }
+      body.appendChild(hopperWrap);
     }
 
     // Progress Track
@@ -971,7 +1235,7 @@ export class HUD {
     processBtn.className = 'btn-process';
     processBtn.textContent = 'PROCESS';
     const recipe = this.factory.recipes[machine.currentRecipe];
-    const hasMats = recipe ? this.inventory.hasMaterials(recipe.inputs) : false;
+    const hasMats = recipe ? this.factory.hasHopperMaterials(machine, recipe.inputs) : false;
     if (machine.isAutomated || !hasMats) {
       processBtn.disabled = true;
       processBtn.style.opacity = '0.5';
@@ -1023,11 +1287,18 @@ export class HUD {
     const danger = exp.tierTooDangerous(tier);
     const farming = exp.isBandCleared(band);
 
-    // Status card
+    // Status card. AWAITING COMPUTE = board unlocked, frame running, 0 units on
+    // the ladder — the sim is paused until Al's attention is assigned (ALLOC).
+    const computeStarved = exp.active && this.compute?.unlocked && this.compute.unitsOn('ladder') <= 0;
+    const runState = !exp.active
+      ? '<span style="color:#888">IDLE</span>'
+      : computeStarved
+        ? '<span style="color:#ffaa44">AWAITING COMPUTE</span>'
+        : '<span style="color:#66ff66">RUNNING</span>';
     const status = document.createElement('div');
     status.className = 'fieldops-status';
     status.innerHTML = `
-      <div class="fieldops-title">SIMULATION LADDER — ${exp.active ? '<span style="color:#66ff66">RUNNING</span>' : '<span style="color:#888">IDLE</span>'}</div>
+      <div class="fieldops-title">SIMULATION LADDER — ${runState}</div>
       <div class="fieldops-row"><span>Sim tier</span><span>T${tier + 1} · ${exp.bandLabel(band)} ${farming ? '<span style="color:#66ff66">[FARM]</span>' : '<span style="color:#ffaa44">[FRONTIER]</span>'}</span></div>
       <div class="fieldops-row"><span>Target</span><span>${exp.enemyName(tier)} · HP ${abbrevNum(Math.floor(exp.enemyHP(tier)))}</span></div>
       <div class="fieldops-row"><span>Frame DPS</span><span>${abbrevNum(Math.floor(exp.playerDPS))}</span></div>
@@ -1035,6 +1306,7 @@ export class HUD {
       <div class="fieldops-row"><span>Lifetime</span><span>${abbrevNum(exp.totalKills)} kills · +${abbrevNum(exp.totalPP)} PP</span></div>
       <div class="fieldops-row"><span>Archive Fragments</span><span style="color:#c9a2ff">◈ ${abbrevNum(exp.archiveShards)} <span style="color:#666">(banked for Recompile)</span></span></div>
       ${danger ? '<div class="fieldops-warn">⚠ Tier threat exceeds frame survivability — upgrade Health / Defense or drop tiers</div>' : ''}
+      ${computeStarved ? '<div class="fieldops-warn">⚠ No compute assigned to SIM LADDER — allocate a unit on the ALLOC board</div>' : ''}
     `;
     el.appendChild(status);
 
@@ -1072,6 +1344,19 @@ export class HUD {
 
     // Warden gate — transparent attempt math, keys from field kills
     const p = exp.wardenPreview();
+    // Key Tracker (Al module): band↔family hunting grounds, from the zone
+    // spawn tables in Environment.getEnemySpawns().
+    const KEY_TRACKER_GROUNDS = {
+      serpendrill: 'Landing Site · The Mine',
+      reptlar: 'The Mine · Verdant Maw',
+      dunkraza: 'The Mine · Lagoon Coast · Frozen Tundra',
+      spoonvark: 'Lagoon Coast',
+      hardlizzy: 'Frozen Tundra · The Depths',
+      cavecrab: 'The Depths',
+    };
+    const trackerLine = this.compute?.hasModule('keyTracker')
+      ? `<div class="fieldops-row"><span style="color:#44ffcc">🤖 Key Tracker</span><span>${KEY_TRACKER_GROUNDS[p.family.id] || 'field zones'}</span></div>`
+      : '';
     const keysShort = p.keysNeed - p.keysHave;
     const ready = keysShort <= 0;
     const winnable = p.damageFraction >= 1;
@@ -1084,6 +1369,7 @@ export class HUD {
       <div class="fieldops-title" style="color:#ffaa44">SECTOR WARDEN — GATE T${p.gateTier + 1}</div>
       <div class="fieldops-row"><span>${p.name}</span><span>HP ${abbrevNum(Math.floor(p.hp))}</span></div>
       <div class="fieldops-row"><span>Override Keys</span><span>${p.keysHave} / ${p.keysNeed} <span style="color:#666">(${perKey - towardKey} field ${p.family.label} kills → next key)</span></span></div>
+      ${trackerLine}
       <div class="fieldops-row"><span>Projected burn</span><span style="color:${p.dpsFraction >= 1 ? '#66ff66' : '#ff8855'}">${Math.round(p.dpsFraction * 100)}%</span></div>
       <div class="fieldops-row"><span>Survival gate</span><span style="color:${p.survivalFraction >= 1 ? '#66ff66' : '#ff8855'}">${Math.round(p.survivalFraction * 100)}%</span></div>
       <div class="activity-timer-bar"><div class="activity-timer-fill" style="width:${Math.min(100, p.damageFraction * 100)}%"></div></div>
@@ -2113,21 +2399,48 @@ export class HUD {
     const allZones = this.drones.constructor.MISSION_ZONES;
     const idleDrones = this.drones.drones.filter(d => !this.drones.isDroneOnMission(d.id) && !d.assignedMaterial);
 
-    // Active missions
+    // Active missions (+ Phase E pre-logout queue: chain more legs behind each)
     const activeMissions = this.drones.getMissions().filter(m => !m.done);
     if (activeMissions.length > 0) {
       for (const m of activeMissions) {
         const remaining = Math.max(0, Math.ceil(m.duration - m.elapsed));
         const pct = Math.min(100, (m.elapsed / m.duration) * 100).toFixed(0);
         const drone = this.drones.drones.find(d => d.id === m.droneId);
+        const queued = this.drones.queuedMissions(m.droneId);
+        const depth = this.drones.missionQueueDepth(m.droneId);
         const row = document.createElement('div');
-        row.style.cssText = 'padding:4px 0;border-bottom:1px solid #00cc6622;font-size:0.75rem;display:flex;align-items:center;gap:8px;';
+        row.style.cssText = 'padding:4px 0;border-bottom:1px solid #00cc6622;font-size:0.75rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap;';
         row.innerHTML = `<span style="flex:1;color:#55bb88;">${drone?.name || 'Drone'} → ${allZones[m.zoneName]?.label || m.zoneName}</span><span style="color:#aaa;">${remaining}s</span>`;
         const recallBtn = document.createElement('button');
         recallBtn.className = 'stat-up-btn';
         recallBtn.textContent = 'Recall';
         recallBtn.onclick = () => { this.drones.recallDrone(m.droneId); this._refreshDrones(); };
         row.appendChild(recallBtn);
+
+        // Queue controls: pick a zone, chain it behind the current mission
+        const qWrap = document.createElement('span');
+        qWrap.style.cssText = 'flex:1 1 100%;display:flex;gap:4px;align-items:center;font-size:0.7rem;color:#557788;';
+        const qLabel = document.createElement('span');
+        qLabel.textContent = `Queue ${queued.length}/${depth}: ${queued.map(z => allZones[z]?.label || z).join(' → ') || '(empty)'}`;
+        qLabel.style.flex = '1';
+        qWrap.appendChild(qLabel);
+        if (queued.length < depth) {
+          const qSelect = document.createElement('select');
+          qSelect.className = 'drone-select';
+          for (const [key, zone] of Object.entries(allZones)) {
+            if (!visitedZones.has(key)) continue;
+            const o = document.createElement('option');
+            o.value = key;
+            o.textContent = zone.label;
+            qSelect.appendChild(o);
+          }
+          const qBtn = document.createElement('button');
+          qBtn.className = 'stat-up-btn';
+          qBtn.textContent = '+Queue';
+          qBtn.onclick = () => { this.drones.queueMission(m.droneId, qSelect.value); this._refreshDrones(); };
+          if (qSelect.options.length > 0) { qWrap.appendChild(qSelect); qWrap.appendChild(qBtn); }
+        }
+        row.appendChild(qWrap);
         el.appendChild(row);
       }
     }
@@ -2761,6 +3074,16 @@ export class HUD {
     if (!banner) return;
     const content = document.getElementById('offline-content');
     if (content) {
+      // Per-system rows: what RAN vs what sat DORMANT (teaches the pre-logout puzzle)
+      const rowHTML = (summary.rows && summary.rows.length)
+        ? `<div style="margin-top:6px;padding-top:6px;border-top:1px solid #00ffcc33;">
+             ${summary.rows.map(r => `
+               <div style="font-size:0.74rem;margin-top:2px;">
+                 <span style="color:${r.ran ? '#44ffaa' : '#888'};">${r.ran ? '▸' : '▪'} ${r.label}</span>
+                 <span style="color:${r.ran ? '#aaccbb' : '#cc8855'};"> — ${r.detail}</span>
+               </div>`).join('')}
+           </div>`
+        : '';
       const highlightHTML = (summary.highlights && summary.highlights.length)
         ? `<div style="margin-top:6px;padding-top:6px;border-top:1px solid #00ffcc33;">
              ${summary.highlights.map(h => `<div style="color:#ffcc66;font-size:0.74rem;margin-top:2px;">${h}</div>`).join('')}
@@ -2769,13 +3092,14 @@ export class HUD {
       content.innerHTML = `
         <div style="font-size:1rem;font-weight:bold;color:#00ffcc;margin-bottom:8px;">WELCOME BACK</div>
         <div style="color:#aaccbb;font-size:0.8rem;margin-bottom:4px;">Time away: ${summary.timeAway}</div>
-        <div style="color:#44ffaa;font-size:0.85rem;margin-bottom:4px;">+${formatBig(summary.ppGained)} PP (50% offline rate)</div>
-        <div style="color:#aaccbb;font-size:0.75rem;">Drone haul: ${summary.matSummary}</div>
+        <div style="color:#44ffaa;font-size:0.85rem;margin-bottom:4px;">+${formatBig(summary.ppGained)} PP core feed</div>
+        <div style="color:#aaccbb;font-size:0.75rem;">Hauled in: ${summary.matSummary}</div>
+        ${rowHTML}
         ${highlightHTML}
       `;
     }
     banner.hidden = false;
-    setTimeout(() => { banner.hidden = true; }, 10000);
+    setTimeout(() => { banner.hidden = true; }, 15000);
   }
 
   // ── Achievement Toast ───────────────────────────────────────────────────

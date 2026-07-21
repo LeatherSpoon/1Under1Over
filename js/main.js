@@ -56,6 +56,7 @@ import { ExpeditionSystem } from './systems/ExpeditionSystem.js';
 import { ChallengeSystem } from './systems/ChallengeSystem.js';
 import { NeuralImplantSystem } from './systems/NeuralImplantSystem.js';
 import { TrainingAreaSystem } from './systems/TrainingAreaSystem.js';
+import { ComputeSystem } from './systems/ComputeSystem.js';
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
 
@@ -139,6 +140,26 @@ const trainingAreas   = new TrainingAreaSystem(statsSystem, inventorySystem);
 // Power leg = how hard PP works at a sink: it amplifies training throughput.
 trainingAreas.getPowerBonus = () => tripartite.powerBonus;
 
+// ── Compute allocation (Phase E) — Al's attention pool ───────────────────────
+const computeSystem = new ComputeSystem(ppSystem, inventorySystem);
+computeSystem.getPowerBonus = () => tripartite.powerBonus;
+computeSystem.getAmpLevel = () => ascension.computeAmpLevel;
+computeSystem.getChapterLevel = () => chapterSystem.level;
+// Overflow Routing (Al module): PP that clamps at the cap becomes implant XP.
+ppSystem.onOverflow = (amount) => computeSystem.routeOverflow(amount, neuralImplant);
+// One-time auto-seed probes: which destinations were already in use when the
+// board first unlocks (so the stocked gate never silently kills a running system).
+computeSystem.probe = {
+  ladder: () => expedition.active || expedition.totalKills > 0,
+  drones: () => droneSystem.drones.some(d => d.assignedMaterial),
+  extractors: () => extractorSystem.slotCount > 0,
+  holodeck: () => !!(trainingAreas.activeId || trainingAreas.selectedProgram),
+};
+// Factory lines are gated per machine; manual clicks stay ungated (attended).
+factorySystem.computeGate = (id) => computeSystem.gateMult('factory:' + id);
+// Foreman (Al module): hoppers auto-restock from the bags while online.
+factorySystem.foremanActive = () => computeSystem.hasModule('foreman');
+
 // Apply ascension multiplier to PP system (challenge rewards fold in each frame)
 ppSystem.globalMultiplier = ascension.ppMultiplier * challenges.ppRateMult * factorySystem.moduleGlobalMult;
 
@@ -153,7 +174,7 @@ minigame.onStateChange = () => {
 };
 
 // ── Offline progress on boot ──────────────────────────────────────────────
-offlineSystem.setReturnContext({ stats: statsSystem, ascension, timeWarp, expedition, implant: neuralImplant, tripartite, trainingAreas });
+offlineSystem.setReturnContext({ stats: statsSystem, ascension, timeWarp, expedition, implant: neuralImplant, tripartite, trainingAreas, extractors: extractorSystem, compute: computeSystem, factory: factorySystem, processing: processingNodes });
 const offlineSummary = offlineSystem.applyAndSummarize();
 offlineSystem.stamp();
 
@@ -518,6 +539,7 @@ syncClient.onReconciled = (playerState, serverDefinitions) => {
 syncClient.bootstrap();
 
 hud.prog.chapters = chapterSystem; // chapter chain drives tab gates + identity display
+hud.compute = computeSystem; // allocation board section in the ALLOC panel
 hud.setZoneLabel(env.getZoneLabel());
 gameStats.recordZoneVisit('landingSite'); // starting zone
 // questSystem.recordZoneVisit fires on switchZone; record start zone explicitly after wiring
@@ -580,6 +602,7 @@ const saveSystem = new SaveSystem({
   combatSim,
   mineDelve,
   trainingAreas,
+  compute: computeSystem,
 });
 
 // World-space effects (offload burst, etc.)
@@ -1270,8 +1293,9 @@ function handleGathering(delta) {
 let lastTime = performance.now();
 let _actionCooldown = 0; // prevents instant re-trigger of [E] across interaction types
 let _energyWasEmpty = false; // latch for the energy_empty achievement counter
+let _farmDirectorAt = 0;     // Farm Director module's 5s advance timer
 let _portalRefreshTimer = 0;
-window.__debugSystems = { inventorySystem, codexSystem, questSystem, hud, ppSystem, combatSim, trainingAreas, tripartite, statsSystem, modifiers, ascension, factorySystem, gameStats, pedometer, craftingSystem, chapters: chapterSystem, bossSystem };
+window.__debugSystems = { inventorySystem, codexSystem, questSystem, hud, ppSystem, combatSim, trainingAreas, tripartite, statsSystem, modifiers, ascension, factorySystem, gameStats, pedometer, craftingSystem, chapters: chapterSystem, bossSystem, compute: computeSystem, offlineSystem, expedition, droneSystem, extractorSystem };
 window.__debugSnapshot = () => {
   const hint = document.getElementById('interact-hint');
   const nearestNode = entityManager.findNearestNode(player.position);
@@ -1506,7 +1530,23 @@ function gameLoop(now) {
   ppSystem.globalMultiplier = ascension.ppMultiplier * challenges.ppRateMult * factorySystem.moduleGlobalMult;
   combatSystem.permDamageMult = bossSystem.damageMult * challenges.damageMult * ascension.combatMultiplier;
   expedition.damageMult = combatSystem.damageMult * combatSystem.permDamageMult;
-  droneSystem.efficiencyMult = modifiers.droneMult * ascension.droneMultiplier;
+
+  // Compute gates (Phase E): once the board is unlocked, a destination with 0
+  // units is paused (gateMult 0) and extra units boost it; while locked every
+  // gate reads 1 (pre-S2 behavior). Factory lines pull their gate via callback.
+  computeSystem.maybeSeed();
+  droneSystem.efficiencyMult = modifiers.droneMult * ascension.droneMultiplier * computeSystem.gateMult('drones');
+  expedition.computeMult = computeSystem.gateMult('ladder');
+  extractorSystem.computeMult = computeSystem.gateMult('extractors');
+  processingNodes.computeMult = computeSystem.gateMult('processing');
+  trainingAreas.computeMult = computeSystem.unlocked ? computeSystem.gateMult('holodeck') : 0;
+
+  // Farm Director (Al module): every 5s, walk the stocked ladder up to the
+  // highest safe tier.
+  if (now > _farmDirectorAt && computeSystem.hasModule('farmDirector') && expedition.computeMult > 0) {
+    _farmDirectorAt = now + 5000;
+    expedition.autoAdvanceFarm();
+  }
 
   // Latch the energy-empty achievement counter on 0-crossings only
   if (statsSystem.currentEnergy <= 0) {
