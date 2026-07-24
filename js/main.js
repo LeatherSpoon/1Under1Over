@@ -1,7 +1,7 @@
 import { SceneManager } from './scene/SceneManager.js';
 import { Environment } from './scene/Environment.js';
 import { LootPopups } from './scene/LootPopups.js';
-import { Player } from './entities/Player.js';
+import { Player, playerModelReady } from './entities/Player.js';
 import { EntityManager } from './entities/EntityManager.js';
 import { threatColorFor } from './entities/Enemy.js';
 import { PPSystem } from './systems/PPSystem.js';
@@ -1662,3 +1662,18 @@ function gameLoop(now) {
 }
 
 sceneManager.renderer.setAnimationLoop(gameLoop);
+
+// ── Boot gate ────────────────────────────────────────────────────────────────
+// Keep the boot overlay up until the player rig and the zone GLBs have parsed,
+// so a fresh session opens on modern assets instead of procedural fallbacks.
+// Hard 6 s cap: a missing/broken model must never hang boot.
+{
+  const bootOverlay = document.getElementById('boot-overlay');
+  if (bootOverlay) {
+    const cap = new Promise(res => setTimeout(res, 6000));
+    Promise.race([Promise.allSettled([env._modelsReady, playerModelReady]), cap]).then(() => {
+      bootOverlay.style.opacity = '0';
+      setTimeout(() => bootOverlay.remove(), 500);
+    });
+  }
+}

@@ -7,10 +7,15 @@ import { CONFIG } from '../config.js';
 // The procedural capsule body below stays as the fallback until it arrives.
 let _playerGLB = null;
 let _onPlayerGLB = null;
+let _resolvePlayerReady;
+// Settles on load success OR failure — main.js gates the boot overlay on it,
+// so it must never hang.
+export const playerModelReady = new Promise(res => { _resolvePlayerReady = res; });
 new GLTFLoader().load('./models/Player.glb', gltf => {
   _playerGLB = gltf;
+  _resolvePlayerReady();
   if (_onPlayerGLB) _onPlayerGLB();
-}, undefined, () => {});
+}, undefined, () => _resolvePlayerReady());
 
 // Natural forward speed of the authored run cycle (units/sec) — used to scale
 // the clip so feet don't slide at boosted move speeds.

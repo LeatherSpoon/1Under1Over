@@ -16,11 +16,11 @@
  *   boulder  0.75   tower  0.9   rock (cluster)  0.75
  *   tree     0.6    crate  0.5   barrel          0.35   pc  0.5
  *   blueBoulder 0.75   redRock 0.75   firePlant 0.5
+ *   mossyBoulder 0.65-0.8   ship 2.1 (grounded scout ship, scale 2.0)
  *
  * To add a new model type:
- *   1. Add its GLB to models/ (e.g. models/MyProp.glb) — if that path 404'd
- *      earlier in the same tab, failures are cached in the 'pp.missingModels'
- *      sessionStorage key; clear it (or use a new tab) so the loader retries
+ *   1. Add its GLB to models/ (e.g. models/MyProp.glb) — a failed load is
+ *      cached only for the current page's lifetime; reload and it retries
  *   2. Add it to the loadModel() list in Environment constructor (_modelsReady)
  *   3. Add the key to the _glb destructure in the .then() callback
  *   4. Reference the key here with { model: 'myProp', ... }
@@ -29,16 +29,22 @@
 export const ZONE_ASSETS = {
   // ── Landing Site ────────────────────────────────────────────────────────────
   landingSite: [
-    { model: 'tower',   x: -7,   z: -6,  scale: 0.9,  rotY: Math.PI * 0.75, r: 0.9  },
+    { model: 'tower',   x: -7,   z: -6,  scale: 1.5,  rotY: Math.PI * 0.75, r: 0.9  },
     { model: 'crate',   x: 2,    z: 3,   scale: 0.55, rotY: 0.4,            r: 0.5  },
     { model: 'crate',   x: -2,   z: 2,   scale: 0.5,  rotY: 1.1,            r: 0.5  },
-    { model: 'tree',    x: 6,    z: 10,  scale: 0.8,  rotY: 0.5,            r: 0.6  },
-    { model: 'tree',    x: -5,   z: 12,  scale: 0.9,  rotY: 2.1,            r: 0.6  },
-    { model: 'tree',    x: 11,   z: -2,  scale: 0.75, rotY: 0.9,            r: 0.6  },
+    // treeH2 = cavity-ink variant of treeH (A/B beside the pool's plain H trees)
+    { model: 'treeH2',  x: 6,    z: 10,  scale: 1.6,  rotY: 0.5,            r: 0.6  },
+    { model: 'treeI',   x: -5,   z: 12,  scale: 1.7,  rotY: 2.1,            r: 0.6  },
+    { model: 'treeD',   x: 11,   z: -2,  scale: 1.6,  rotY: 0.9,            r: 0.6  },
     // Boulders — placed near the forest perimeter and path edges
     { model: 'boulder', x: -4,   z: 7,   scale: 0.85, rotY: 0.3,            r: 0.75 },
     { model: 'boulder', x: 9,    z: 5,   scale: 0.7,  rotY: 1.9,            r: 0.75 },
     { model: 'boulder', x: -8,   z: -5,  scale: 0.65, rotY: 0.8,            r: 0.75 },
+    // Grounded scout ship — the site's namesake, parked beside the Spaceship gate
+    { model: 'ship',    x: 6.8,  z: -6.2, scale: 2.0, rotY: -0.83,          r: 2.1  },
+    { model: 'mossyBoulder', x: -6, z: 9,   scale: 0.8, rotY: 0.7,          r: 0.8  },
+    { model: 'mossyBoulder', x: 12, z: 2,   scale: 0.6, rotY: 2.4,          r: 0.65 },
+    { model: 'rock',    x: 5,    z: -12, scale: 0.7,  rotY: 1.2,            r: 0.75 },
   ],
 
   // ── The Mine ────────────────────────────────────────────────────────────────
@@ -57,9 +63,9 @@ export const ZONE_ASSETS = {
 
   // ── Verdant Maw ─────────────────────────────────────────────────────────────
   verdantMaw: [
-    { model: 'tree',    x: -3,   z: -8,  scale: 1.0,  rotY: 1.0,  r: 0.6  },
-    { model: 'tree',    x: 8,    z: 2,   scale: 0.85, rotY: 2.5,  r: 0.6  },
-    { model: 'tree',    x: -10,  z: -4,  scale: 0.9,  rotY: 0.7,  r: 0.6  },
+    { model: 'treeD',   x: -3,   z: -8,  scale: 1.7,  rotY: 1.0,  r: 0.6  },
+    { model: 'treeJ',   x: 8,    z: 2,   scale: 1.9,  rotY: 2.5,  r: 0.6  },
+    { model: 'treeH',   x: -10,  z: -4,  scale: 1.7,  rotY: 0.7,  r: 0.6  },
     { model: 'crate',   x: 2,    z: -4,  scale: 0.5,  rotY: 0.6,  r: 0.5  },
     { model: 'firePlant', x: -6,  z: 4,  scale: 1.8,  rotY: 0.8,  r: 0.5  },
     { model: 'firePlant', x: 10,  z: -6, scale: 1.65, rotY: 2.2,  r: 0.5  },

@@ -89,13 +89,14 @@ function _addForest(env) {
   const pathAngle    = -3 * Math.PI / 4;
   const gapHalfWidth = Math.PI * 0.12;
 
-  // Keep trees away from portals
+  // Keep trees away from portals and large landmarks
   const portalPositions = [
     { x:   4, z:  -3 },   // Spaceship
     { x: -10, z: -10 },   // Mine
     { x:   0, z:  20 },   // Verdant Maw
     { x:  20, z:   0 },   // Lagoon Coast
     { x:   0, z: -20 },   // Frozen Tundra
+    { x: 6.8, z: -6.2 },  // grounded scout ship (ZoneAssets)
   ];
   const _tooCloseToPortal = (tx, tz) =>
     portalPositions.some(p => Math.hypot(tx - p.x, tz - p.z) < 3.5);

@@ -116,6 +116,12 @@
 <body>
   <canvas id="game-canvas"></canvas>
 
+  <!-- Boot gate — covers the first frames until the player rig + zone GLBs
+       finish parsing (main.js fades it out; hard-capped so it can't hang). -->
+  <div id="boot-overlay" style="position:fixed;inset:0;z-index:9999;background:#0a1014;display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;color:#00ffcc;letter-spacing:0.35em;font-size:14px;transition:opacity 0.45s;">
+    INITIALIZING&nbsp;SYSTEMS…
+  </div>
+
   <!-- HUD overlay -->
   <div id="hud">
     <div id="hud-topleft">

@@ -10,43 +10,49 @@ import {
 import { mineWorldToCell, mineCellToWorld, isMineFloorCell } from './zones/Mine/layout.js';
 
 // Shared GLB model cache — loads each model once then reuses cloned scenes.
-// Failed loads are remembered in sessionStorage so a missing model is requested
-// at most once per tab session, even across page reloads (callers already fall
-// back gracefully). After adding a previously missing GLB to models/, open a
-// new tab or clear the sessionStorage key below so the loader retries it.
+// The cached promise also caches failures for the lifetime of the page (no
+// retry loops), but deliberately NOT across reloads: a transient failure
+// (server not up yet, file mid-write) must self-heal on the next refresh.
+// A sessionStorage failure cache here once made portals invisible forever in
+// a tab after one hiccup — don't reintroduce one.
 const _modelCache = {};
 const _loader = new GLTFLoader();
-const _MISSING_KEY = 'pp.missingModels';
-const _missingModels = (() => {
-  try { return new Set(JSON.parse(sessionStorage.getItem(_MISSING_KEY)) || []); }
-  catch { return new Set(); } // no sessionStorage (tests/private mode) or corrupt entry
-})();
-function _markMissing(path) {
-  _missingModels.add(path);
-  try { sessionStorage.setItem(_MISSING_KEY, JSON.stringify([..._missingModels])); } catch {}
-}
 function loadModel(path) {
   if (!_modelCache[path]) {
-    if (_missingModels.has(path)) {
-      console.info(`[Environment] ${path} failed earlier this session — not re-requesting (clear sessionStorage '${_MISSING_KEY}' after adding the file).`);
-      _modelCache[path] = Promise.reject(new Error(`${path} unavailable (failure cached this session)`));
-    } else {
-      _modelCache[path] = new Promise((resolve, reject) => {
-        _loader.load(path, gltf => resolve(gltf.scene), undefined, err => {
-          _markMissing(path);
-          console.warn(`[Environment] ${path} failed to load — using fallback; won't re-request this session.`);
-          reject(err);
-        });
+    _modelCache[path] = new Promise((resolve, reject) => {
+      _loader.load(path, gltf => resolve(gltf.scene), undefined, err => {
+        console.warn(`[Environment] ${path} failed to load — using fallback (reload retries).`);
+        reject(err);
       });
-    }
+    });
   }
   return _modelCache[path];
+}
+// Texture-baked GLBs (Rodin exports) arrive as MeshStandardMaterial, which
+// picks up specular shine and reads glossy next to the toon-shaded world.
+// Re-shade them with the game's toon material, keeping the baked diffuse map
+// (same pattern Player.js uses for its rig). Emissive-baked GLBs (black base
+// colour + art in the emissive channel) are already flat — leave them alone,
+// as are plain-colour materials (hand-built models, portal energy).
+const _toonConverted = new WeakMap();
+function _toToonMaterial(m) {
+  if (!m || m.emissiveMap || !m.map || m.isMeshToonMaterial) return m;
+  let t = _toonConverted.get(m);
+  if (!t) {
+    t = createToonMaterial(0xffffff, { map: m.map });
+    _toonConverted.set(m, t);
+  }
+  return t;
 }
 function cloneModel(gltfScene, scale = 1) {
   const clone = gltfScene.clone(true);
   clone.scale.setScalar(scale);
   clone.traverse(n => {
-    if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; }
+    if (n.isMesh) {
+      n.castShadow = true;
+      n.receiveShadow = true;
+      n.material = Array.isArray(n.material) ? n.material.map(_toToonMaterial) : _toToonMaterial(n.material);
+    }
   });
   return clone;
 }
@@ -109,9 +115,9 @@ export class Environment {
 
     // Pre-load all GLB models in parallel so they're ready when zones build
     this._modelsReady = Promise.all([
-      loadModel('./models/Ghibli_Tree.glb').catch(() => null),
-      loadModel('./models/Ghibli_Tree_B.glb').catch(() => null),
-      loadModel('./models/Ghibli_Tree_C.glb').catch(() => null),
+      loadModel('./models/Ghibli_Tree_H.glb').catch(() => null),
+      loadModel('./models/Ghibli_Tree_I.glb').catch(() => null),
+      loadModel('./models/Ghibli_Tree_J.glb').catch(() => null),
       loadModel('./models/Rock_Cluster.glb').catch(() => null),
       loadModel('./models/Fuel_Barrel.glb').catch(() => null),
       loadModel('./models/Supply_Crate.glb').catch(() => null),
@@ -123,8 +129,12 @@ export class Environment {
       loadModel('./models/Red_Rock.glb').catch(() => null),
       loadModel('./models/Fire_Plant.glb').catch(() => null),
       loadModel('./models/Portal.glb').catch(() => null),
-    ]).then(([tree, treeB, treeC, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal]) => {
-      this._glb = { tree, treeB, treeC, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal };
+      loadModel('./models/Landing_Ship.glb').catch(() => null),
+      loadModel('./models/Mossy_Boulder.glb').catch(() => null),
+      loadModel('./models/Ghibli_Tree_D.glb').catch(() => null),
+      loadModel('./models/Ghibli_Tree_H2.glb').catch(() => null),
+    ]).then(([treeH, treeI, treeJ, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal, ship, mossyBoulder, treeD, treeH2]) => {
+      this._glb = { treeH, treeI, treeJ, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal, ship, mossyBoulder, treeD, treeH2 };
       // Place GLB props for the initial zone (already built procedurally)
       this._placeGLBProps(this.currentZone);
       // Trees built before the GLBs resolved (fresh-load race) get re-skinned
@@ -353,6 +363,13 @@ export class Environment {
       }
       m.position.set(x, 0, z);
       m.rotation.y = rotY;
+      // Cartoon ink line on placed props. GLBs that bake their own shell (the
+      // trees' flipped-normal `*_OutlineHull` meshes) must not get another.
+      let hasBakedHull = false;
+      m.traverse(n => {
+        if (n.isMesh && (n.material?.side === THREE.BackSide || /outline|hull/i.test(n.name))) hasBakedHull = true;
+      });
+      if (!hasBakedHull) addOutlineToGroup(m, 0.03);
       this.group.add(m);
       if (r !== undefined) {
         this._collisionCircles.push({ x, z, r });
@@ -611,18 +628,27 @@ export class Environment {
     this._trees.push(entry);
   }
 
-  // Weighted variant pick: broad green > tall teal > amber accent
+  // Weighted mix of the reference-matched Rodin trees: broadleaf backbone,
+  // oak second, spruce accents, rare windswept statement tree. baseScale
+  // normalises each native height (1.36-1.89 units) to the game's 2.2-3.6
+  // world-unit forest. All carry a baked `*_OutlineHull` shell — never add a
+  // runtime hull on top (it speckles on organic meshes).
   _treeModel(r) {
     const g = this._glb;
     if (!g) return null;
-    return (r < 0.5 ? g.tree : r < 0.85 ? g.treeB : g.treeC)
-        || g.tree || g.treeB || g.treeC || null;
+    const pick = r < 0.40 ? { src: g.treeH, baseScale: 1.6 }
+               : r < 0.65 ? { src: g.treeD, baseScale: 1.6 }
+               : r < 0.85 ? { src: g.treeJ, baseScale: 1.9 }
+               :            { src: g.treeI, baseScale: 1.7 };
+    if (pick.src) return pick;
+    const fallback = [g.treeH, g.treeD, g.treeJ, g.treeI].find(Boolean);
+    return fallback ? { src: fallback, baseScale: 1.7 } : null;
   }
 
   _buildTreeVisual(entry) {
-    const src = this._treeModel(entry._variantR);
-    if (src) {
-      entry.group.add(cloneModel(src, 0.85 + entry._sizeR * 0.3));
+    const model = this._treeModel(entry._variantR);
+    if (model) {
+      entry.group.add(cloneModel(model.src, model.baseScale * (0.85 + entry._sizeR * 0.3)));
       entry._modeled = true;
       return;
     }
@@ -703,6 +729,27 @@ export class Environment {
     // _modelsReady resolves (see constructor).
     this._attachPortalModel(portal);
 
+    // Until the GLB attaches (first-zone load race, or a failed download) show a
+    // glowing floor ring so a gate is never invisible; removed on attach.
+    if (!portal.hasModel) {
+      const fb = new THREE.Group();
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.9, side: THREE.DoubleSide });
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.8, 32), ringMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.05;
+      fb.add(ring);
+      const disc = new THREE.Mesh(
+        new THREE.CircleGeometry(0.55, 32),
+        new THREE.MeshBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.25 })
+      );
+      disc.rotation.x = -Math.PI / 2;
+      disc.position.y = 0.04;
+      fb.add(disc);
+      portal.fallbackMesh = fb;
+      portal.energyMat = ringMat; // refreshPortalAccess tints the fallback too
+      group.add(fb);
+    }
+
     // Block player from walking into the portal hole
     this._collisionCircles.push({ x, z, r: 0.9 });
 
@@ -727,6 +774,10 @@ export class Environment {
     addOutlineToGroup(model, 0.04);
     portal.mesh.add(model);
     portal.hasModel = true;
+    if (portal.fallbackMesh) {
+      portal.mesh.remove(portal.fallbackMesh);
+      portal.fallbackMesh = null;
+    }
   }
 
   /**

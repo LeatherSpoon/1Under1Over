@@ -12,8 +12,24 @@ const _nodeModelInfo = {
 };
 const _nodeModels = {};
 const _nodeLoader = new GLTFLoader();
+// Nodes built before their GLB finishes parsing (fresh-load race) register
+// here and are rebuilt in place when it arrives; cleared once loads settle.
+const _awaitingModel = new Set();
+let _pendingLoads = Object.keys(_nodeModelInfo).length;
+function _loaderSettled() {
+  if (--_pendingLoads <= 0) _awaitingModel.clear();
+}
 for (const [type, info] of Object.entries(_nodeModelInfo)) {
-  _nodeLoader.load(info.path, gltf => { _nodeModels[type] = gltf.scene; }, undefined, () => {});
+  _nodeLoader.load(info.path, gltf => {
+    _nodeModels[type] = gltf.scene;
+    for (const node of [..._awaitingModel]) {
+      if (node.materialType === type) {
+        _awaitingModel.delete(node);
+        node._refreshMesh();
+      }
+    }
+    _loaderSettled();
+  }, undefined, _loaderSettled);
 }
 
 const NODE_VISUALS = {
@@ -58,14 +74,26 @@ export class ResourceNode {
 
     this.group = new THREE.Group();
     this._buildMesh();
+    if (!this._modeled && _pendingLoads > 0 && _nodeModelInfo[this.materialType]) {
+      _awaitingModel.add(this);
+    }
     scene.add(this.group);
     this.group.position.copy(this.position);
+  }
+
+  // Swap the procedural fallback for the GLB when it finishes parsing
+  // (fresh-load race). Same group — position, scale, and depletion persist.
+  _refreshMesh() {
+    if (this._modeled) return;
+    while (this.group.children.length) this.group.remove(this.group.children[0]);
+    this._buildMesh();
   }
 
   _buildMesh() {
     const visual = NODE_VISUALS[this.materialType] || NODE_VISUALS.stone;
 
     const glbSrc = _nodeModels[this.materialType];
+    this._modeled = !!glbSrc;
     if (glbSrc) {
       const mesh = glbSrc.clone(true);
       mesh.scale.setScalar(_nodeModelInfo[this.materialType].scale);

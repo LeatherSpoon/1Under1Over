@@ -37,9 +37,17 @@ export function createToonMaterial(color, options = {}) {
   });
 }
 
+// Floor for the inverted-hull width in world units. The scale trick makes the
+// hull thickness proportional to mesh size, so sub-unit props (resource-node
+// stumps, small rocks) used to get sub-pixel — invisible — outlines while
+// trees read fine. Raise cautiously: it widens every small prop's outline.
+const MIN_OUTLINE_WORLD = 0.045;
+
 /**
  * Adds a black outline mesh as a child of the given mesh.
  * Uses the inverted-normals (BackSide) trick — no post-processing needed.
+ * `thickness` is a scale fraction; meshes whose proportional hull would be
+ * thinner than MIN_OUTLINE_WORLD world units get bumped up to that floor.
  */
 export function addOutline(mesh, thickness = 0.04) {
   const outlineMat = new THREE.MeshBasicMaterial({
@@ -47,7 +55,9 @@ export function addOutline(mesh, thickness = 0.04) {
     side: THREE.BackSide,
   });
   const outline = new THREE.Mesh(mesh.geometry, outlineMat);
-  outline.scale.setScalar(1 + thickness);
+  if (!mesh.geometry.boundingSphere) mesh.geometry.computeBoundingSphere();
+  const r = mesh.geometry.boundingSphere?.radius || 1;
+  outline.scale.setScalar(1 + Math.max(thickness, MIN_OUTLINE_WORLD / r));
   outline.renderOrder = -1;
   mesh.add(outline);
   return outline;

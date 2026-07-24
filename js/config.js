@@ -3,7 +3,9 @@
 export const CONFIG = {
   // Camera
   FRUSTUM_SIZE: 20,
-  CAMERA_OFFSET: { x: 0, y: 18, z: 7 },
+  // ~46° elevation — low enough that trees/props read in profile instead of
+  // top-down, steep enough that gameplay legibility holds (69° was near-plan).
+  CAMERA_OFFSET: { x: 0, y: 14, z: 13.5 },
   CAMERA_LERP: 0.08,
 
   // Player

@@ -51,6 +51,16 @@ const _bossModelPaths = {
 const _bossModels = {};
 const _bossAnimations = {};
 const _bossLoader = new GLTFLoader();
+// Enemies built before their GLB finishes parsing (fresh-load race) fall back
+// to the procedural body. They register here and are rebuilt in place the
+// moment their model arrives, so a fresh boot never keeps old-style bodies.
+// The registry is cleared once every load settles — after that _buildMesh
+// always finds its model on the first try.
+const _awaitingModel = new Set();
+let _pendingLoads = new Set(Object.values(_bossModelPaths)).size;
+function _loaderSettled() {
+  if (--_pendingLoads <= 0) _awaitingModel.clear();
+}
 // Load each unique GLB once, then share the parsed scene across every archetype
 // that references it (all bosses point at the same Pirate Lizard file).
 for (const path of [...new Set(Object.values(_bossModelPaths))]) {
@@ -61,7 +71,14 @@ for (const path of [...new Set(Object.values(_bossModelPaths))]) {
         _bossAnimations[archetype] = gltf.animations;
       }
     }
-  }, undefined, () => {});
+    for (const enemy of [..._awaitingModel]) {
+      if (_bossModels[enemy.archetype]) {
+        _awaitingModel.delete(enemy);
+        enemy._refreshMesh();
+      }
+    }
+    _loaderSettled();
+  }, undefined, _loaderSettled);
 }
 
 // ── Enemy archetypes ───────────────────────────────────────────────────────────
@@ -295,6 +312,7 @@ export class Enemy {
 
     this.group = new THREE.Group();
     this._buildMesh(cfg);
+    if (!this._modeled && _pendingLoads > 0) _awaitingModel.add(this);
     scene.add(this.group);
 
     if (this.boss) {
@@ -310,6 +328,7 @@ export class Enemy {
 
   _buildMesh(cfg) {
     const bossModel = _bossModels[this.archetype];
+    this._modeled = !!bossModel;
     if (bossModel) {
       this._buildBossModelMesh(bossModel, cfg);
       return;
@@ -441,6 +460,18 @@ export class Enemy {
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.02;
     this.group.add(ring);
+  }
+
+  // Swap the procedural fallback body for the GLB the moment it finishes
+  // parsing (fresh-load race). Rebuilds into the same group, so position,
+  // scale, and patrol/combat state all persist.
+  _refreshMesh() {
+    if (this._state === 'dead' || this._modeled) return;
+    while (this.group.children.length) this.group.remove(this.group.children[0]);
+    this._mixer = null;
+    this._chargeRing = null;
+    this._buildMesh(this._cfg);
+    if (this.boss) this._addAggroRing();
   }
 
   // GLB-model body for bosses with a matching entry in _bossModelPaths — replaces
