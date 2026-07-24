@@ -28,6 +28,67 @@ const ZONE_AMBIENCE = {
     sun: { color: 0x9fb4ff, intensity: 0.45 },
     fill: { color: 0x4444aa, intensity: 0.12 },
   },
+  // Jungle understorey: green-tinted humid haze, canopy-filtered warm sun,
+  // and a lush green fill so shadows read mossy rather than grey.
+  verdantMaw: {
+    clear: 0xa8d890,
+    fog: { color: 0xa8d890, near: 30, far: 72 },
+    ambient: { color: 0xeaffdc, intensity: 0.62 },
+    sun: { color: 0xfff8c8, intensity: 1.1 },
+    fill: { color: 0x8fd87a, intensity: 0.35 },
+  },
+  // Arctic daylight: pale high sky, cold blue fill in the shadows, and a low
+  // warm winter sun so the snow reads white-gold against teal ice.
+  frozenTundra: {
+    clear: 0xbfd8ee,
+    fog: { color: 0xc8dcf0, near: 26, far: 62 },
+    ambient: { color: 0xdce8ff, intensity: 0.6 },
+    sun: { color: 0xfff2e0, intensity: 0.95 },
+    fill: { color: 0x9fb8e8, intensity: 0.35 },
+  },
+  // Ice cave: near-black cold sky and tight fog so the wall ring reads as
+  // enclosure, with a blue-white ambient that keeps the ice legible. The
+  // cavern's readable light comes from the point lights its builder places.
+  glacialHollow: {
+    clear: 0x060a12,
+    fog: { color: 0x08101c, near: 15, far: 42 },
+    ambient: { color: 0xbcd8ee, intensity: 0.42 },
+    sun: { color: 0xcfe4ff, intensity: 0.5 },
+    fill: { color: 0x4a7ab0, intensity: 0.22 },
+  },
+  // Ship cabin: warm lamplight over the wood-and-brass interior, deep space
+  // beyond the hull. Fog pushed far out — the room is only 22 units across.
+  spaceship: {
+    clear: 0x10141f,
+    fog: { color: 0x10141f, near: 30, far: 80 },
+    ambient: { color: 0xffe2b8, intensity: 0.62 },
+    sun: { color: 0xffedd0, intensity: 1.05 },
+    fill: { color: 0x8fd8cc, intensity: 0.25 },
+  },
+  // NPC home interiors (Verdant Maw hamlet) — small lamplit rooms; short fog
+  // swallows the void beyond the walls. Each tender gets their own cast:
+  // Sylva teal herb-glow, Bram amber hearth, Sprig warm workshop brass.
+  homeSylva: {
+    clear: 0x121a12,
+    fog: { color: 0x121a12, near: 9, far: 24 },
+    ambient: { color: 0xd8f2e0, intensity: 0.62 },
+    sun: { color: 0xcfeedd, intensity: 0.62 },
+    fill: { color: 0x6fd8c0, intensity: 0.32 },
+  },
+  homeBram: {
+    clear: 0x171208,
+    fog: { color: 0x171208, near: 9, far: 24 },
+    ambient: { color: 0xffe2b0, intensity: 0.6 },
+    sun: { color: 0xffd9a0, intensity: 0.65 },
+    fill: { color: 0xcc8844, intensity: 0.28 },
+  },
+  homeSprig: {
+    clear: 0x14120c,
+    fog: { color: 0x14120c, near: 9, far: 24 },
+    ambient: { color: 0xf2ecc8, intensity: 0.62 },
+    sun: { color: 0xffeab8, intensity: 0.64 },
+    fill: { color: 0xa8d870, intensity: 0.3 },
+  },
 };
 
 export class SceneManager {
@@ -80,6 +141,15 @@ export class SceneManager {
     // Target position for camera follow
     this._camTarget = new THREE.Vector3(0, 0, 0);
 
+    // Scroll-wheel zoom — scales the ortho frustum. Listener sits on the
+    // canvas only, so wheeling over HUD panels still scrolls their lists.
+    this._zoom = 1;
+    this._zoomTarget = 1;
+    canvas.addEventListener('wheel', (e) => {
+      const step = e.deltaY > 0 ? CONFIG.ZOOM_STEP : 1 / CONFIG.ZOOM_STEP;
+      this._zoomTarget = Math.min(CONFIG.ZOOM_MAX, Math.max(CONFIG.ZOOM_MIN, this._zoomTarget * step));
+    }, { passive: true });
+
     // Handle resize
     window.addEventListener('resize', () => this._onResize());
     this._onResize();
@@ -104,7 +174,7 @@ export class SceneManager {
   }
 
   _updateCameraFrustum() {
-    const s = CONFIG.FRUSTUM_SIZE / 2;
+    const s = (CONFIG.FRUSTUM_SIZE / 2) * this._zoom;
     this.camera.left = -s * this._aspect;
     this.camera.right = s * this._aspect;
     this.camera.top = s;
@@ -124,6 +194,10 @@ export class SceneManager {
    * Smoothly translate camera to follow player position.
    */
   update(playerPos) {
+    if (Math.abs(this._zoomTarget - this._zoom) > 0.0005) {
+      this._zoom += (this._zoomTarget - this._zoom) * CONFIG.ZOOM_LERP;
+      this._updateCameraFrustum();
+    }
     const { x, y, z } = CONFIG.CAMERA_OFFSET;
     this._camTarget.set(playerPos.x + x, y, playerPos.z + z);
     this.camera.position.lerp(this._camTarget, CONFIG.CAMERA_LERP);

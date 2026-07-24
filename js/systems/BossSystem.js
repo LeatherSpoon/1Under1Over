@@ -33,6 +33,11 @@ const BOSS_DEFS = [
     unlocks: null,
   },
   {
+    id: 'boss_hollow', zone: 'glacialHollow', label: 'Rimefather',
+    bonus: { type: 'ppRate', value: 2.5, label: '+2.5 PP/s' },
+    unlocks: null,
+  },
+  {
     id: 'boss_depths', zone: 'depths', label: 'The Unmaker',
     bonus: { type: 'damage', value: 1.25, label: '+25% damage' },
     unlocks: null,

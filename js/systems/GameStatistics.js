@@ -13,7 +13,7 @@ export class GameStatistics {
   }
 
   // landingSite, mine, depths, verdantMaw, lagoonCoast, frozenTundra, spaceship, workspace
-  static get TOTAL_WORLDS() { return 8; }
+  static get TOTAL_WORLDS() { return 12; }
 
   recordEnemyDefeated(zone) {
     this.enemiesDefeated++;

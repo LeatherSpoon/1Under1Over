@@ -549,7 +549,8 @@ gameStats.recordZoneVisit('landingSite'); // starting zone
 const ZONE_LORE = {
   landingSite: 'theLanding', mine: 'theMine', depths: 'theDepths',
   verdantMaw: 'theMaw', lagoonCoast: 'theCoast', frozenTundra: 'theTundra',
-  spaceship: 'theShip',
+  glacialHollow: 'theHollow', spaceship: 'theShip',
+  homeSylva: 'denSylva', homeBram: 'lodgeBram', homeSprig: 'burrowSprig',
 };
 codexSystem.discover(ZONE_LORE.landingSite);
 
@@ -701,6 +702,7 @@ initSaveButtons({ saveSystem, env, player, hud, switchZone, cloudSaves });
 window.__debugSwitchZone = switchZone;
 
 let _pendingZone = null;
+let _pendingSpawn = null; // optional [x, z] override carried by doorway portals
 
 // ── Input ──────────────────────────────────────────────────────────────────────
 
@@ -719,6 +721,7 @@ document.addEventListener('keydown', e => {
   if (e.code === 'KeyP') togglePanel('pedometer-panel');
   if (e.code === 'KeyB' && !player.isInCombat && env.currentZone !== 'landingSite') {
     _pendingZone = 'landingSite';
+    _pendingSpawn = null;
   }
   if (e.code === 'KeyT' && !player.isInCombat && (pedometer.infiniteTracks || pedometer.pendingTracks > 0)) {
     const snappedX = Math.round(player.position.x / 2) * 2;
@@ -1295,7 +1298,7 @@ let _actionCooldown = 0; // prevents instant re-trigger of [E] across interactio
 let _energyWasEmpty = false; // latch for the energy_empty achievement counter
 let _farmDirectorAt = 0;     // Farm Director module's 5s advance timer
 let _portalRefreshTimer = 0;
-window.__debugSystems = { inventorySystem, codexSystem, questSystem, hud, ppSystem, combatSim, trainingAreas, tripartite, statsSystem, modifiers, ascension, factorySystem, gameStats, pedometer, craftingSystem, chapters: chapterSystem, bossSystem, compute: computeSystem, offlineSystem, expedition, droneSystem, extractorSystem };
+window.__debugSystems = { inventorySystem, codexSystem, questSystem, hud, ppSystem, combatSim, trainingAreas, tripartite, statsSystem, modifiers, ascension, factorySystem, gameStats, pedometer, craftingSystem, chapters: chapterSystem, bossSystem, compute: computeSystem, offlineSystem, expedition, droneSystem, extractorSystem, sceneManager };
 window.__debugSnapshot = () => {
   const hint = document.getElementById('interact-hint');
   const nearestNode = entityManager.findNearestNode(player.position);
@@ -1321,8 +1324,9 @@ window.__debugSnapshot = () => {
 
 function gameLoop(now) {
   if (_pendingZone) {
-    switchZone(_pendingZone);
+    switchZone(_pendingZone, _pendingSpawn);
     _pendingZone = null;
+    _pendingSpawn = null;
   }
 
   const rawDelta = (now - lastTime) / 1000;
@@ -1629,6 +1633,7 @@ function gameLoop(now) {
           hud.showInteractHint(`[E/ACT] Enter ${portal.label}`);
           if ((keysDown.has('KeyE') || touchInput.actionPressed) && _actionCooldown <= 0) {
             _pendingZone = portal.targetZone;
+            _pendingSpawn = portal.spawnOverride || null;
             _actionCooldown = 0.8; // Prevent accidental double-jump
           }
         } else {

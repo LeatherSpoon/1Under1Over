@@ -1,8 +1,8 @@
 // ── Chapter Chain (the spine) ───────────────────────────────────────────────
 // One number indexes the game: the player's "level" is the latest chapter
-// crossed. Rungs interleave beat-once STORY bosses (odd rungs 1-11) with
-// re-climbable Simulation Ladder WARDENS (even rungs 2-10; every rung past
-// S6 is a warden — the chain is infinite). A rung counts as crossed when:
+// crossed. Rungs interleave beat-once STORY bosses (odd rungs 1-13) with
+// re-climbable Simulation Ladder WARDENS (even rungs 2-12; every rung past
+// S7 is a warden — the chain is infinite). A rung counts as crossed when:
 //   story rung  → that boss has ever been defeated (BossSystem, never resets)
 //   warden rung → the LIFETIME tier watermark covers it (max of the
 //                 Recompile watermark bestTierEver and the current run's
@@ -17,7 +17,14 @@ const STORY = [
   { rung: 5,  boss: 'boss_verdant', label: 'Maw Sovereign', scene: 'Verdant Maw' },
   { rung: 7,  boss: 'boss_lagoon',  label: 'Tide Oracle',   scene: 'Lagoon Coast' },
   { rung: 9,  boss: 'boss_tundra',  label: 'Cryo Monarch',  scene: 'Frozen Tundra' },
-  { rung: 11, boss: 'boss_depths',  label: 'The Unmaker',   scene: 'The Depths' },
+  // S6 sits between the Tundra and the Depths: the Glacial Hollow opens off the
+  // tundra ridge, so the Rimefather is the natural bridge between them. Adding
+  // it pushed The Unmaker from rung 11 to 13. Existing saves cannot regress —
+  // `highestEver` is monotonic and `level` is max(current, highestEver), so a
+  // player who already beat The Unmaker keeps their chapter and simply jumps
+  // ahead once they clear the Rimefather.
+  { rung: 11, boss: 'boss_hollow',  label: 'Rimefather',    scene: 'Glacial Hollow' },
+  { rung: 13, boss: 'boss_depths',  label: 'The Unmaker',   scene: 'The Depths' },
 ];
 
 export class ChapterSystem {
@@ -37,16 +44,16 @@ export class ChapterSystem {
     return Math.floor(best / 10);
   }
 
-  /** Warden ordinal needed for an even/deep rung: 2→1st … 10→5th, 12+→(r−6)th. */
+  /** Warden ordinal needed for an even/deep rung: 2→1st … 12→6th, 14+→(r−7)th. */
   _wardenIndexFor(rung) {
-    return rung <= 10 ? rung / 2 : rung - 6;
+    return rung <= 12 ? rung / 2 : rung - 7;
   }
 
   rungCrossed(rung) {
     if (rung < 1) return true;
     const story = STORY.find(s => s.rung === rung);
     if (story) return this.bosses.isDefeated(story.boss);
-    if (rung <= 10 && rung % 2 === 1) return false; // odd story rung missing from data (safety)
+    if (rung <= 13 && rung % 2 === 1) return false; // odd story rung missing from data (safety)
     return this.wardensCrossedLifetime() >= this._wardenIndexFor(rung);
   }
 

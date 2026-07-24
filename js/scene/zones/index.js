@@ -15,5 +15,7 @@ export { build as buildDepths       } from './Depths/index.js';
 export { build as buildVerdantMaw   } from './VerdantMaw/index.js';
 export { build as buildLagoonCoast  } from './LagoonCoast/index.js';
 export { build as buildFrozenTundra } from './FrozenTundra/index.js';
+export { build as buildGlacialHollow } from './GlacialHollow/index.js';
 export { build as buildSpaceship    } from './Spaceship/index.js';
 export { build as buildWorkspace    } from './Workspace/index.js';
+export { buildHomeSylva, buildHomeBram, buildHomeSprig } from './HomeInteriors/index.js';

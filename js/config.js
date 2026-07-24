@@ -7,6 +7,11 @@ export const CONFIG = {
   // top-down, steep enough that gameplay legibility holds (69° was near-plan).
   CAMERA_OFFSET: { x: 0, y: 14, z: 13.5 },
   CAMERA_LERP: 0.08,
+  // Scroll-wheel zoom — multiplies the ortho frustum size (smaller = closer)
+  ZOOM_MIN: 0.45,
+  ZOOM_MAX: 1.5,
+  ZOOM_STEP: 1.12,   // per wheel notch
+  ZOOM_LERP: 0.14,   // smoothing toward the target zoom each frame
 
   // Player
   BASE_MOVE_SPEED: 3.5,
@@ -114,6 +119,7 @@ export const CONFIG = {
     lagoonCoast: 9000,
     frozenTundra: 25000,
     depths: 2000,
+    glacialHollow: 0, // sub-area of the tundra — free once you can reach the mouth
   },
 
   // Status effects
@@ -122,6 +128,7 @@ export const CONFIG = {
     shock:     { label: 'Shock',     fpSlowPct: 0.5, durationTicks: 4 },
     corrosion: { label: 'Corrosion', defenseReduction: 3, durationTicks: 6 },
     poison:    { label: 'Poison',    tickDamage: 2, durationTicks: 8 },
+    frostbite: { label: 'Frostbite', tickDamage: 3, durationTicks: 6 },
   },
 
   // Tripartite Allocation — three legs that split passive PP investment.

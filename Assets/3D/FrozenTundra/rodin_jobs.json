@@ -1,0 +1,197 @@
+[
+  {
+    "key": "Creature_Frostfang",
+    "prompt": "shaggy arctic wolf creature with pale blue-white fur, frosted icicle ruff around its neck, bushy tail held out, standing neutral pose with all four legs planted straight and clearly separated, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      14,
+      5,
+      10
+    ],
+    "uuid": "56eff5b8-41b4-4555-8f03-75141dde2f0d",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiY2FlZWM3YTEtMDM4ZC00ZWEyLWI5MDEtNmRkNzI5OTM2YWNkIiwiZTJjODIwNGEtNjI5Ni00ZTc4LWJkYjMtNmYxOTE5MmExZGM5IiwiZmZmMWJjMTQtNTE0Ny00OTM5LTljYmEtMWU5MjYzMzJhYzdkIiwiNmYxYjIyOTUtMTM2OS00NzMyLWJjMmQtYzI5M2I3NDk1YWVlIiwiZmY3MDQ5YmEtZjY1Ny00N2NkLWI4MzUtNGY4MmVmYTFlMmU2IiwiNjA0ZTE0ZmUtNmI5Yy00MzMxLWIyOTktZGY2M2JmZTg1NGQ3Il0sImlhdCI6MTc4NDkxMjgyN30.RnjtLCzQ4PgZ1n0pbcFkJA0C50y0_0I2m9Y5iDeBVpQ",
+    "error": null
+  },
+  {
+    "key": "Creature_Glacierback",
+    "prompt": "sturdy round yak and turtle hybrid creature carrying a glacier ice shell with small jagged ice crags on its back, short thick legs planted straight and clearly separated, standing neutral pose, head forward, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      13,
+      9,
+      8
+    ],
+    "uuid": "858d2fb4-7512-44fb-bd6a-30c47647603a",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiZWVkMDY0YzUtZGVhNi00YTI5LWFhZTgtMjkyOGRkZjU3NDk1IiwiZjU5MDU5ZWQtMWVlOC00MTYxLWI4NDEtYjFhN2EwNTNkNDA0IiwiOWVjZTRiZWUtZjFiNi00OGRhLWE3ZmMtOGI5NjU2YmVhYzRjIiwiMTNlMDM3OTYtNjAzYi00OWNiLWI4YWYtMGNjZjkyOTg0ZTk2IiwiNmNlYjNmMGYtYTQ1Ni00Yzg2LTk1ZWItZmRkODBlNDdiYThjIiwiNDJiN2E5YTQtMGU1YS00ODdlLWFiNzUtNWQ1NTA1ODg3YjAzIl0sImlhdCI6MTc4NDkxMjgzMX0.BGbSGWsLFMNAgr6ZYikzOqGxKeuNiy8GB8LHJLI4jps",
+    "error": null
+  },
+  {
+    "key": "Creature_Blubberfin",
+    "prompt": "plump penguin and seal hybrid creature standing upright, small flipper arms held slightly away from its round body, short webbed feet apart, cream belly and steel-blue back, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      8,
+      7,
+      11
+    ],
+    "uuid": "0f101088-b463-40ed-a201-ad9e726e0df7",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiYzA1YmI5YWUtMDE1My00NzRmLTg4ZDctNzM2N2FmYTFmZDg3IiwiOTgwZTNhNTgtYWFhMC00NGUyLWJjZjItMzY3OWQxNDQ3OGQxIiwiMmU1MTFmMTItOTJmYS00ZDI2LTkxNmUtMzhkMTEzNjM5ZGJmIiwiMTgwMWYwMWItZDFhMi00YWYwLTgyYTQtOTMwYjZjNDg0NmNiIiwiZDZjMmIwYTEtN2JhNi00ZDljLTlmOWUtMzYxZjRkNmExMzIzIiwiMTYwZWQ4ZjMtMzlmNS00ZjY2LThkYTEtNjA3Mjk4NzJlZjhiIl0sImlhdCI6MTc4NDkxMjgzNH0.s3qr1Qrt3lVohmSvVBweKfEFgF8kYfTFppM_xEdlyRI",
+    "error": null
+  },
+  {
+    "key": "Boss_CryoMonarch",
+    "prompt": "majestic frost lion beast wearing a crown of ice crystals, frozen spiky mane, regal standing pose with four legs planted and separated, icy blue and white fur with silver ornament details, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      12,
+      7,
+      13
+    ],
+    "uuid": "d812f52a-8e5d-4368-8826-5d94c9eec3a7",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMWI3NDJmMWQtNzE3ZS00NjMzLWIwNTgtMDYzYTBjZGMzODJhIiwiYmRmZWEyNmEtZDk4OC00YTAxLTg2ZmMtODNkMjZkYWU1MWM2IiwiNTZjZDBhMDMtYmNhZS00NmVhLWIwZTYtZDc4ZGVkM2I2YmEwIiwiNTkwNGQxNDMtNTNkZi00MjA1LWFmOGMtM2I1NDRmYmIxOGEwIiwiMDI5YmY4ZjEtNDZiZC00ZWEyLWE2Y2EtNDAxNzZjYzBlODU3IiwiNThhZmJhMWUtM2M4OC00YzdkLWE5YzktMmEyMmE0NmIwYjk1Il0sImlhdCI6MTc4NDkxMjgzOX0.kZZ4C9JvKNGH-dC1Dag8BU8YhNNUu9hNXlbGrkaTUho",
+    "error": null
+  },
+  {
+    "key": "Tundra_SnowPine",
+    "prompt": "tall alpine spruce tree heavily laden with snow, drooping snow-covered branch tiers, dark green needles showing beneath the snow, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      8,
+      8,
+      20
+    ],
+    "uuid": "81d96b3d-4400-48ce-a96b-d7746de5d80c",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMzRmODA2OTktZjcyYS00OGY4LTg1MGYtMzY0Y2RkOTViNDg0IiwiYmY1ZTlhOTYtZDk4Ni00Mzc5LWE1YWItMTA0MTdiZmU0ZDA2IiwiNzI0MTU4MDctMjU2Ni00MzUwLThiOGEtYTQ4YWJjYWJkMjBkIiwiN2ExMzJkZDUtMGY1ZS00Nzc3LWI0MmMtNTU3MTg1YTQzODc4IiwiZjIwYTg4NzYtZGIxMy00OGNjLTg5NzItYmY4YzhmNDVmNzA3IiwiNjk0NGRmYzctYTQ5Zi00ZmU5LTgyMGItNjBlMjJkYzRmM2RiIl0sImlhdCI6MTc4NDkxMjg0MX0.7saqE5RmWSWCSrFoD3fPNXYVwawdAiB8YaiKOyyyiEA",
+    "error": null
+  },
+  {
+    "key": "Tundra_SnowPineSquat",
+    "prompt": "squat wide spruce tree heavily laden with thick rounded snow caps, plump snowy silhouette, dark green needles beneath, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      10,
+      10,
+      13
+    ],
+    "uuid": "65fe26d4-b0cf-4bcb-a094-6e1ddca0e8ff",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiZGVlMWVlNzMtZjE3My00MGIzLTg4MzItNzg1M2QzODdjODI5IiwiYWI4MjNjMzMtYmI5MC00YWUzLWI2NTctNTM4NWJlZmRiMjRmIiwiMjdkNDFlZmMtYTVkMy00ZmY4LThlMGYtOTM2MzQyNjMzNjdjIiwiOGI2NmU5YjQtMmRiYy00YTA1LWI3YjAtYmU4ZDEwMDE0OTk1IiwiYjgwYmVmNGMtOGFjZS00MzYyLWJhOTUtYjUzZjdhODA1YWMyIiwiODljMzg0NDMtOTM2OS00MzFmLWE1YWEtMGI2NzViMzRhMGMwIl0sImlhdCI6MTc4NDkxMjg0NH0.SqAwcj12LHH7R_uORHIVUhE2RS6e4WWgqK8HowapGo8",
+    "error": null
+  },
+  {
+    "key": "Tundra_DeadTree",
+    "prompt": "bare leafless winter tree with gnarled twisted branches dusted with snow, dark brown bark, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      9,
+      9,
+      16
+    ],
+    "uuid": "bc7bc515-5ad0-4415-bbed-0e1415750172",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiZDc0NjFmNmQtNGNkYi00Nzg3LWJmMDEtZWVhNWQ3ZWEyOWUzIiwiNjBiN2YyMTAtZmM4Yy00M2RjLTkwYzYtNzM1YjI1NTdmYTUyIiwiY2Q5NzVkN2YtN2JiYy00NmNjLTk1ODEtNjkwN2FlN2RmNTg4IiwiODNjYzY4YWUtNTdhZC00YTlmLWIxYmMtNmE5ZDc0NGFhYjg4IiwiYjVhZjdkM2ItMjdjOS00ZTNmLTkwZTUtYjliNDlkYWJhMDRhIiwiYjMyZDc2NzQtMjRiMS00YWY4LTgzMDUtYmNkYWNmZGJjMDdjIl0sImlhdCI6MTc4NDkxMjg0N30.yg8V37ho9fGrjPaPNnSMLUV1HZ32sJkWeAlL2RVpRdE",
+    "error": null
+  },
+  {
+    "key": "Tundra_IceCrystal",
+    "prompt": "cluster of jagged translucent blue ice crystal shards jutting at varied angles from a snowy rock base, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      9,
+      8,
+      10
+    ],
+    "uuid": "6f591cd5-cdc1-4ba1-ac9f-7af0d58a9082",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiZTgwMzU4ODctYjgwYy00ZTBjLTg1ZTItOTk0NjdjMTU1N2ZiIiwiNDI3YjMyZWUtOTFhZS00NjBkLTliM2UtNDI3MDBiMmViMTM0IiwiYzYwZmMxZTUtMTYzYi00YTI4LTljZjYtOTllZTYzMTljMDA5IiwiYzJkOTRiMmQtZTAzOC00YWUzLWFmZDMtMjhhNTZjNGU3ZDcyIiwiNWMwYjY0MTItYjRjZS00Mzg3LWEyYzctMDRmY2I5M2QyNmFkIiwiZmRkNzAyZGQtMjgxZS00OTAyLWEzMDUtNzliMDNlZWZkNTQyIl0sImlhdCI6MTc4NDkxMjg1Nn0.ah0PSZ3miE6LeeXYNFhb-bq86mDy94W0oLkh-_rFui0",
+    "error": null
+  },
+  {
+    "key": "Tundra_SnowBoulder",
+    "prompt": "large rounded grey boulder capped with a thick smooth layer of snow, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      10,
+      9,
+      7
+    ],
+    "uuid": "c36c2c52-b6f1-41d3-9184-abafb11a06f9",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiZjExMDVhZTQtOWFlZi00ZTIxLTliZTYtODkxOTQwY2YxZTU1IiwiZDI1YjQyOTMtNjA3YS00YmI0LWI4YWMtZTdlNzBhMWVjMjFhIiwiMzVkNWVkYjEtMjMzZi00N2MwLWI3ZmQtMGQzZGYzNzc3ODhiIiwiMjA5NmJjY2MtODVjYi00MDViLTkzZjMtMTA3ZDkzZjQwOTkyIiwiNGYzN2U5YzYtY2VkZi00NmNmLTkzOWMtM2QwNDMyMGY1OTFmIiwiYWU2Yjc2YjYtYTg5OS00YWExLTk0OGItZmVlZmU1YzE0ZWZiIl0sImlhdCI6MTc4NDkxMjg2N30.m6Yeu0HH3QP4b1qTec0jWRvpUsqVMwEwoKW7TuiX2o8",
+    "error": null
+  },
+  {
+    "key": "Tundra_FrozenShrine",
+    "prompt": "ancient carved stone shrine archway encased in blue ice, glowing teal runes etched into the pillars, snow resting on top, flat level base, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      10,
+      4,
+      14
+    ],
+    "uuid": "84fdbf1f-6082-4d7f-8d6e-5d4bf160b3c6",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiZGIzZTJhZTYtNzBhYi00YTQ5LWFhNjgtMTdkOWU5ZGE4NjhkIiwiMTRjYWU4NzMtNzkxNi00ZDk0LWE2YjktYjgwODU2YjU3MTdiIiwiYzViMWNkN2QtYzRhZC00MmZkLTk5MDEtOGQ1ZDJjY2U1YjQwIiwiMDkxMWZmNjAtM2Q4ZS00YzY2LWFhMzktZWNmZWU1NTJlYThkIiwiZWE3ODQxYjYtNzk1OC00MjVjLWE2OWMtOGFlOWRkOTRkZDIxIiwiZjM0Mzk4NWEtNDI4Zi00YWMwLWI0ODctMjE3OWNmZjcxOTY5Il0sImlhdCI6MTc4NDkxMjg3NX0.IcoxNcgM-Zncdxid0-vDKEVAy4HjOZ-gHBSCYgs39j4",
+    "error": null
+  },
+  {
+    "key": "Node_Titanium",
+    "prompt": "chunk of blue-silver titanium metal ore embedded in a block of glacial ice, bright metallic veins, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      8,
+      7,
+      6
+    ],
+    "uuid": "bc087705-b492-45a3-be9c-933d31e46833",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiOGU1Yjc1ZmMtYTQzNS00YzI1LWExZmYtZGI0ZWU3ZDZjMDAyIiwiYzNjYjQzOGItZDExZi00ZjMxLThiYTktOTM5ZmFjMzlhYjQxIiwiMmVjYWVjMjItMzkxMi00OGRlLWI0MmQtY2QxOTdkNzFmMjlkIiwiZjg0NTE4NzEtODA1Ni00ZjliLWJjNWItZTdlYzY1NWQ3MDcxIiwiZGI0NTIzZGItNzBlYy00OTA2LTgzMWQtY2YxMjAyZWM3MDA3IiwiOWFmMTczNGUtZmQzZS00YTA0LWIwM2UtOTdjOWVkMjllNmQxIl0sImlhdCI6MTc4NDkxMjg4MH0.rbLetQvcwf7rhcHK60CcIorGy_4W2FfNDrI70xWTPlg",
+    "error": null
+  },
+  {
+    "key": "Node_Tungsten",
+    "prompt": "dark heavy tungsten metal ore boulder with angular facets and faint warm ember glints in its crevices, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      8,
+      7,
+      6
+    ],
+    "uuid": "04ba3eda-b258-4503-9d0d-a0028c6abad8",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMTE5M2Y2NTYtMDFhZi00MmY5LWIxYzItNWE2NjgxOTIxYjVjIiwiNjg4ZTRlODctMTMyZS00ZmQ3LWE5YWQtMDY3OTMxMmEwNDdmIiwiNzQ3OTU1ZDQtNmFkOC00NTkzLTg0OTQtYzg3ZWMwYzNhODFmIiwiOTg2ZjUxMjktZDJjZS00NzVlLTlhMjctMzUyY2RjNjExYTA2IiwiOGNhZjFlYWYtNTRlMS00YTI1LTgyYzItZTg1MDMyYjcwNzJhIiwiMDIzYTJlZmQtYWNkYy00NmYyLTg5YTktMDhhN2YwZTRjODI0Il0sImlhdCI6MTc4NDkxMjg4NH0.nQGrgu0d6tlrU6m5jbfUi3nUZkxiss-X99LgMrzG8_8",
+    "error": null
+  },
+  {
+    "key": "Node_Silver",
+    "prompt": "spray of bright polished silver crystal shards growing out of a snowy rock base, gleaming white metal, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      8,
+      7,
+      8
+    ],
+    "uuid": "9b7f5083-1254-426a-a38f-d06a7dfcdb60",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiNjNjZjFkYzEtNmNhMS00ZTkzLWFhMTktNDBiZGRiMjlmOTIyIiwiNzE5MWQ5MzktMGI5NC00YmU5LWEwMzQtMTMxZjNkMzliNzc5IiwiNzE2MjJlYzItMDZkOC00MTE2LWEyOTYtYWI5ZDYyNzFlODQ4IiwiNzgyODU3OTctODU3Yy00MGU1LTg3YjYtYTU3NTQxMjYxZDhjIiwiMDgzYjZjOWEtOWQ0NS00ZTc0LTk5NjctYTA1MTQyOGQxYjI5IiwiZWFmN2ZmMTMtNDE5Yi00ZDg2LWE2MDYtODQ0MWRkZmZmZTNhIl0sImlhdCI6MTc4NDkxMjg4N30.R8gbIrbpjnJXJeNjhHfzEMtRPicn0Iav9KVCBvLeUoE",
+    "error": null
+  },
+  {
+    "key": "Tundra_DeadTree_v2",
+    "prompt": "single freestanding bare leafless winter tree, gnarled twisted trunk with several crooked branches reaching upward, light snow dusting on top of the branches, dark brown bark, no base, no ground, no backdrop, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      9,
+      9,
+      16
+    ],
+    "uuid": "77c85069-08bf-4100-bbb9-80e33aef3587",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiOWZmNjA5YzYtYjQzMi00MTk1LWI3MDctZmQwMDU0YTM1MjRlIiwiNjljOWFhZDMtNWVhNS00NjM1LWI2NjgtM2EyZmRkOGQwYTE1IiwiMTk0OWMzNDItZWIyNC00ZDgyLWJkZjctYTA3ODY5YzZhOTIyIiwiYWFlMzhkMjItZTFkOS00ZGFjLWIxZTYtZTcwY2MzYmRlYTlkIiwiMDY2YjY5ODItYjAzNy00YmNjLTgxNTItNzNhNzk3OWQ3NTFjIiwiMjlkODcwNjEtYzcyZC00NDM0LWI5MDctMDNhZGEzNDdmNTQ3Il0sImlhdCI6MTc4NDkxMzkwMX0.UaMi0N0yhBKIR_0SgMXVsZkTuU6LhkmBqD9zwKCkW3I",
+    "error": null,
+    "note": "v1 generated a tree relief on a flat slab — unusable"
+  },
+  {
+    "key": "Tundra_SnowPine_v2",
+    "prompt": "tall conical alpine spruce tree heavily laden with thick snow, full rounded silhouette from every angle, wide drooping snow-covered branch tiers all around the trunk, round footprint, dark green needles beneath the snow, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      10,
+      10,
+      20
+    ],
+    "uuid": "d0f1e6b8-7813-4ac4-bd7c-b8fdf493198d",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMWRhODAxOWMtNzA4MS00YmFhLThjMzctZjFiZTkzOWVlNWZiIiwiMDM0NWQ0MWEtYzJjMS00ZDdjLTk5YjUtYjlmYjIyYTQyN2ZiIiwiMDU4ZDhiZTEtMzliOC00Njc1LWJiYzItOWJiZTU0Mjc5N2EwIiwiZDViZWVmNTAtY2VlYi00YmE3LTkwMDgtOTU1MmU2MjQzYjdlIiwiZWQ0MDU3ODEtZTg3MS00YzdkLThkMjYtNDI5MDk5ZGE2NmRkIiwiNjRkYzVmMDQtYjNhZi00MzM4LThkYzItMDE0NWMxZWM1ZWFlIl0sImlhdCI6MTc4NDkxNDQ0OX0.T0hE1cn9an5c6YxSa0pSCS-psQklv4nxaKrBFDhiy-0",
+    "error": null,
+    "note": "v1 was a flat blade-like spindle; hull also unresolvable (trapped fin-slot verts)"
+  },
+  {
+    "key": "Creature_Glacierback_v2",
+    "prompt": "sturdy yak and turtle hybrid creature carrying a glacier ice shell with jagged ice crags on its back, standing on four short sturdy legs with visible hooves, one leg at each corner of its body, all four legs clearly separated with a visible open gap beneath the round belly, standing neutral pose, head forward, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      13,
+      9,
+      9
+    ],
+    "uuid": "54ea16d9-2702-418a-a1be-7f902ddb37c2",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiNjY3MjhjNTAtYmQzYS00MjA4LWE2ODMtNjkzNzQ5ZWUzZjYwIiwiZWM0N2ExOTgtMWZlNS00YzZhLWIxY2ItODdkNzBmNWU2OWExIiwiYzBkMGQ5MGEtZjJmMS00NjFmLTk3MTEtYzg5NGVhZTM0YTkxIiwiNzU5ZWE1OWQtNTc2MS00MjRiLThhOTAtYjBhMWRjNDA4OTc0IiwiNzYzOTFlNmMtY2I5My00Njk0LThkY2EtMzcyMzJmYTc1OGE5IiwiODA2NWMxM2YtMmVmYS00YTU4LWE5ZjItYTA0NTkwYzI0NjhkIl0sImlhdCI6MTc4NDkxNjczOX0.3c85QRd0_-Uzk5_YP99zovy5loQDyr_ZxYmy17YFI_0",
+    "error": null,
+    "note": "v1 rear legs fused into the body — owner: should be a quadruped"
+  }
+]

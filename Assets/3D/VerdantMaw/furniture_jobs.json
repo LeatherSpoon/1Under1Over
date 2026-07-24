@@ -1,0 +1,111 @@
+[
+ {
+  "key": "Furn_SylvaCot",
+  "prompt": "low grown-wood sleeping cot with a woven leaf blanket and moss pillow + style template",
+  "bbox": [
+   10,
+   6,
+   4
+  ],
+  "uuid": "fb3cabdb-427f-412b-afb1-db5ae763734d",
+  "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMTViMTA4MjQtNjE1MS00ZjNmLWE0MTYtMDAwNDg1ZTk3OTNkIiwiYWY5NzgxNzUtNGQ5OS00ODFiLTgwZmUtNjJlMGUyYTQyYWRiIiwiMGFjYWI2MTgtM2E0ZC00M2I4LWIzOGMtYWVlMWQyMTI1ZjlhIiwiZDlmYTFkZGQtZjE3MC00NWJkLWFhMzctY2ZiMmNhYWY5YzkyIiwiZjQ4ZDhkZDMtYzdiMC00NTEzLTliMzYtY2I0NWM2MjY1MWNmIiwiMDQ2ZDFlYjQtNDA4NS00NGE1LWE4ODktOTE4ZWFlZDBhNGY0Il0sImlhdCI6MTc4NDkyNTY4Nn0.SANUVLAR89Ye-LDdY17cj97HRzF0GYOIoZ2R1WqBs3U",
+  "error": null
+ },
+ {
+  "key": "Furn_SylvaRack",
+  "prompt": "wooden drying rack hung with herb bundles and small glowing seed pod lanterns + style template",
+  "bbox": [
+   9,
+   4,
+   9
+  ],
+  "uuid": "614e0688-62ea-4e1a-8bed-8543a121390f",
+  "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiODk4ZDJkOTItMDllOC00OTNlLWI1NTctZDNlYjhjNDBjMGExIiwiODM0NzIwZDgtNjdiOC00NGQ2LTk2OGUtMGQ0ODQxZjAyNWFjIiwiMjRiMmRiMWYtNmEwYS00NTEzLThjMTEtMjVjNGVmODk0Y2EwIiwiOGVkYjhkMzktYTBjNC00ODNlLWFiNmItOTk0MGRlNmQyNWNiIiwiOWE0ZjUzMGMtYzc5Ny00YWJjLTg0MjItMzVhNWU1M2E0OTMwIiwiNmE1N2RiNDctYTNjMS00ZjA1LTg5Y2UtMmE1NjllZmIzMGFjIl0sImlhdCI6MTc4NDkyNTY4OH0.8aJAm9luy5rAm7KM9cxHXknK2z_PaqTa1JAMKQOpbmc",
+  "error": null
+ },
+ {
+  "key": "Furn_SylvaTable",
+  "prompt": "small round wooden tea table with a clay teapot and two cups + style template",
+  "bbox": [
+   7,
+   7,
+   5
+  ],
+  "uuid": "52b68c2c-9584-4f50-9a10-244bb540ad35",
+  "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiOTM4ODM2NDEtYTQ4Yy00NjkzLThmZTYtYjhmYTcwNDY1ODIyIiwiNGU3NGRmZmEtNDhjOC00ZDg0LWEwYmUtMmM4Y2Y4ZmJiMGQzIiwiMjA1MjM5ZjEtNWUwNS00MjNjLWI2MTMtN2NhZjE0Mjk1NjA3IiwiYWJjN2JhYjktYzkzYi00OGU4LTk2M2YtZjA4ZTJkZWJiNzEyIiwiY2M2MTg4YTktNzk0Yi00ZDJmLWI3OTctZWQ0OWE0MmM0MDNiIiwiOWQzMGVkZmMtNDFlNy00MmM2LWI3MjctOGI1MzI0M2UyZGRlIl0sImlhdCI6MTc4NDkyNTY5MX0.K3h2FEVDmsxugObBiwkXVACitRG7lXTMaFaFpopwtcc",
+  "error": null
+ },
+ {
+  "key": "Furn_BramBench",
+  "prompt": "sturdy log workbench with woodworking tools and a carved half-finished staff lying flat on top + style template",
+  "bbox": [
+   11,
+   6,
+   7
+  ],
+  "uuid": "f370c7ba-8562-48bd-8320-ec5196d2730d",
+  "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMTllZDdlOTgtZDViNy00NzliLTk2NjQtMGI2MWZkNGUxYjg5IiwiYzQwMzJhYTMtYTQyZi00ODY4LWIwOWItMTBkMDBhMzk5MDU0IiwiNjRjOTU2YjQtMDg1NC00MjZiLTlmZWUtZTNlMDQ1ZTMxNzMxIiwiODE0YzcyNGYtMTI4Zi00OTc1LWFhMzAtNDRkZjMwMjU1ZWYzIiwiNjQ5YjRmZmUtNjVkZC00MGI0LTg3ZDktMmFmYWQ2ODJkNTdkIiwiMjgwN2EzMjYtNmE3YS00ZjlkLWE2ZDAtMTRiMTlkZTg2OTM0Il0sImlhdCI6MTc4NDkyNTY5M30.jnqcw1EHi3chHlXGAyVCbnwxvjQuUtGT0Rve78JWrDs",
+  "error": null
+ },
+ {
+  "key": "Furn_BramBed",
+  "prompt": "wide bedroll of stuffed leaves on a low timber frame + style template",
+  "bbox": [
+   10,
+   7,
+   4
+  ],
+  "uuid": "a55304ec-2c9b-471f-be49-8b409e237c31",
+  "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiOGVlNjYwMDgtNTZmOC00ODhiLTlmNjktZTgyZTg3YzFhOGQ3IiwiYmE2Zjg3NzQtNDY2Zi00ZmRlLTgzODEtZTA3YzE1OGQ3MzdjIiwiNTkyNWIyOWEtYTcwYi00NTcyLTk0ODQtMzZkMzZkOThmYzQ2IiwiMzJmNmI4YjMtN2VmOS00MGM4LWFmZmItZTg2ZjkyNGE1NjhiIiwiZWM0NWZlNzUtYjA4Mi00MzYxLTkxM2EtYjBkNTYyMjFmMmJmIiwiMDEzOGJkZjItN2E1YS00YzQxLWFhZjAtOWMyNmVmY2E3MWJkIl0sImlhdCI6MTc4NDkyNTY5NH0.G3XszypVU3l1UlaB2e2vk9YZL2sds74KzbgY2ddhAlE",
+  "error": null
+ },
+ {
+  "note": "v1 (uuid 0ac5cbdc...) had floating scythe-blade fragments — re-rolled as a coat stand w/ rope + shield, no scythe (Bram's model already holds his). Re-roll uuid: 3f9df1e2-0f91-4935-be2c-011b77581d12",
+  "key": "Furn_BramRack",
+  "prompt": "wooden stand holding a coiled rope, a round leaf shield and a wooden scythe + style template",
+  "bbox": [
+   8,
+   4,
+   9
+  ],
+  "uuid": "0ac5cbdc-af86-4cb5-ae76-2827469d5f46",
+  "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMGE0YzMzNTctMmY0ZC00ZjI0LWI0ZDMtZDVlNDQxNzVmZTEyIiwiMDVlNmJiZjQtNTIwMS00MDIwLTk5YzMtZjY4MWNjMjVhNTBhIiwiNDRhZmRkZmEtMjdjNi00NjA4LWI4Y2YtMTE0NTQwYzQ4MzhmIiwiZjE3NDk5ODgtNmRiZC00N2U0LTgzM2ItNTBkNGZjNDFkNzdlIiwiOGZlOWRmNjYtMGEzYy00NTE2LWEyZjktMzYzYzMyNDZkOTJiIiwiN2MzYzZkMzAtZGUyNi00NzdkLThhNGQtMzhlOGUzNmRlM2FmIl0sImlhdCI6MTc4NDkyNTY5N30.EjHxA13f8jgaf8DFJBFfC78ZHL-7QLRtPETLpBhF_n8",
+  "error": null
+ },
+ {
+  "key": "Furn_SprigBench",
+  "prompt": "cluttered tiny tinkerer workbench covered in small brass gadgets, coils and tools + style template",
+  "bbox": [
+   10,
+   6,
+   7
+  ],
+  "uuid": "c18cf96d-8b9b-45ec-be0a-dbf6998449f3",
+  "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiNzU4Y2I4YzQtOGMyNi00ZDE4LTk5ZGItODQ4NzNlZDYwNTQ3IiwiZmVmZTg5OTYtMjQ4My00NTAyLWJhY2UtNmRjNmMxYTc1NmNmIiwiMTdmYmU1MTctM2M1YS00MDhiLTkwYTgtZTJiODY3OGFmY2IyIiwiYmE5MDdmMzItZTJhYS00MDliLTgwODUtYjhhZTJlZGQxMGM2IiwiOTQyYmQ3ZDktNzRiNi00ODUxLTkwMzYtZjhiNTllMGIyOGUxIiwiZTFmMjM1NjUtY2RiMC00NzFjLTlhYzAtYjlkMTcyMGIxODYzIl0sImlhdCI6MTc4NDkyNTcwOX0.xQYhhJsEdok54k2wGyeE7OsZ6lZqBF8dvdmo_qpTqCU",
+  "error": null
+ },
+ {
+  "key": "Furn_SprigHammock",
+  "prompt": "small hammock of woven leaves strung between two wooden posts + style template",
+  "bbox": [
+   10,
+   5,
+   6
+  ],
+  "uuid": "4daa40cd-91ee-469e-854e-830d275a69d9",
+  "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMDVkZjI2ODgtNWIwZi00OWIwLWI1NjktNDZlODZkNDMzNWYwIiwiZmQwMDk4ZjMtMjUwYi00ZDMxLThlMGMtNzdiOTMyMmYzMDdkIiwiNWM5YmQ0ZGItY2M0My00NGE0LWI0M2EtMmE5MWIyZTJlNGUzIiwiZDliYjMwNmUtZjc1OS00NDk3LTgxYjktOTJkYThiNDUwNjE4IiwiZmU5ZTlkZmMtMWY3Ni00OGJiLThjYjQtMzVhNjZkMzNlNzA3IiwiOTAzNmU2NGItYTVmYS00NzQzLTkwODUtOWZhOWUyMTRjNmE4Il0sImlhdCI6MTc4NDkyNTcxNH0.QDZ7Yk4xDI4CfNefExbrRqcTKEAqs9BiFMtDQcx646c",
+  "error": null
+ },
+ {
+  "key": "Furn_SprigPots",
+  "prompt": "stack of copper pots and glowing green jars + style template",
+  "bbox": [
+   6,
+   6,
+   7
+  ],
+  "uuid": "94645146-9031-4b6c-be9b-cfb7940ed216",
+  "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiYzhjMzMzYjQtNTU1OS00NTcxLWFjZjQtOWUxMzBmZmEyZWVhIiwiYmI3ZWYyMWItMzM5Ny00ZDZjLTg3ZDMtYmZjYjMwMmZjNGJjIiwiNmVlMDUyMjItODVlMi00ZWExLWJlMWItNDUxNDMzNzY1NjY1IiwiODY5OWE2ODctZjBiNC00MjFiLTk1Y2EtOWI1MGNlMjNmNjlmIiwiNDhlYzBkOTYtYzUxZS00YmUxLThjYTgtYzE3NmYzOWE2Y2QzIiwiYmJkOWExZDctNzFiMS00ZjQ4LTk2ZDAtMzU0YmViYTc0YjZhIl0sImlhdCI6MTc4NDkyNTcyM30.JETEpAmKSPkRnpajVIYLzj17RB8jctCNxa0qjoquQLE",
+  "error": null
+ }
+]

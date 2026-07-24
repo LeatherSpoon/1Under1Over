@@ -10,7 +10,7 @@ let enemyIdCounter = 0;
 // the clone leave the mesh unbound (vertices fly to bind-pose world origin).
 // Standard three.js SkeletonUtils.clone algorithm, inlined to avoid vendoring
 // another addon file just for this.
-function cloneSkinned(source) {
+export function cloneSkinned(source) {
   const sourceLookup = new Map();
   const cloneLookup = new Map();
   const clone = source.clone();
@@ -33,12 +33,13 @@ function cloneSkinned(source) {
 // GLB replacement for specific boss archetypes — preloaded once, cloned per spawn.
 // Falls back to the procedural boxes/cones body below if not loaded yet.
 const _bossModelPaths = {
-  // All six zone bosses share the Pirate Lizard model.
+  // Five zone bosses share the Pirate Lizard model; the Cryo Monarch has its own.
   boss_landing: './models/Pirate_Lizard.glb',
   boss_mine:    './models/Pirate_Lizard.glb',
   boss_verdant: './models/Pirate_Lizard.glb',
   boss_lagoon:  './models/Pirate_Lizard.glb',
-  boss_tundra:  './models/Pirate_Lizard.glb',
+  boss_tundra:  './models/Boss_CryoMonarch.glb',
+  boss_hollow:  './models/Boss_Rimefather.glb',
   boss_depths:  './models/Pirate_Lizard.glb',
   // Regular creature archetypes, one model each.
   dunkraza:    './models/Dunkraza.glb',
@@ -47,6 +48,23 @@ const _bossModelPaths = {
   hardlizzy:   './models/Hard_Lizzy.glb',
   cavecrab:    './models/Cave_Crab.glb',
   spoonvark:   './models/Spoonvark.glb',
+  // Tundra pack — rigged GLBs with Idle/Walk clips (see mixer crossfade below).
+  frostfang:   './models/Frostfang.glb',
+  glacierback: './models/Glacierback.glb',
+  blubberfin:  './models/Blubberfin.glb',
+  // Glacial Hollow pack — rigged GLBs with Idle/Walk clips.
+  rimeburrow:  './models/Rimeburrow.glb',
+  shardback:   './models/Shardback.glb',
+  cryolisk:    './models/Cryolisk.glb',
+  chillwing:   './models/Chillwing.glb',
+  // Verdant Maw pack — rigged GLBs with Idle/Walk clips.
+  vineclaw:    './models/Vineclaw.glb',
+  sporeback:   './models/Sporeback.glb',
+  bloomfang:   './models/Bloomfang.glb',
+  // Mine pack — rigged GLBs with Idle/Walk clips.
+  bramblemaw:  './models/Bramblemaw.glb',
+  scalerunner: './models/Scalerunner.glb',
+  duneplate:   './models/Duneplate.glb',
 };
 const _bossModels = {};
 const _bossAnimations = {};
@@ -177,6 +195,170 @@ const ARCHETYPE_CONFIG = {
     visual: 'crest',
   },
 
+  // Vine-wrapped jungle stalker of the Verdant Maw — quick, evasive, venomous.
+  vineclaw: {
+    name: 'VINECLAW',
+    hp: 95, damage: 11, attackInterval: 1200, ppReward: 55,
+    bodyColor: 0x2e6b34, headColor: 0x3f8040, visorColor: 0xd8ff66, threatColor: 0x88ee44,
+    scale: 1.0, speed: 1.5,
+    statusEffect: 'poison',
+    dodgeChance: 0.15,
+    attackPattern: 'burst',
+    burstCount: 2,
+    visual: 'crest',
+  },
+
+  // Toad beneath a fungal garden — the Maw's armored windup tank.
+  sporeback: {
+    name: 'SPOREBACK',
+    hp: 190, damage: 20, attackInterval: 3000, ppReward: 75,
+    bodyColor: 0x5a4a36, headColor: 0x6a5a42, visorColor: 0x66ffd8, threatColor: 0x55eebb,
+    scale: 1.0, speed: 0.5,
+    armor: 6,
+    regenOnAttack: 3,
+    attackPattern: 'windup',
+    visual: 'plates',
+  },
+
+  // Carnivorous bloom on legs — its perfume saps the will to fight (FP drain).
+  bloomfang: {
+    name: 'BLOOMFANG',
+    hp: 130, damage: 13, attackInterval: 1800, ppReward: 65,
+    bodyColor: 0x4a7a3a, headColor: 0xe878b8, visorColor: 0xff88cc, threatColor: 0xff77bb,
+    scale: 1.0, speed: 0.9,
+    fpDrainOnHit: 12,
+    attackPattern: 'melee',
+    visual: 'crest',
+  },
+
+  // Shaggy pack-hunter of the Frozen Tundra — fast, dodgy, frostbiting striker.
+  frostfang: {
+    name: 'FROSTFANG',
+    hp: 130, damage: 14, attackInterval: 1100, ppReward: 85,
+    bodyColor: 0x9db8d8, headColor: 0xb8d0e8, visorColor: 0x66d8ff, threatColor: 0x88ddff,
+    scale: 1.0, speed: 1.6,
+    statusEffect: 'frostbite',
+    dodgeChance: 0.22,
+    attackPattern: 'burst',
+    burstCount: 2,
+    visual: 'crest',
+  },
+
+  // Yak-turtle hauling a glacier shelf — the tundra's slow windup tank.
+  glacierback: {
+    name: 'GLACIERBACK',
+    hp: 260, damage: 24, attackInterval: 3200, ppReward: 130,
+    bodyColor: 0x7a8ba0, headColor: 0x8a9bb0, visorColor: 0x9fe8ff, threatColor: 0xaaddee,
+    scale: 1.0, speed: 0.45,
+    armor: 12,
+    regenOnAttack: 4,
+    attackPattern: 'windup',
+    visual: 'plates',
+  },
+
+  // Plump penguin-seal — clinging cold saps the player's FP with every hit.
+  blubberfin: {
+    name: 'BLUBBERFIN',
+    hp: 170, damage: 16, attackInterval: 1900, ppReward: 100,
+    bodyColor: 0x4a6a88, headColor: 0x3a5a78, visorColor: 0xffcc88, threatColor: 0x88ccee,
+    scale: 1.0, speed: 1.0,
+    armor: 2,
+    fpDrainOnHit: 20,
+    attackPattern: 'melee',
+    visual: 'crest',
+  },
+
+  // ── Glacial Hollow pack (T5 side-branch, tuned a shade above the surface
+  // tundra: the cave is optional, so it pays and hits harder) ────────────────
+
+  // Blind digger. Leads with the ice picks — a fast opener, then it commits.
+  rimeburrow: {
+    name: 'RIMEBURROW',
+    hp: 150, damage: 17, attackInterval: 1000, ppReward: 95,
+    bodyColor: 0xe8e2d8, headColor: 0xf2ece2, visorColor: 0xff5a4a, threatColor: 0x9fd8f0,
+    scale: 1.0, speed: 1.5,
+    statusEffect: 'frostbite',
+    attackPattern: 'burst',
+    burstCount: 2,
+    visual: 'crest',
+  },
+
+  // Crystal-plated pangolin. The tundra's armour problem, taken further.
+  shardback: {
+    name: 'SHARDBACK',
+    hp: 300, damage: 26, attackInterval: 3000, ppReward: 145,
+    bodyColor: 0x8f8aa8, headColor: 0x9c96b4, visorColor: 0xc8ecff, threatColor: 0xaadcf0,
+    scale: 1.0, speed: 0.5,
+    armor: 16,
+    regenOnAttack: 5,
+    attackPattern: 'windup',
+    visual: 'plates',
+  },
+
+  // Cave salamander — slow burner. The frostbite is the real damage.
+  cryolisk: {
+    name: 'CRYOLISK',
+    hp: 195, damage: 15, attackInterval: 1500, ppReward: 110,
+    bodyColor: 0xbcd8e4, headColor: 0xcae2ec, visorColor: 0x5fd4e8, threatColor: 0x7fe0f0,
+    scale: 1.0, speed: 1.1,
+    statusEffect: 'frostbite',
+    armor: 5,
+    rageRamp: 0.12,
+    attackPattern: 'melee',
+    visual: 'crest',
+  },
+
+  // Roost-dropper. Hard to land a hit on, and it drains focus when it lands one.
+  chillwing: {
+    name: 'CHILLWING',
+    hp: 165, damage: 19, attackInterval: 1300, ppReward: 120,
+    bodyColor: 0x54606c, headColor: 0x606c78, visorColor: 0x9fe4ff, threatColor: 0x88d0e8,
+    scale: 1.0, speed: 1.8,
+    dodgeChance: 0.30,
+    fpDrainOnHit: 24,
+    attackPattern: 'burst',
+    burstCount: 2,
+    visual: 'crest',
+  },
+
+  // Scale-plated tunneller of the Mine — quick, evasive, digs faster than it fights.
+  scalerunner: {
+    name: 'SCALERUNNER',
+    hp: 90, damage: 11, attackInterval: 1200, ppReward: 52,
+    bodyColor: 0x3a5a8a, headColor: 0xa89878, visorColor: 0x88bbff, threatColor: 0x6699dd,
+    scale: 1.0, speed: 1.5,
+    armor: 3,
+    dodgeChance: 0.16,
+    attackPattern: 'burst',
+    burstCount: 2,
+    visual: 'crest',
+  },
+
+  // Boulder-shelled digger wedged in the ore seams — the Mine's armored windup tank.
+  duneplate: {
+    name: 'DUNEPLATE',
+    hp: 175, damage: 21, attackInterval: 2800, ppReward: 70,
+    bodyColor: 0x8a7a55, headColor: 0x9a8a65, visorColor: 0xffdd88, threatColor: 0xccaa66,
+    scale: 1.0, speed: 0.5,
+    statusEffect: 'corrosion',
+    armor: 8,
+    attackPattern: 'windup',
+    visual: 'plates',
+  },
+
+  // Thorn-backed brute haunting the deep cuts — winds itself into a rage as it fights.
+  bramblemaw: {
+    name: 'BRAMBLEMAW',
+    hp: 145, damage: 16, attackInterval: 1900, ppReward: 68,
+    bodyColor: 0x2e2438, headColor: 0x3d3049, visorColor: 0xaa66ff, threatColor: 0x9955ee,
+    scale: 1.0, speed: 0.85,
+    statusEffect: 'poison',
+    armor: 5,
+    rageRamp: 1.06,
+    attackPattern: 'melee',
+    visual: 'spikes',
+  },
+
   // ── Zone bosses — unique, no timed respawn, permanent bonus on defeat ─────
   boss_landing: {
     name: 'SCRAP TYRANT',
@@ -238,6 +420,21 @@ const ARCHETYPE_CONFIG = {
     visual: 'crown',
     boss: true,
     phase2: { at: 0.5, damageMult: 1.5 },
+  },
+  // Glacial Hollow — the ancestor of every skull in the cave. A slow, armored
+  // charger: the frostbite chip is what actually kills you while you grind
+  // through the ice plate.
+  boss_hollow: {
+    name: 'RIMEFATHER',
+    hp: 1050, damage: 34, attackInterval: 3200, ppReward: 1500,
+    bodyColor: 0xd8e8f4, headColor: 0xe6f2fb, visorColor: 0x7fd8ff, threatColor: 0xaadcf0,
+    scale: 2.2, speed: 0.35,
+    statusEffect: 'frostbite',
+    armor: 14,
+    attackPattern: 'windup',
+    visual: 'crown',
+    boss: true,
+    phase2: { at: 0.45, damageMult: 1.4, intervalMult: 0.8 },
   },
   boss_depths: {
     name: 'THE UNMAKER',

@@ -419,6 +419,7 @@
 .status-shock     { background: #0055aa; color: #aaddff; }
 .status-corrosion { background: #557722; color: #ccddaa; }
 .status-poison    { background: #552288; color: #ddaaff; }
+.status-frostbite { background: #226688; color: #cceeff; }
 
 @keyframes statusPulse {
   0%, 100% { opacity: 0.8; }

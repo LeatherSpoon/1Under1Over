@@ -1,0 +1,170 @@
+[
+  {
+    "key": "Creature_Vineclaw",
+    "prompt": "lean jungle panther creature wrapped in living green vines, thorn-tipped claws, small leafy fronds along its spine and tail, tail held out, standing neutral pose with all four legs planted straight and clearly separated, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      14,
+      5,
+      9
+    ],
+    "uuid": "509a3f5e-25a6-40ae-805b-39f005a1f32d",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiOGNhNDVmODgtNmMzMi00ODViLTllNmMtZmZiZDBkYTRjZTk0IiwiMWFiOTIwOTQtMTMxNC00NDhhLThkOTktYzMwMDVmMGZlMDQ3IiwiZDIxZDE0YzYtMDAzNS00NDk1LTlmMmUtZDE5MTdiNmQ3YjRmIiwiM2FhMDUzMDMtZTI3ZC00YzZiLWIwNDYtN2JkOGMwNjExOWViIiwiMzg2ODdmZmYtYWQ4OC00NDBmLThkMWQtMjQ3NzZiNjc1MWNlIiwiZmQyMmE0M2QtMzFhZi00MWFiLWFhNDYtZTFjYjgyNGMwYWU5Il0sImlhdCI6MTc4NDkxNDYxNn0.-xpne6Lgxaxhei_2Xo4gsD39nk9VFTbAD415VlQ62TI",
+    "error": null
+  },
+  {
+    "key": "Creature_Sporeback",
+    "prompt": "round toad and beetle hybrid creature carrying a cluster of giant glowing mushrooms on its domed shell back, short thick legs planted straight and clearly separated, standing neutral pose, head forward, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      12,
+      9,
+      10
+    ],
+    "uuid": "d92171d9-84b8-49ef-a836-92aa63060656",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiZDcyYzIxY2EtZTlhZC00YTJhLThhOWUtZTNhMDg3M2U1NWUzIiwiYzE1YjJkODYtMjJhOC00YjQwLTkyYWQtOThmZmZiZWQxNTQ0IiwiMjdmMzBlY2UtZWUwOS00N2UyLWJlY2UtOWVlNDQ3NzhkZTYxIiwiNmE5NDBlMGEtNzU3NS00MWY3LTgzYTMtZmQ2NWY3NWIzNzRmIiwiMzExZGJhNjMtMjc3My00MmE2LWExODItOTFjMmE4NjA5MDU5IiwiOTQyZDRkMTctOWYxMC00MDJjLWExOGItNmVkY2I2NzE0YmVjIl0sImlhdCI6MTc4NDkxNDYyMX0.2UD-rMEzNZ6agMltVM4Ip4YBhxFtwnbetKEJPp2-MKY",
+    "error": null
+  },
+  {
+    "key": "Creature_Bloomfang",
+    "prompt": "slender mantis creature whose head is framed by a large carnivorous flower bloom with pink petals, two scythe forearms held slightly raised and apart from the body, standing neutral pose on four thin legs clearly separated, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      9,
+      7,
+      13
+    ],
+    "uuid": "007e2653-0704-4757-b33f-84dedbd42405",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMzdlODE3NmUtNzRlNC00ZDVhLWFiMGYtNTQ4MjRhNjRkYmZlIiwiY2Y2YWYyZTItZTg1Yy00ZjlmLWJiNDAtOTQ4YzZlNWI5NzBmIiwiOWJhNDYwMTAtNzdjNy00YmIzLWI3YWMtYTQxNGU4YWM3YWE3IiwiZjZjNjM1ZWUtNWQ3NS00NDIzLWE2YjktNTk2ODcwODU4MGI3IiwiNzlhYThlYWQtNWMwMi00YjViLThkYTEtZjhlZTZlZDNkZGJjIiwiZWM4NDQ2OGItNWQ4My00MzJjLWE0MDEtNDlhZTBlMWE0NWJiIl0sImlhdCI6MTc4NDkxNDYyOH0.cQXWKJsekOOR03IlE98JDhGOKFeDysZxGllPevDc0T0",
+    "error": null
+  },
+  {
+    "key": "Jungle_CanopyTree",
+    "prompt": "towering tropical jungle tree with a broad layered umbrella canopy of lush green leaves, thick trunk with buttress roots, no base, no ground, no backdrop, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      11,
+      11,
+      20
+    ],
+    "uuid": "58fd7eef-e9d1-4241-a9be-47b493834ef1",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiZWEyZmQwMzEtMzEwZC00OTk5LWIyMzctODQyMDZiM2UzNDczIiwiNGZhMTNiMjEtMjdmZS00YThkLThhMzEtMzM1NGNkNWMyY2ZjIiwiMWRiMGFiN2EtYTM3NC00MmYxLThiNTQtMDQ2OTFlMGEzYzAyIiwiZmQ4MTdkNDQtMzRmMi00YWFjLTgzZmMtMmIyM2EwOWQ0M2JmIiwiNmU3Y2RhYWQtNGM5Ni00OGYzLThkODQtZjQ4ZWM1OTE0Yzc5IiwiNTA1ZDc5ODQtMTBjOS00ZjM3LTg0MjEtYjA4NjgwZTgxMmNhIl0sImlhdCI6MTc4NDkxNDYzNH0.UgmIIZnaKeErx7nHsWG7q-RH15f2M1KGhsH7-PYyG8E",
+    "error": null
+  },
+  {
+    "key": "Jungle_BanyanTree",
+    "prompt": "twisted jungle banyan tree with intertwined trunks and long hanging vines drooping from its wide branch crown, no base, no ground, no backdrop, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      13,
+      13,
+      16
+    ],
+    "uuid": "61c6c35e-d0d8-48b7-9a9f-f8dbd455f556",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiNmFhNzAyYjUtY2EwNC00OTM2LTg0ZGYtYTU0ZTMyMmFlNTg5IiwiNjgwNWZiNjUtYTFkYy00ZTA0LTlmMTUtMWYxMmVkMjE5NjkwIiwiYTk0NGYwZjItMzcyNC00ODhjLWFhOGYtOTJiMGIwNmZjYzcwIiwiODdlOTJhNzgtMWU5NC00NDNhLTk2ZTUtNjk5ZTQ2YjQ3OGQ2IiwiMGNmZDgyY2ItYWIyZi00M2NjLWIxNzUtODU5MDJkMjMxMTYxIiwiM2E0ZjhiM2EtZTNiOS00MzY1LWE5YjQtZmM1YzczZDBmMmY3Il0sImlhdCI6MTc4NDkxNDY0MX0.z8FevJkttZi-P5inqszSVDM1cB0OxkC-kx-WZyRXWqA",
+    "error": null
+  },
+  {
+    "key": "Jungle_FernCluster",
+    "prompt": "cluster of giant tropical fern fronds arching outward from a central base, lush saturated green, no base, no ground, no backdrop, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      11,
+      11,
+      8
+    ],
+    "uuid": "bf5f3e31-f295-4c18-8e1b-bdf3e018d61c",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiZmZlMmJhOGItN2U2NC00NGE2LWFjMDctY2YyYzgyZjQ1YTgyIiwiMDQzOGI1MDUtMjdlMi00YTI2LWE0MDctMGNlNjljOTM5ZTQ0IiwiN2ZjOTM3ODYtZWEzZi00ZDdkLTgyNjItNTAxMTJmODUyY2U3IiwiYjk5ZDkxNTAtYmQ0Mi00NTAyLTg5M2ItMGFiZmIxNzg3YWEyIiwiMmE5N2M4NjQtOGE5MC00YTQxLTllZDgtNWJhNzE4MDdlMmM4IiwiNTM2OTQ3MzMtYjdiOS00MGE5LWFhN2UtNmZjNjlhZjdjZGNkIl0sImlhdCI6MTc4NDkxNDY0Nn0.R72SFwD-AmAz14JvCOXkxrS1JiOwpd-LBljP-4hDTxE",
+    "error": null
+  },
+  {
+    "key": "Jungle_MawPlant",
+    "prompt": "large carnivorous jungle pitcher plant with a fanged open maw head on a thick curved stem, surrounded by broad tropical leaves, deep green with magenta throat, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      9,
+      9,
+      13
+    ],
+    "uuid": "cd1670dc-45d4-40df-8cf5-c0b11508cdb7",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiOWNjZDFlY2EtODhhNC00MDdkLTg0ODktNmRkMGZjMzM1ZmY5IiwiYzdlNTJjN2YtYmMxYi00ODU5LWE4MzItZjBkY2FkZDFlYTA3IiwiM2M5Y2IzZDktNWQ1NC00OGU3LTkxMGQtYmM5ODUzN2Q4MmRiIiwiZDg1ZTlhOTEtZWQ4ZS00NDk0LWE2MDktMGU5Y2E4YzIzZDJjIiwiNWQ3MDRiOWQtNTMwMi00NzkwLTkwNWMtMGU5ZDc2Njk4ODgwIiwiZmM3NzAzMGUtODJmMS00OTMwLTk5ZDgtY2MwZGViMzZmNDZmIl0sImlhdCI6MTc4NDkxNDY1MX0.e_neV3mhMNX-_eIFLvV2igFaectwGE1eEw_w68biu_E",
+    "error": null
+  },
+  {
+    "key": "Jungle_MossIdol",
+    "prompt": "ancient weathered stone idol head half swallowed by jungle moss and creeping vines, faint teal glowing rune eyes, flat level base, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      8,
+      7,
+      11
+    ],
+    "uuid": "baf3232b-2d7f-4d92-b1b1-9567020041c5",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiYTNmYzRmMTUtZTQ5Zi00ZTJmLTlkY2ItY2IzMGQ5MjNlYWU4IiwiZDkxMzM0ZmQtZDhkYi00OWM0LWExMDUtYzE0NDc0ZThhOTU0IiwiZGQ0ZDBmMDYtNjkxYy00Y2VmLWIwODItMzZhZGI3OWE3OGE0IiwiMDJlNDdmNDEtZWRjMS00NjVlLTgzM2EtMjQyNGNjNTA0MzRhIiwiMGIwNTE2YjAtZjcxZi00YzlmLThmZmUtNjg5MjQxNTBmZDcwIiwiMzFhZmEzZWUtYmVlNy00NmVjLWIxMzAtZjkxZjRkYWJmZTdjIl0sImlhdCI6MTc4NDkxNDY1OH0.dn9VOVp6Z3gqN_vvxxGrbcP7ujpOabmi73djxQ2QJ5I",
+    "error": null
+  },
+  {
+    "key": "Jungle_MossBoulder",
+    "prompt": "large rounded boulder thickly carpeted in jungle moss with small ferns sprouting from its cracks, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      10,
+      9,
+      7
+    ],
+    "uuid": "9a461f74-f442-4dc2-b945-cb8e5e0c173f",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMjNiYWZlYzItZDdmMS00OWZiLTk4NDgtMmVjYTk1ZjQ0MzkzIiwiNTkxNTQyZWQtNjA0My00NTg4LTg4MWUtNWFhYjVmN2RjNjU4IiwiMmEwNmVmMDUtMDQ2ZS00YTJiLWEyODYtNGQzMzY0ZGI2YjNiIiwiM2U0YTY5MzEtZmI0OS00NWQ0LThjMWYtYTcwOGZmYTZhOWRkIiwiMDRhZjk1MTktNWRjYy00YzBmLTkwYjgtMWIxMzkxN2M3ODE4IiwiOGM5NmMyYjktYWIyYy00ZDMwLTg1OTItNTY3NDE3MDM5ZjIwIl0sImlhdCI6MTc4NDkxNDY2M30.PQUCHecNZigUxzJt3t2GinMNK8kC_SKIHhLF-4Pi4Pc",
+    "error": null
+  },
+  {
+    "key": "Jungle_GlowShroom",
+    "prompt": "cluster of tall glowing teal and pink jungle mushrooms of varied heights growing from a small mossy patch, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      8,
+      8,
+      9
+    ],
+    "uuid": "51321adc-96a5-4617-b862-b952e2eb590f",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMDNiZTg0MjMtZmZmMy00OGQ0LWFiZDAtMDMxYWFiOGRkYzVmIiwiZDE4NTI5ZGYtOWMzOS00MGRlLWIyYzctZmNjOTE5NmVjMjliIiwiMjI5YWExOTAtMDViYS00YjViLTgwYzUtODI2NzBlMWY1YTkyIiwiMGFiMWE0NmUtOWNkYS00MTkxLWJlZDUtNDE1NWM2ZWMzZjNkIiwiZDJkNGEyN2UtZGZhZC00ODQyLTgwMTgtYWNjYmI1YTczYWIxIiwiZmExYTBmNTgtZThlNS00NDIxLWIwNTMtNzU0Y2QyMjllODA5Il0sImlhdCI6MTc4NDkxNDY2OH0.iNyTqnXXhyVJirH7lUq_icn2J5MfPoU07SM8JRIDNIU",
+    "error": null
+  },
+  {
+    "key": "Node_Timber",
+    "prompt": "neat stack of freshly cut hardwood jungle logs with leafy green sprouts, one log split open showing warm inner wood, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      9,
+      8,
+      6
+    ],
+    "uuid": "92e35763-679f-4ef8-91d4-84645b982c75",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMzdhMmEyYTctNmU4NC00YTE5LWFlNTEtMjgxOTFmZGQ0NGFjIiwiNWU5MGU2ODgtMjhiOC00MjYzLWIxZjMtN2Q1NjQzM2RmNjFkIiwiMTJmM2JiYWUtNTYyYy00ZTg3LWI2MWQtY2I0NWM5YjkyNDliIiwiMjkwODgwYWMtYThmMS00MmE0LWE1M2QtMGU2ZjAwYzRhZDA4IiwiY2Q2ZWJiNWUtYTRiNi00MDhhLTg3ZjQtYTFiMWM2YjZkMWM1IiwiMDM0MGM0ODQtZGNkOC00MmVhLTg4NmMtMmU1OGQ5MzlhMDg3Il0sImlhdCI6MTc4NDkxNDY3M30.wV4RPF14XQ6QwRXHXynGbXUDFnhzXeZniKhKVwvRdk8",
+    "error": null
+  },
+  {
+    "key": "Node_Resin",
+    "prompt": "dark tree stump oozing thick glowing amber resin globs down its sides, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      8,
+      8,
+      7
+    ],
+    "uuid": "50cf0fad-5bed-4632-b682-7efc51253192",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMWY5OWQwZDctMTBlYy00M2EzLWJiNzctZWQ5YzBjNDU5ZTQ4IiwiY2RlNmIzMDMtYWFjZC00MzliLTlhMjUtNGMxYjI4ZjAzNTU5IiwiNDkxMWFhMTgtMGJkOS00NzlhLWIyYjktZjIzZDc1ZDg0MjA1IiwiZjExODA0YjQtMGFkOC00ZmU4LTlkM2UtMDFiYWRmNTUyNWRlIiwiYjI3Yzg3NmYtOGM4Ni00NzlmLTg0NDctOGVjMzE5YTQzMzM2IiwiNjE5YmRiMzItOGUyYi00NDJkLTkxOTgtNzEyMTcxZDI3M2MwIl0sImlhdCI6MTc4NDkxNDY4MH0.b3CpdX3_DVsDVhffh6sty9fAuSJ29G3SzqOr_vTD3Zk",
+    "error": null
+  },
+  {
+    "key": "Node_Silica",
+    "prompt": "spray of pale translucent white sand-glass crystal shards growing from a rocky base, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      8,
+      7,
+      8
+    ],
+    "uuid": "238bf951-2cdf-448a-a234-7eae4c69042d",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiZWVjMWIwMWQtMmZjYS00NDk4LWFjYWQtYjljOGQ3OTUyZTY0IiwiMzhjMTQ2MDYtZjMzYy00OGY3LTkzMmYtMzFiMjRmNWYzZWYwIiwiYzRlMDVhNzAtMDI1Ny00YWQ3LWFjODMtZTJiZGZmMjIyMWQ3IiwiZDZkNDNiZWQtYTE3My00ZTgyLTkzOGMtY2E4ZDg5ZjE3YWIwIiwiY2ExYzM4ZGItNmRhNi00NDg0LWE4YjYtMTgyN2I0MzA2NDg4IiwiZTlkMzczNjUtOGFkNS00ZWI1LWI2MTktN2Q2OWE4MjY1NWQwIl0sImlhdCI6MTc4NDkxNDY5MH0.Lc6Ia_56ihouc_OsniB2Ttu5IW34ijcVoRHsmfe7li4",
+    "error": null
+  },
+  {
+    "key": "Node_CarbonBiomass",
+    "prompt": "dark peaty mound of rich black biomass with small glowing green shoots and curled sprouts emerging, westernized anime style inspired by Avatar: The Last Airbender and Studio Ghibli, clean confident outlines, flat colors with soft gradient shading, strong silhouette, cute game asset, single object",
+    "bbox": [
+      9,
+      8,
+      6
+    ],
+    "uuid": "e4774d20-aa5c-4b41-83f5-cdfa944bb211",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiZjA5NGRjOWEtZjFlMi00NDRjLTgxYzUtMWI1OGIwZWE3OGYwIiwiNWQ3NWNmYmEtNWQyMC00MWE0LTk3NTItZThjMTljMTI3NDQyIiwiNDQ4NjkzZTgtYzNhNC00NzlmLWEwODMtMTZlZDMyZjcwNDhlIiwiOThmOTdiNTItMjY4Yy00NzVlLTkzYmQtYWY5MTdkMmE1YTIxIiwiODcyNWJiYWYtOGZjNC00ZjQzLTljZDItMmM1NWUxMDJjNTE3IiwiMmFmMzdkNzUtNzg4OC00NDRmLTg1YTctNGFmYjUyNzJmMTU5Il0sImlhdCI6MTc4NDkxNDY5N30.hLjKlt-m0zEf30sE_OYRVB4KBDv4ViTBQIIeOYddG_M",
+    "error": null
+  }
+]

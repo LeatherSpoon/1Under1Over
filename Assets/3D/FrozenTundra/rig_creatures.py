@@ -1,0 +1,308 @@
+# Rig + animate the three tundra creatures (Frostfang quadruped, Glacierback
+# quadruped, Blubberfin belly-glider) in FrozenTundra.blend.
+#
+# Pipeline per creature (mesh already normalized: grounded z=0, centered XY,
+# facing -y, final native scale):
+#   1. Feet detected from ground-contact vertex clusters (never from bbox
+#      fractions — the fox's sideways tail would fool them).
+#   2. Armature built in mesh-local space; legs vertical in rest pose.
+#   3. Skinning = nearest-bone-segment weights (K=2, inverse-distance^4).
+#      Deterministic and debris-proof where bone-heat fails on Rodin soup.
+#   4. Idle (48f) + Walk (24f) actions authored parametrically, pushed to NLA
+#      tracks named exactly 'Idle'/'Walk' (Enemy.js matches /idle/i, /walk/i).
+# Run via the blender-mcp socket. Report prints JSON.
+import bpy, math, json
+from mathutils import Vector, Matrix
+
+FPS = 24
+scn = bpy.context.scene
+scn.render.fps = FPS
+
+
+def seg_dist(p, a, b):
+    ab = b - a
+    L2 = ab.length_squared
+    if L2 < 1e-12:
+        return (p - a).length
+    t = max(0.0, min(1.0, (p - a).dot(ab) / L2))
+    return (p - (a + ab * t)).length
+
+
+def ground_clusters(verts, zmax, tol):
+    """Cluster ground-contact verts in XY; returns [(count, Vector center)]."""
+    pts = [v for v in verts if v.z < zmax]
+    clusters = []  # [ [sum, count] ]
+    for p in pts:
+        best = None
+        bd = tol
+        for c in clusters:
+            d = (Vector((p.x, p.y, 0)) - c[0] / c[1]).length
+            if d < bd:
+                bd = d
+                best = c
+        if best is None:
+            clusters.append([Vector((p.x, p.y, 0)), 1])
+        else:
+            best[0] += Vector((p.x, p.y, 0))
+            best[1] += 1
+    return sorted([(c[1], c[0] / c[1]) for c in clusters], reverse=True, key=lambda x: x[0])
+
+
+def detect_feet(verts, H):
+    cl = ground_clusters(verts, 0.13 * H, 0.14)
+    centers = [c for _, c in cl[:6]]
+    if len(centers) < 4:
+        return None
+    xs = sorted(p.x for p in centers)
+    ys = sorted(p.y for p in centers)
+    x_med = xs[len(xs) // 2] if len(xs) % 2 else (xs[len(xs)//2 - 1] + xs[len(xs)//2]) / 2
+    y_med = ys[len(ys) // 2] if len(ys) % 2 else (ys[len(ys)//2 - 1] + ys[len(ys)//2]) / 2
+    quad = {}
+    for _, c in cl[:6]:
+        key = ('F' if c.y < y_med else 'B') + ('L' if c.x < x_med else 'R')
+        if key not in quad:
+            quad[key] = c
+    # mirror any missing quadrant from its sibling
+    for a, b in (('FL', 'FR'), ('BL', 'BR')):
+        if a in quad and b not in quad:
+            quad[b] = Vector((-quad[a].x + 2 * x_med, quad[a].y, 0))
+        if b in quad and a not in quad:
+            quad[a] = Vector((-quad[b].x + 2 * x_med, quad[b].y, 0))
+    if len(quad) < 4:
+        return None
+    return quad
+
+
+def build_armature(name, bone_specs, loc):
+    arm_data = bpy.data.armatures.new(name + '_Arm')
+    arm = bpy.data.objects.new(name + '_Rig', arm_data)
+    scn.collection.objects.link(arm)
+    arm.location = loc
+    bpy.ops.object.select_all(action='DESELECT')
+    arm.select_set(True)
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode='EDIT')
+    ebs = {}
+    for bname, head, tail, parent in bone_specs:
+        eb = arm_data.edit_bones.new(bname)
+        eb.head = head
+        eb.tail = tail
+        if parent:
+            eb.parent = ebs[parent]
+        ebs[bname] = eb
+    bpy.ops.object.mode_set(mode='OBJECT')
+    return arm
+
+
+def skin_mesh(mesh_obj, arm, bone_specs):
+    segs = {b[0]: (Vector(b[1]), Vector(b[2])) for b in bone_specs}
+    groups = {}
+    for bname in segs:
+        groups[bname] = mesh_obj.vertex_groups.new(name=bname)
+    names = list(segs.keys())
+    for v in mesh_obj.data.vertices:
+        p = v.co
+        ds = sorted(((seg_dist(p, *segs[n]), n) for n in names))[:2]
+        ws = [(1.0 / (d + 1e-4)) ** 4 for d, _ in ds]
+        tot = sum(ws)
+        for (d, n), w in zip(ds, ws):
+            groups[n].add([v.index], w / tot, 'REPLACE')
+    mod = mesh_obj.modifiers.new('Armature', 'ARMATURE')
+    mod.object = arm
+    mesh_obj.parent = arm
+    mesh_obj.matrix_parent_inverse = arm.matrix_world.inverted()
+
+
+def author_clip(arm, cname, nframes, pose_fn):
+    # datablock name may collide globally ('Idle.001') — clip identity for the
+    # game comes from the NLA track name set in push_nla, not from this.
+    act = bpy.data.actions.new(cname)
+    act.use_fake_user = True
+    act['clip'] = cname
+    adt = arm.animation_data or arm.animation_data_create()
+    adt.action = act
+    if hasattr(act, 'slots'):
+        try:
+            slot = act.slots.new(id_type='OBJECT', name=arm.name)
+        except TypeError:
+            slot = act.slots.new('OBJECT', arm.name)
+        try:
+            adt.action_slot = slot
+        except Exception:
+            pass
+    for pb in arm.pose.bones:
+        pb.rotation_mode = 'XYZ'
+    for f in range(1, nframes + 2, 2):
+        t = ((f - 1) % nframes) / nframes
+        for pb in arm.pose.bones:
+            pb.rotation_euler = (0, 0, 0)
+            if pb.name == 'Root':
+                pb.location = (0, 0, 0)
+        pose_fn(arm.pose.bones, t)
+        for pb in arm.pose.bones:
+            pb.keyframe_insert('rotation_euler', frame=f)
+            if pb.name == 'Root':
+                pb.keyframe_insert('location', frame=f)
+    return act
+
+
+def push_nla(arm, acts):
+    adt = arm.animation_data
+    adt.action = None
+    for act in acts:
+        cname = act.get('clip', act.name)
+        tr = adt.nla_tracks.new()
+        tr.name = cname
+        st = tr.strips.new(cname, 1, act)
+        st.name = cname
+        if hasattr(st, 'action_slot') and hasattr(act, 'slots') and len(act.slots):
+            try:
+                st.action_slot = act.slots[0]
+            except Exception:
+                pass
+
+
+TWO_PI = 2 * math.pi
+report = []
+
+# ── Quadrupeds ───────────────────────────────────────────────────────────────
+QUADS = {
+    'Creature_Frostfang': {
+        'swingA': 0.55, 'kneeB': 0.5, 'bob': 0.014, 'tail2': True,
+        'idle_tail': 0.16, 'walk_tail': 0.28, 'headbob': 0.07,
+    },
+    'Creature_Glacierback': {
+        'swingA': 0.32, 'kneeB': 0.3, 'bob': 0.010, 'tail2': False,
+        'idle_tail': 0.08, 'walk_tail': 0.12, 'headbob': 0.05,
+    },
+}
+
+for name, P in QUADS.items():
+    o = bpy.data.objects[name]
+    verts = [v.co.copy() for v in o.data.vertices]
+    H = max(v.z for v in verts)
+    ymin = min(v.y for v in verts)
+    ymax = max(v.y for v in verts)
+    feet = detect_feet(verts, H)
+    if feet is None:
+        L = ymax - ymin
+        yc = (ymax + ymin) / 2
+        feet = {k: Vector((sx * 0.16, yc + sy * 0.28 * L, 0)) for k, (sx, sy) in
+                {'FL': (-1, -1), 'FR': (1, -1), 'BL': (-1, 1), 'BR': (1, 1)}.items()}
+    yF = (feet['FL'].y + feet['FR'].y) / 2
+    yB = (feet['BL'].y + feet['BR'].y) / 2
+    hips = Vector((0, yB, 0.52 * H))
+    chest = Vector((0, yF, 0.55 * H))
+    headbase = Vector((0, max(ymin + 0.22 * (yF - ymin), yF - 0.12), 0.74 * H))
+    nose = Vector((0, ymin + 0.03, 0.66 * H))
+    # tail: furthest vert behind the hips
+    behind = [v for v in verts if v.y > yB + 0.04]
+    if behind:
+        tip = max(behind, key=lambda v: (v - hips).length)
+        tip = Vector((tip.x, tip.y, max(tip.z, 0.2 * H)))
+    else:
+        tip = Vector((0, ymax - 0.02, 0.5 * H))
+    tmid = hips.lerp(tip, 0.5)
+
+    bones = [
+        ('Root', hips, hips + Vector((0, 0.14, 0)), None),
+        ('Spine', hips, chest, 'Root'),
+        ('Neck', chest, headbase, 'Spine'),
+        ('Head', headbase, nose, 'Neck'),
+    ]
+    if P['tail2']:
+        bones += [('Tail1', hips, tmid, 'Root'), ('Tail2', tmid, tip, 'Tail1')]
+    else:
+        bones += [('Tail1', hips, tip, 'Root')]
+    for leg, parent in (('FL', 'Spine'), ('FR', 'Spine'), ('BL', 'Root'), ('BR', 'Root')):
+        fx, fy = feet[leg].x, feet[leg].y
+        sh = Vector((fx, fy, 0.5 * H))
+        kn = Vector((fx, fy, 0.24 * H))
+        ft = Vector((fx, fy, 0.02))
+        bones += [('UpLeg.' + leg, sh, kn, parent), ('LoLeg.' + leg, kn, ft, 'UpLeg.' + leg)]
+
+    arm = build_armature(name, bones, o.location)
+    skin_mesh(o, arm, bones)
+
+    def quad_walk(pbs, t, P=P):
+        s = math.sin(TWO_PI * t)
+        for leg, ph in (('FL', 0.0), ('BR', 0.0), ('FR', 0.5), ('BL', 0.5)):
+            sw = math.sin(TWO_PI * (t + ph))
+            lift = max(0.0, math.sin(TWO_PI * (t + ph) + 0.7))
+            pbs['UpLeg.' + leg].rotation_euler = (P['swingA'] * sw, 0, 0)
+            pbs['LoLeg.' + leg].rotation_euler = (P['kneeB'] * lift, 0, 0)
+        pbs['Root'].location = (0, 0, P['bob'] * abs(math.sin(TWO_PI * t * 2)))
+        pbs['Root'].rotation_euler = (0, 0.05 * s, 0)
+        pbs['Spine'].rotation_euler = (0.03 * math.sin(TWO_PI * t * 2), 0, 0)
+        pbs['Head'].rotation_euler = (P['headbob'] * math.sin(TWO_PI * t * 2 + 1.0), 0, 0)
+        pbs['Tail1'].rotation_euler = (0, 0, P['walk_tail'] * s)
+        if 'Tail2' in pbs:
+            pbs['Tail2'].rotation_euler = (0, 0, P['walk_tail'] * math.sin(TWO_PI * t - 0.8))
+
+    def quad_idle(pbs, t, P=P):
+        s = math.sin(TWO_PI * t)
+        pbs['Root'].location = (0, 0, 0.006 * s)
+        pbs['Spine'].rotation_euler = (0.022 * s, 0, 0)
+        pbs['Head'].rotation_euler = (0.04 * math.sin(TWO_PI * t + 0.9), 0, 0.05 * math.sin(TWO_PI * t * 0.5))
+        pbs['Tail1'].rotation_euler = (0, 0, P['idle_tail'] * s)
+        if 'Tail2' in pbs:
+            pbs['Tail2'].rotation_euler = (0, 0, P['idle_tail'] * math.sin(TWO_PI * t - 0.9))
+
+    idle = author_clip(arm, 'Idle', 48, quad_idle)
+    walk = author_clip(arm, 'Walk', 24, quad_walk)
+    push_nla(arm, [idle, walk])
+    report.append({'name': name, 'bones': len(bones),
+                   'feet': {k: [round(v.x, 3), round(v.y, 3)] for k, v in feet.items()},
+                   'idle_fcurves': len(idle.fcurves) if not hasattr(idle, 'slots') else 'slotted',
+                   'walk_fcurves': len(walk.fcurves) if not hasattr(walk, 'slots') else 'slotted'})
+
+# ── Blubberfin belly-glider ──────────────────────────────────────────────────
+o = bpy.data.objects['Creature_Blubberfin']
+verts = [v.co.copy() for v in o.data.vertices]
+H = max(v.z for v in verts)
+ymin = min(v.y for v in verts)
+ymax = max(v.y for v in verts)
+xmin = min(v.x for v in verts)
+xmax = max(v.x for v in verts)
+belly = Vector((0, 0.12, 0.30 * H))
+chest = Vector((0, ymin + 0.30 * (0 - ymin), 0.42 * H))
+nose = Vector((0, ymin + 0.03, 0.62 * H))
+tailtip = Vector((0, ymax - 0.03, 0.35 * H))
+bones = [
+    ('Root', belly, belly + Vector((0, 0.14, 0)), None),
+    ('Spine', belly, chest, 'Root'),
+    ('Head', chest, nose, 'Spine'),
+    ('Tail1', belly, tailtip, 'Root'),
+    ('Flipper.L', Vector((xmin * 0.45, -0.08, 0.45 * H)), Vector((xmin + 0.02, -0.05, 0.18 * H)), 'Spine'),
+    ('Flipper.R', Vector((xmax * 0.45, -0.08, 0.45 * H)), Vector((xmax - 0.02, -0.05, 0.18 * H)), 'Spine'),
+]
+arm = build_armature('Creature_Blubberfin', bones, o.location)
+skin_mesh(o, arm, bones)
+
+
+def fin_walk(pbs, t):
+    s = math.sin(TWO_PI * t)
+    pbs['Root'].rotation_euler = (0.04 * math.sin(TWO_PI * t * 2), 0.16 * s, 0.09 * math.sin(TWO_PI * t + 0.6))
+    pbs['Root'].location = (0, 0, 0.008 * abs(math.sin(TWO_PI * t * 2)))
+    pbs['Flipper.L'].rotation_euler = (0.45 * max(0.0, s), 0, 0)
+    pbs['Flipper.R'].rotation_euler = (0.45 * max(0.0, -s), 0, 0)
+    pbs['Head'].rotation_euler = (0.05 * math.sin(TWO_PI * t * 2 + 1.2), 0, 0)
+    pbs['Tail1'].rotation_euler = (0, 0, 0.16 * math.sin(TWO_PI * t - 0.7))
+
+
+def fin_idle(pbs, t):
+    s = math.sin(TWO_PI * t)
+    pbs['Root'].location = (0, 0, 0.006 * s)
+    pbs['Root'].rotation_euler = (0.015 * s, 0, 0)
+    pbs['Head'].rotation_euler = (0.05 * math.sin(TWO_PI * t + 0.8), 0, 0.09 * math.sin(TWO_PI * t * 0.5))
+    pbs['Flipper.L'].rotation_euler = (0.08 * s, 0, 0)
+    pbs['Flipper.R'].rotation_euler = (0.08 * math.sin(TWO_PI * t + 0.5), 0, 0)
+    pbs['Tail1'].rotation_euler = (0, 0, 0.08 * math.sin(TWO_PI * t - 0.4))
+
+
+idle = author_clip(arm, 'Idle', 48, fin_idle)
+walk = author_clip(arm, 'Walk', 24, fin_walk)
+push_nla(arm, [idle, walk])
+report.append({'name': 'Creature_Blubberfin', 'bones': len(bones)})
+
+print(json.dumps(report))

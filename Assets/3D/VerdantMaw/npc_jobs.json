@@ -1,0 +1,52 @@
+[
+  {
+    "key": "Npc_Sylva",
+    "mode": "image-to-3d",
+    "image": "npc_ref_2.png (chat upload, 1024x1536)",
+    "prompt": "tall slender plant-folk elder sage standing upright, layered leaf robes with hanging glowing seed-pod lanterns, silver leaf crown, serene face, full body character, no base, no ground, + style template",
+    "uuid": "10da4972-6760-4c72-bb5e-7b346b75c9b6",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiYmNkNTFmYWEtOTM2My00NzAxLWIxYzctOWIzMTI2MGVjYTE5IiwiNWVhZjY4MzEtMjgwMy00YThkLThmZDQtMDYxMmQ4YWM2M2QzIiwiNzA5YzU5OTEtYWEwZS00YTRhLTkzYzktOWE2MjZkYTYxMDdmIiwiN2RkZTQ3MTEtY2U0Ny00ODIyLWI4ZTUtZWNkYTQ2ZjAyNmZiIiwiOTFlMDQzYmUtMDAwYS00ZTE2LThjZDEtNDIyY2IzMDcxNDU4IiwiYTA1ZDU0YzQtMjUxMi00ZWQ0LTg4ZTgtMGNlNWQyN2E4ZmY3Il0sImlhdCI6MTc4NDkxOTY1MX0.hvzLCpx9UPtBIyKZFYDQlPiZofx_C7CqAi6f_t6fSus"
+  },
+  {
+    "key": "Npc_Bram",
+    "mode": "image-to-3d",
+    "image": "npc_ref_3.png (chat upload, 1024x1536)",
+    "prompt": "broad powerful plant-folk guardian standing upright holding a tall wooden scythe staff, armored in layered leaves and woven bark, glowing yellow eyes, full body character, no base, no ground, + style template",
+    "uuid": "8612ee73-4616-42ea-9da5-116e035af052",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiN2M3N2U2OGMtNzAyYS00NGQ0LWE4MjctYmI2ZjRhMmExYmI0IiwiNjlhNDhkYTAtYzI4MC00ZWYwLWE5YzQtNDhiNTc1YjA2MDNiIiwiMmVjNzY4NDQtN2FlZS00MTlhLTg4MzEtMWJjNmQxMzYxZDk2IiwiOWEyNzhhODEtYTU2NC00OTBiLTg3MmYtOTdjZTVlY2U3ZGZmIiwiNDRlMzFiZjctMjNjYy00NTI2LTg4ZjYtMWMzZWQ3OTg0OWMxIiwiOGVmNTlhNTctMDVlMi00MzIwLWJkZTMtN2RiYTdmZDQwMWQ3Il0sImlhdCI6MTc4NDkxOTY1NH0.nnBvhOoSVQKMwsGsx4HTaI5c0MlT00ZK0YxIgK0pzb8"
+  },
+  {
+    "key": "Npc_Sprig",
+    "mode": "image-to-3d",
+    "image": "npc_ref_4.png (chat upload, 1024x1536)",
+    "prompt": "small plant-sprite goblin tinkerer standing upright, leaf-sprout antennae, big eyes, white scarf, gear harness with silver canisters and pouches, purple trousers, single character only, no floating companion, no base, no ground, + style template",
+    "uuid": "5ed7ef4a-5f2a-4b21-b9e6-a4ef96a8b3c6",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiN2RkZDJlMDItMDhjZC00YjRjLTlkMTMtMmE0NTllYWZiZWNkIiwiZTY4ODIwMjQtYTIzNi00MWY1LThhODQtMjZkMzViYzFiM2RjIiwiOTIyODE2ZDktNWFkNC00MDlmLWE3ZGQtMTdiNDVkNjZhNGIyIiwiMGE5MzRkOGItZmNmZC00MTU2LTgxNmQtNjc1Y2NlMmNiZWRhIiwiNDhiZDk2ZTAtZTc2ZC00MGQxLThkM2EtMzliY2UzZjY0N2MxIiwiMzczOTBmYWUtMDc5NS00YjdhLTg5NTktMmUzNzRlMjdjYzM3Il0sImlhdCI6MTc4NDkxOTY1N30.Ro4ZuHoixy8Q7gw7SK1nkxF2e1dGDsUntxqAGh0hR20"
+  },
+  {
+    "key": "Home_Sylva",
+    "mode": "text-to-3d",
+    "note": "v1 (uuid 0576514f...) generated doorless on all 4 sides — 'teardrop shaped doorway' never materialized. Re-roll b0f4d0ba3-1355-466d-8e1e-1fb7d70b2da7 with 'a tall arched rounded wooden door set into the front of the trunk' worked (concrete door object phrasing, like Bram's lodge / Sprig's porthole). Re-roll arrived with a rear ground-terrace slab, removed positionally (z<0.16H & y>0.03L).",
+    "prompt": "grown living-wood pod dwelling, a tall spiraling hollow tree-trunk house with a teardrop shaped doorway, glowing seed-pod lanterns hanging from curved branch eaves, moss and leaf roof, no base, no ground, no backdrop, + style template",
+    "bbox": [10, 10, 13],
+    "reroll_uuid": "0f4d0ba3-1355-466d-8e1e-1fb7d70b2da7",
+    "uuid": "0576514f-47e3-44c2-8972-4868dac1f74d",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiY2ZiOGEzYmItM2IzYy00NjhmLTgwYTUtMjNhZjNkODNmN2UxIiwiZTU2NTk4YjctYWQ2OC00ODEyLWE2OGMtODUxNTFkMmY1ODFjIiwiYmE3NmFkZjYtODIyNC00ZDE4LWJkMmUtNDNkYjc5ZTM4YjUxIiwiMGExZGRmYjUtZjIxYi00ZjI1LWI2MTctNGNiNjEzNDNiYTRmIiwiODNjZWVkNmMtMjliMC00ZmI1LTkyNTUtZGYxMTIwZmYzZDRlIiwiMjNiNGMwOWEtZmMzMi00Y2ZiLTlkYjMtYjdhNzFlOWM1NDdmIl0sImlhdCI6MTc4NDkxOTY1OX0.Rwnle_LR-xmtJApCat9h9kdZI50DHwA64gJfqHVnDU4"
+  },
+  {
+    "key": "Home_Bram",
+    "mode": "text-to-3d",
+    "prompt": "sturdy jungle lodge built from stacked hardwood logs and woven bark panels, wide overhanging leaf-thatch roof, round wooden door, hanging rope and tool pouches by the door, no base, no ground, no backdrop, + style template",
+    "bbox": [12, 10, 9],
+    "uuid": "24627407-6ffb-4521-848e-c0246faae2bf",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiNWIyMDQwMjQtYzFlMC00OGMyLWFiNDUtYzU2NjgzNzExYzkxIiwiMDQ2ZTM5NDAtMTQ1NS00Y2ExLWEyNTAtZmFjMzdlYTZmZjczIiwiN2FlNmVlN2QtODkyMi00OGU4LTgwY2YtMGJhY2EwMDQzYjRlIiwiOTIxYzE0N2EtY2ZlMS00NjE0LWFlZTAtOTZmYmJhMGI1MDVmIiwiZjVlN2Q0ODMtNWM4ZC00N2FmLTg2MDAtZTE0NTk0ZDQwZDRhIiwiZTRhYjM3YjUtMmFlNC00YTQxLWIwNzMtNjFkNTZmZTg5MWI4Il0sImlhdCI6MTc4NDkxOTY3M30.6923afT-kxq9sbAMk5NoW0BYfPr15OwxYn74ZthKwF4"
+  },
+  {
+    "key": "Home_Sprig",
+    "mode": "text-to-3d",
+    "prompt": "tiny tinkerer den built inside a hollow tree stump, round brass porthole door, small copper pipes and pots sprouting from the mossy roof, leafy sprouts, no base, no ground, no backdrop, + style template",
+    "bbox": [9, 9, 8],
+    "uuid": "cde57e82-f4ca-4122-9d3a-7757e01dcd99",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiNzZjYzk2MWItMWE5ZC00YjlmLWJkNTAtMWJkZTA4NTAzZTk0IiwiNTI4ZGY4MDMtNmRjYS00OGVmLWFkODktNWMwNGM4MjU5MDZkIiwiMjQ5MDY5NjQtMmMzNi00Njg3LTk1YWUtZTVjZDExZjk2NWE0IiwiOGQ1NmU5ZjYtNzBjMS00NjNhLTg0ZmUtYjQzMWEwYjZhMGUyIiwiNWNkM2U0YTgtZThhYS00MmIwLThlNWMtYTY0NzNhNzMxNDgxIiwiMWFjNjA5NWMtN2I0Mi00ZjlkLWI3MWEtNmZkZWQwMjQ5NjA3Il0sImlhdCI6MTc4NDkxOTY4M30.gD7yeiDP1xruBA-wJfEzUxzKDSHu4fb5W9flGeTjSIM"
+  }
+]

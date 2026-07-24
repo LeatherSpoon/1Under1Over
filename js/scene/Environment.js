@@ -6,8 +6,11 @@ import { ZONE_ASSETS } from './ZoneAssets.js';
 import {
   buildLandingSite, buildMine,         buildDepths,    buildVerdantMaw,
   buildLagoonCoast, buildFrozenTundra, buildSpaceship, buildWorkspace,
+  buildGlacialHollow,
+  buildHomeSylva, buildHomeBram, buildHomeSprig,
 } from './zones/index.js';
 import { mineWorldToCell, mineCellToWorld, isMineFloorCell } from './zones/Mine/layout.js';
+import { cloneSkinned } from '../entities/Enemy.js';
 
 // Shared GLB model cache — loads each model once then reuses cloned scenes.
 // The cached promise also caches failures for the lifetime of the page (no
@@ -20,7 +23,12 @@ const _loader = new GLTFLoader();
 function loadModel(path) {
   if (!_modelCache[path]) {
     _modelCache[path] = new Promise((resolve, reject) => {
-      _loader.load(path, gltf => resolve(gltf.scene), undefined, err => {
+      _loader.load(path, gltf => {
+        // Keep animation clips reachable for rigged NPCs — resolving with just
+        // gltf.scene would otherwise drop gltf.animations on the floor.
+        gltf.scene.userData._clips = gltf.animations;
+        resolve(gltf.scene);
+      }, undefined, err => {
         console.warn(`[Environment] ${path} failed to load — using fallback (reload retries).`);
         reject(err);
       });
@@ -65,6 +73,7 @@ export class Environment {
     scene.add(this.group);
     this.currentZone = 'landingSite';
     this._zonePortals = []; // { position, targetZone, ppRequired, mesh }
+    this._stationAttaches = []; // { group, modelKey, opts, hasModel } — GLB station bodies
     this._collisionCircles = []; // { x, z, r }
     this._trackGroup = new THREE.Group(); // track markers live here, separate from env
     scene.add(this._trackGroup);
@@ -110,6 +119,9 @@ export class Environment {
     // Continuously rotating meshes (Breach ring, etc.) — { mesh, axis, speed }
     this._spinners = [];
 
+    // Ambient rigged NPCs in the current zone — { group, glbKey, scale, mixer, hasModel }
+    this._npcs = [];
+
     // Growing trees (planted from seeds)
     this._growingTrees = []; // { group, targetScale, currentScale, x, z }
 
@@ -133,14 +145,66 @@ export class Environment {
       loadModel('./models/Mossy_Boulder.glb').catch(() => null),
       loadModel('./models/Ghibli_Tree_D.glb').catch(() => null),
       loadModel('./models/Ghibli_Tree_H2.glb').catch(() => null),
-    ]).then(([treeH, treeI, treeJ, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal, ship, mossyBoulder, treeD, treeH2]) => {
-      this._glb = { treeH, treeI, treeJ, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal, ship, mossyBoulder, treeD, treeH2 };
+      loadModel('./models/SpaceshipShell.glb').catch(() => null),
+      loadModel('./models/Station_Fabricator.glb').catch(() => null),
+      loadModel('./models/Station_Offload.glb').catch(() => null),
+      loadModel('./models/Station_Charging.glb').catch(() => null),
+      loadModel('./models/Station_DroneMonitor.glb').catch(() => null),
+      loadModel('./models/Station_Ascension.glb').catch(() => null),
+      loadModel('./models/Station_Mastery.glb').catch(() => null),
+      loadModel('./models/Station_CombatRig.glb').catch(() => null),
+      loadModel('./models/Station_TrainingConsole.glb').catch(() => null),
+      loadModel('./models/Station_HoloPylon.glb').catch(() => null),
+      loadModel('./models/Prop_ShipPlant.glb').catch(() => null),
+      loadModel('./models/Prop_CrateStack.glb').catch(() => null),
+      loadModel('./models/Prop_PipeManifold.glb').catch(() => null),
+      loadModel('./models/Tundra_SnowPine.glb').catch(() => null),
+      loadModel('./models/Tundra_SnowPineSquat.glb').catch(() => null),
+      loadModel('./models/Tundra_DeadTree.glb').catch(() => null),
+      loadModel('./models/Tundra_IceCrystal.glb').catch(() => null),
+      loadModel('./models/Tundra_SnowBoulder.glb').catch(() => null),
+      loadModel('./models/Tundra_FrozenShrine.glb').catch(() => null),
+      loadModel('./models/Hollow_CaveMouth.glb').catch(() => null),
+      loadModel('./models/Hollow_Stalagmites.glb').catch(() => null),
+      loadModel('./models/Hollow_IceCrystal.glb').catch(() => null),
+      loadModel('./models/Hollow_FrostShroom.glb').catch(() => null),
+      loadModel('./models/Hollow_IceRubble.glb').catch(() => null),
+      loadModel('./models/Hollow_MammothSkull.glb').catch(() => null),
+      loadModel('./models/Hollow_BoneArch.glb').catch(() => null),
+      loadModel('./models/Jungle_CanopyTree.glb').catch(() => null),
+      loadModel('./models/Jungle_BanyanTree.glb').catch(() => null),
+      loadModel('./models/Jungle_FernCluster.glb').catch(() => null),
+      loadModel('./models/Jungle_MawPlant.glb').catch(() => null),
+      loadModel('./models/Jungle_MossIdol.glb').catch(() => null),
+      loadModel('./models/Jungle_MossBoulder.glb').catch(() => null),
+      loadModel('./models/Jungle_GlowShroom.glb').catch(() => null),
+      loadModel('./models/Home_Sylva.glb').catch(() => null),
+      loadModel('./models/Home_Bram.glb').catch(() => null),
+      loadModel('./models/Home_Sprig.glb').catch(() => null),
+      loadModel('./models/Npc_Sylva.glb').catch(() => null),
+      loadModel('./models/Npc_Bram.glb').catch(() => null),
+      loadModel('./models/Npc_Sprig.glb').catch(() => null),
+      loadModel('./models/Furn_SylvaCot.glb').catch(() => null),
+      loadModel('./models/Furn_SylvaRack.glb').catch(() => null),
+      loadModel('./models/Furn_SylvaTable.glb').catch(() => null),
+      loadModel('./models/Furn_BramBench.glb').catch(() => null),
+      loadModel('./models/Furn_BramBed.glb').catch(() => null),
+      loadModel('./models/Furn_BramRack.glb').catch(() => null),
+      loadModel('./models/Furn_SprigBench.glb').catch(() => null),
+      loadModel('./models/Furn_SprigHammock.glb').catch(() => null),
+      loadModel('./models/Furn_SprigPots.glb').catch(() => null),
+    ]).then(([treeH, treeI, treeJ, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal, ship, mossyBoulder, treeD, treeH2, shipShell, stFabricator, stOffload, stCharging, stDroneMonitor, stAscension, stMastery, stCombatRig, stTrainingConsole, stHoloPylon, shipPlant, crateStack, pipeManifold, snowPine, snowPineSquat, tundraDeadTree, iceCrystal, snowBoulder, frozenShrine, hollowCaveMouth, hollowStalagmites, hollowIceCrystal, hollowFrostShroom, hollowIceRubble, hollowMammothSkull, hollowBoneArch, mawCanopyTree, mawBanyanTree, mawFernCluster, mawPlant, mawMossIdol, mawMossBoulder, mawGlowShroom, homeSylva, homeBram, homeSprig, npcSylva, npcBram, npcSprig, furnSylvaCot, furnSylvaRack, furnSylvaTable, furnBramBench, furnBramBed, furnBramRack, furnSprigBench, furnSprigHammock, furnSprigPots]) => {
+      this._glb = { treeH, treeI, treeJ, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal, ship, mossyBoulder, treeD, treeH2, shipShell, stFabricator, stOffload, stCharging, stDroneMonitor, stAscension, stMastery, stCombatRig, stTrainingConsole, stHoloPylon, shipPlant, crateStack, pipeManifold, snowPine, snowPineSquat, tundraDeadTree, iceCrystal, snowBoulder, frozenShrine, hollowCaveMouth, hollowStalagmites, hollowIceCrystal, hollowFrostShroom, hollowIceRubble, hollowMammothSkull, hollowBoneArch, mawCanopyTree, mawBanyanTree, mawFernCluster, mawPlant, mawMossIdol, mawMossBoulder, mawGlowShroom, homeSylva, homeBram, homeSprig, npcSylva, npcBram, npcSprig, furnSylvaCot, furnSylvaRack, furnSylvaTable, furnBramBench, furnBramBed, furnBramRack, furnSprigBench, furnSprigHammock, furnSprigPots };
       // Place GLB props for the initial zone (already built procedurally)
       this._placeGLBProps(this.currentZone);
       // Trees built before the GLBs resolved (fresh-load race) get re-skinned
       this._upgradeProceduralTrees();
       // Attach portal models built before the GLB finished loading (first zone)
       for (const p of this._zonePortals) this._attachPortalModel(p);
+      // Same late-attach for station bodies built before their GLBs resolved
+      for (const s of this._stationAttaches) this._attachStationModel(s);
+      // And for NPCs placed by a zone builder before the models resolved
+      for (const n of this._npcs) this._attachNpcModel(n);
     });
 
     buildLandingSite(this);
@@ -153,6 +217,7 @@ export class Environment {
       this.group.remove(this.group.children[0]);
     }
     this._zonePortals = [];
+    this._stationAttaches = [];
     this._collisionCircles = [];
     this._collisionBoxes = [];
     this._trees = [];
@@ -163,6 +228,7 @@ export class Environment {
     this._treePlacedPositions = [];
     this._revealMaterials = [];
     this._spinners = [];
+    this._npcs = [];
     // Reset per-zone interactable station positions
     this._offloadStationPos = null;
     this._fabricatorPos = null;
@@ -187,8 +253,12 @@ export class Environment {
       case 'verdantMaw':   buildVerdantMaw(this);   break;
       case 'lagoonCoast':  buildLagoonCoast(this);  break;
       case 'frozenTundra': buildFrozenTundra(this); break;
+      case 'glacialHollow': buildGlacialHollow(this); break;
       case 'spaceship':    buildSpaceship(this);    break;
       case 'workspace':    buildWorkspace(this);    break;
+      case 'homeSylva':    buildHomeSylva(this);    break;
+      case 'homeBram':     buildHomeBram(this);     break;
+      case 'homeSprig':    buildHomeSprig(this);    break;
       default: buildLandingSite(this);
     }
 
@@ -202,6 +272,9 @@ export class Environment {
   update(delta) {
     for (const s of this._spinners) {
       s.mesh.rotation[s.axis] += s.speed * delta;
+    }
+    for (const n of this._npcs) {
+      if (n.mixer) n.mixer.update(delta);
     }
     for (const t of this._growingTrees) {
       if (t.currentScale < t.targetScale) {
@@ -379,6 +452,46 @@ export class Environment {
 
   getPortals() { return this._zonePortals; }
 
+  // ── Ambient NPCs ───────────────────────────────────────────────────────────
+  // Rigged characters that stand in the world playing their Idle clip (ticked
+  // in update()). Same fallback contract as portals/stations: placing one
+  // before the GLB resolves registers it for the late attach in _modelsReady.
+  _addNpc(glbKey, x, z, { scale = 1, rotY = 0, r = 0.45 } = {}) {
+    const group = new THREE.Group();
+    group.position.set(x, 0, z);
+    group.rotation.y = rotY;
+    this.group.add(group);
+    const npc = { group, glbKey, scale, mixer: null, hasModel: false };
+    this._npcs.push(npc);
+    this._collisionCircles.push({ x, z, r });
+    this._attachNpcModel(npc);
+    return npc;
+  }
+
+  _attachNpcModel(npc) {
+    if (npc.hasModel || !this._glb) return;
+    const src = this._glb[npc.glbKey];
+    if (!src) return;
+    npc.hasModel = true;
+    let hasSkinned = false;
+    src.traverse(n => { if (n.isSkinnedMesh) hasSkinned = true; });
+    const model = hasSkinned ? cloneSkinned(src) : src.clone(true);
+    model.scale.setScalar(npc.scale);
+    model.traverse(n => {
+      if (n.isMesh) {
+        n.castShadow = true;
+        n.material = Array.isArray(n.material) ? n.material.map(_toToonMaterial) : _toToonMaterial(n.material);
+      }
+    });
+    npc.group.add(model);
+    const clips = src.userData._clips;
+    const idle = clips && clips.find(c => /idle/i.test(c.name));
+    if (idle) {
+      npc.mixer = new THREE.AnimationMixer(model);
+      npc.mixer.clipAction(idle).play();
+    }
+  }
+
   getCollisionCircles() { return this._collisionCircles; }
 
   /** Show or hide all floor grid helpers (called when construction panel opens/closes). */
@@ -431,9 +544,13 @@ export class Environment {
       verdantMaw: 'Verdant Maw',
       lagoonCoast: 'Lagoon Coast',
       frozenTundra: 'Frozen Tundra',
+      glacialHollow: 'Glacial Hollow',
       spaceship: 'Spaceship Interior',
       workspace: 'Workspace',
       depths: 'The Depths',
+      homeSylva: "Sylva's Den",
+      homeBram: "Bram's Lodge",
+      homeSprig: "Sprig's Burrow",
     };
     return labels[this.currentZone] || 'Unknown';
   }
@@ -484,10 +601,26 @@ export class Environment {
         { x: -3, z: 7, type: 'silver' },
         { x: 9, z: 5, type: 'iron' },
         { x: -6, z: -6, type: 'quartz' },
+        // Near ground (z 20+) — keeps the enlarged southern field worth crossing
+        { x: -19, z: 22, type: 'silver' },
+        { x: 12, z: 25, type: 'iron' },
+      ];
+      // Cave seams — the same tundra ores, but the hollow is where the deep
+      // tungsten sits. Cryo-Pick gated exactly like the surface tundra.
+      case 'glacialHollow': return [
+        { x: 6, z: -2, type: 'tungsten', requiredTool: 'cryoPick' },
+        { x: -6, z: -3, type: 'tungsten', requiredTool: 'cryoPick' },
+        { x: 9, z: 4, type: 'titanium', requiredTool: 'cryoPick' },
+        { x: -10, z: 1, type: 'titanium', requiredTool: 'cryoPick' },
+        { x: 3, z: 9, type: 'silver' },
+        { x: -3, z: -9, type: 'silver' },
+        { x: 14, z: -2, type: 'quartz' },
+        { x: -14, z: 12, type: 'quartz' },
       ];
       case 'spaceship': return []; // no gatherables inside the ship
       case 'workspace': return []; // no gatherables in the workspace
       case 'depths': return [];   // pure mining zone — no resource nodes
+      case 'homeSylva': case 'homeBram': case 'homeSprig': return []; // furnished rooms only
       default: return [];
     }
   }
@@ -523,27 +656,31 @@ export class Environment {
         { x: -12, z: 16, archetype: 'serpendrill' },
         { x: 18, z: 18,  archetype: 'boss_landing', boss: true },
       ];
-      // T2 — Serpendrills through the working cavern, Reptlars pressing harder,
-      // Dunkraza posted at the Depths shaft (the toughest regular enemy in the
+      // T2 — native Mine pack, graded by depth: Serpendrill/Scalerunner skirmishers
+      // near the adit, Duneplate tanks and the rage-ramping Bramblemaw in the deep
+      // cuts, Dunkraza posted at the Depths shaft (the toughest regular enemy in the
       // early game), and the Forge Warden at the mouth of the passage to the Breach.
       case 'mine': return [
         { x: -12.8, z: -3.2, archetype: 'serpendrill' },
-        { x: 12.8,  z: 3.2,  archetype: 'serpendrill' },
+        { x: 12.8,  z: 3.2,  archetype: 'scalerunner' },
         { x: 6.4,   z: 9.6,  archetype: 'reptlar' },
-        { x: -6.4,  z: 6.4,  archetype: 'serpendrill' },
-        { x: 6.4,   z: 19.2, archetype: 'reptlar' },
+        { x: -6.4,  z: 6.4,  archetype: 'scalerunner' },
+        { x: 6.4,   z: 19.2, archetype: 'duneplate' },
         { x: 16,    z: 3.2,  archetype: 'dunkraza' },
-        { x: -9.6,  z: 16,   archetype: 'serpendrill' },
+        { x: -9.6,  z: 16,   archetype: 'bramblemaw' },
         { x: -3.2,  z: 12.8, archetype: 'boss_mine', boss: true },
       ].map(s => this._snapToMineFloor(s));
-      // T3 — armored Reptlars + a Dunkraza elite + the Maw Sovereign
+      // T3 — native Maw pack: Vineclaw stalkers, Sporeback fungal tanks,
+      // Bloomfang lurers + the Maw Sovereign in the deep growth.
       case 'verdantMaw': return [
-        { x: 10,  z: 8,  archetype: 'serpendrill' },
-        { x: -8,  z: 10, archetype: 'reptlar' },
-        { x: 12,  z: -6, archetype: 'reptlar' },
-        { x: -10, z: -8, archetype: 'serpendrill' },
-        { x: 6,   z: -9, archetype: 'dunkraza' },
-        { x: -12, z: -4, archetype: 'reptlar' },
+        { x: 10,  z: 8,  archetype: 'vineclaw' },
+        { x: -4,  z: -6, archetype: 'sporeback' }, // was (-8,10) — moved out of the hamlet clearing
+
+        { x: 12,  z: -6, archetype: 'sporeback' },
+        { x: -10, z: -8, archetype: 'vineclaw' },
+        { x: 6,   z: -9, archetype: 'vineclaw' },
+        { x: -12, z: -4, archetype: 'bloomfang' },
+        { x: 3,   z: 12, archetype: 'bloomfang' },
         { x: 0,   z: -12, archetype: 'boss_verdant', boss: true },
       ];
       // T4 — Reptlar/Dunkraza pressure, shore-digging Spoonvarks + the Tide Oracle
@@ -556,15 +693,38 @@ export class Environment {
         { x: -12, z: -10, archetype: 'spoonvark' },
         { x: -14, z: 0, archetype: 'boss_lagoon', boss: true },
       ];
-      // T5 — Dunkraza + armored Hard Lizzy pressure + the Cryo Monarch
+      // T5 — native tundra pack: Frostfang skirmishers, Glacierback tanks,
+      // Blubberfins by the lake, and the Cryo Monarch out on the ice itself.
       case 'frozenTundra': return [
-        { x: 10, z: 6,  archetype: 'dunkraza' },
-        { x: -10, z: 6, archetype: 'hardlizzy' },
-        { x: 8, z: -10, archetype: 'dunkraza' },
-        { x: -8, z: -8, archetype: 'hardlizzy' },
-        { x: 5, z: 10,  archetype: 'dunkraza' },
-        { x: -13, z: -12, archetype: 'hardlizzy' },
+        { x: 10, z: 6,  archetype: 'frostfang' },
+        { x: -10, z: 6, archetype: 'glacierback' },
+        { x: 8, z: -10, archetype: 'frostfang' },
+        { x: -8, z: -8, archetype: 'frostfang' },
+        { x: 5, z: 10,  archetype: 'blubberfin' },
+        { x: 13, z: 3,  archetype: 'blubberfin' },
+        { x: -13, z: -12, archetype: 'glacierback' },
+        // Enlarged southern field — two posts so the new ground isn't dead space
+        { x: -20, z: 24, archetype: 'frostfang' },
+        { x: 15, z: 22, archetype: 'glacierback' },
         { x: 12, z: 12, archetype: 'boss_tundra', boss: true },
+      ];
+      // T5.5 — the native cave pack plus the Rimefather, chapter rung S6
+      // (between the Cryo Monarch and The Unmaker). The boss guards the deep
+      // end of the cavern, past the bone arch.
+      case 'glacialHollow': return [
+        { x: 8, z: 2,    archetype: 'rimeburrow' },
+        { x: -7, z: 4,   archetype: 'rimeburrow' },
+        { x: 11, z: -8,  archetype: 'shardback' },
+        { x: -11, z: -6, archetype: 'shardback' },
+        { x: 4, z: 12,   archetype: 'cryolisk' },
+        { x: -5, z: -12, archetype: 'cryolisk' },
+        { x: 14, z: 6,   archetype: 'chillwing' },
+        { x: -13, z: 9,  archetype: 'chillwing' },
+        // Deep end, past the mammoth skull landmark at (0,8) — walking by its
+        // dead kin before meeting the living one. Kept clear of the bone arch
+        // at (-1,-6.5), which sat right on top of an earlier spawn point and
+        // hid the boss (and its aggro ring) behind the arch legs.
+        { x: -2, z: 14,  archetype: 'boss_hollow', boss: true },
       ];
       case 'spaceship': return []; // no enemies in the ship
       case 'workspace': return []; // no enemies in the workspace
@@ -577,6 +737,7 @@ export class Environment {
         { x: -8, z: -3, archetype: 'cavecrab' },
         { x: 0,  z: 0,  archetype: 'boss_depths', boss: true },
       ];
+      case 'homeSylva': case 'homeBram': case 'homeSprig': return []; // safe rooms
       default: return [];
     }
   }
@@ -761,8 +922,63 @@ export class Environment {
    * again after models finish loading. Clones the glowing energy material per
    * portal so each gate can show its own accessible/locked colour.
    */
+  /**
+   * A walk-in cave mouth instead of an Ancient World Gate: same portal record
+   * (so main.js's proximity prompt, getPortals() and switchZone all work
+   * unchanged) but no gate GLB, no fallback ring, and no collision circle —
+   * the cave-mouth prop placed at the same spot from ZONE_ASSETS supplies the
+   * collision, which stops the player at the threshold just inside the 2.5-unit
+   * interact radius.
+   */
+  _addCaveEntrance(x, z, targetZone, label) {
+    const group = new THREE.Group();
+    group.position.set(x, 0, z);
+    this.group.add(group);
+    this._zonePortals.push({
+      position: new THREE.Vector3(x, 0, z),
+      targetZone,
+      ppRequired: 0,
+      label,
+      mesh: group,
+      energyMat: null,
+      hasModel: true,   // nothing to late-attach
+      noGate: true,
+    });
+  }
+
+  /**
+   * A home-door zone transition: same portal record as _addCaveEntrance (the
+   * proximity prompt, getPortals() and switchZone all work unchanged), plus a
+   * soft glowing door-mat so the hotspot reads, and an optional [x, z] spawn
+   * override so the return trip lands on this doorstep instead of the target
+   * zone's default spawn.
+   */
+  _addDoorway(x, z, targetZone, label, spawnOverride = null) {
+    const group = new THREE.Group();
+    group.position.set(x, 0, z);
+    this.group.add(group);
+    const mat = new THREE.Mesh(
+      new THREE.CircleGeometry(0.45, 24),
+      new THREE.MeshBasicMaterial({ color: 0x9fe8c8, transparent: true, opacity: 0.35 })
+    );
+    mat.rotation.x = -Math.PI / 2;
+    mat.position.y = 0.03;
+    group.add(mat);
+    this._zonePortals.push({
+      position: new THREE.Vector3(x, 0, z),
+      targetZone,
+      ppRequired: 0,
+      label,
+      mesh: group,
+      energyMat: null,
+      hasModel: true,
+      noGate: true,
+      spawnOverride,
+    });
+  }
+
   _attachPortalModel(portal) {
-    if (portal.hasModel || !this._glb || !this._glb.portal) return;
+    if (portal.noGate || portal.hasModel || !this._glb || !this._glb.portal) return;
     const model = cloneModel(this._glb.portal, 1.0);
     model.position.y = 0;
     model.traverse(n => {
@@ -1112,6 +1328,38 @@ export class Environment {
     }
   }
 
+  /**
+   * Swap a station's procedural body for a GLB model (same late-attach idea as
+   * _attachPortalModel): register at build time, attach immediately if the GLB
+   * is loaded, else again when _modelsReady resolves. Children flagged
+   * userData.isIndicator (the floating interaction gem) survive the swap and
+   * are re-floated just above the model's bounding box.
+   */
+  _registerStationModel(group, modelKey, opts = {}) {
+    const entry = { group, modelKey, opts, hasModel: false };
+    this._stationAttaches.push(entry);
+    this._attachStationModel(entry);
+  }
+
+  _attachStationModel(entry) {
+    if (entry.hasModel || !this._glb) return;
+    const src = this._glb[entry.modelKey];
+    if (!src) return;
+    const m = cloneModel(src, entry.opts.scale ?? 1);
+    if (entry.opts.rotY) m.rotation.y = entry.opts.rotY;
+    addOutlineToGroup(m, 0.03);
+    for (const child of [...entry.group.children]) {
+      if (!child.userData.isIndicator) entry.group.remove(child);
+    }
+    const ind = entry.group.children.find(c => c.userData.isIndicator);
+    if (ind) {
+      const h = new THREE.Box3().setFromObject(m).max.y;
+      ind.position.y = h + 0.45;
+    }
+    entry.group.add(m);
+    entry.hasModel = true;
+  }
+
   _addOffloadStation(x, z) {
     const g = new THREE.Group();
 
@@ -1150,10 +1398,12 @@ export class Environment {
     const indMat = createToonMaterial(0x00ffcc);
     const ind = new THREE.Mesh(indGeo, indMat);
     ind.position.y = 2.0;
+    ind.userData.isIndicator = true;
     g.add(ind);
 
     g.position.set(x, 0, z);
     this.group.add(g);
+    this._registerStationModel(g, 'stOffload');
     this._collisionCircles.push({ x, z, r: 1.0 });
 
     // Register as interactable station
@@ -1187,20 +1437,24 @@ export class Environment {
     grid.position.y = 0.11;
     g.add(grid);
 
-    // Four emitter pillars around the rim (the only collision)
+    // Four emitter pylons around the rim (the only collision). Each is its own
+    // sub-group so the GLB pylon can swap in (fallback: box pillar + emitter).
     for (let i = 0; i < 4; i++) {
       const a = (Math.PI / 4) + i * (Math.PI / 2); // diagonals, keeping N/S/E/W open
       const ex = Math.cos(a) * (r + 0.4), ez = Math.sin(a) * (r + 0.4);
+      const pg = new THREE.Group();
       const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.0, 0.3), createToonMaterial(0x223355));
-      pillar.position.set(ex, 1.0, ez);
+      pillar.position.y = 1.0;
       addOutline(pillar, 0.04);
-      g.add(pillar);
+      pg.add(pillar);
 
       const emitter = new THREE.Mesh(new THREE.OctahedronGeometry(0.14, 0), new THREE.MeshBasicMaterial({ color: 0x66ddff }));
-      emitter.position.set(ex, 2.25, ez);
-      g.add(emitter);
-      this._spinners.push({ mesh: emitter, axis: 'y', speed: 1.5 });
+      emitter.position.y = 2.25;
+      pg.add(emitter);
 
+      pg.position.set(ex, 0, ez);
+      g.add(pg);
+      this._registerStationModel(pg, 'stHoloPylon');
       this._collisionCircles.push({ x: x + ex, z: z + ez, r: 0.4 });
     }
 
@@ -1220,6 +1474,7 @@ export class Environment {
     cg.add(screen);
     cg.position.set(x, 0, cz);
     this.group.add(cg);
+    this._registerStationModel(cg, 'stTrainingConsole');
     this._collisionCircles.push({ x, z: cz, r: 0.7 });
     this._trainingConsolePos = { x, z: cz };
   }
@@ -1274,10 +1529,12 @@ export class Environment {
     const indMat = createToonMaterial(0x4488ff);
     const ind = new THREE.Mesh(indGeo, indMat);
     ind.position.y = 2.8;
+    ind.userData.isIndicator = true;
     g.add(ind);
 
     g.position.set(x, 0, z);
     this.group.add(g);
+    this._registerStationModel(g, 'stFabricator');
     this._collisionCircles.push({ x, z, r: 1.0 });
 
     // Register as interactable fabricator
@@ -1317,10 +1574,12 @@ export class Environment {
     const indMat = createToonMaterial(0x00cc88);
     const ind = new THREE.Mesh(indGeo, indMat);
     ind.position.y = 1.7;
+    ind.userData.isIndicator = true;
     g.add(ind);
 
     g.position.set(x, 0, z);
     this.group.add(g);
+    this._registerStationModel(g, 'stDroneMonitor');
     this._collisionCircles.push({ x, z, r: 1.0 });
     this._droneMonitorPos = { x, z };
   }
@@ -1366,10 +1625,12 @@ export class Environment {
     const indMat = createToonMaterial(0xcc88ff);
     const ind = new THREE.Mesh(indGeo, indMat);
     ind.position.y = 1.85;
+    ind.userData.isIndicator = true;
     g.add(ind);
 
     g.position.set(x, 0, z);
     this.group.add(g);
+    this._registerStationModel(g, 'stAscension');
     this._collisionCircles.push({ x, z, r: 1.0 });
     this._ascensionTerminalPos = { x, z };
   }
@@ -1415,10 +1676,12 @@ export class Environment {
     const indMat = createToonMaterial(0xffaa44);
     const ind = new THREE.Mesh(indGeo, indMat);
     ind.position.y = 2.0;
+    ind.userData.isIndicator = true;
     g.add(ind);
 
     g.position.set(x, 0, z);
     this.group.add(g);
+    this._registerStationModel(g, 'stMastery');
     this._collisionCircles.push({ x, z, r: 1.0 });
     this._masteryTerminalPos = { x, z };
   }
@@ -1463,10 +1726,12 @@ export class Environment {
     const indMat = createToonMaterial(0x44ff88);
     const ind = new THREE.Mesh(indGeo, indMat);
     ind.position.y = 2.2;
+    ind.userData.isIndicator = true;
     g.add(ind);
 
     g.position.set(x, 0, z);
     this.group.add(g);
+    this._registerStationModel(g, 'stCharging');
     this._collisionCircles.push({ x, z, r: 1.0 });
 
     this._chargingStationPos = { x, z };
@@ -1510,6 +1775,7 @@ export class Environment {
 
     g.position.set(x, 0, z);
     this.group.add(g);
+    this._registerStationModel(g, 'stCombatRig');
     this._collisionCircles.push({ x, z, r: 1.0 });
 
     this._combatSimPos = { x, z };

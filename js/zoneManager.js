@@ -6,9 +6,13 @@ export const ZONE_TERRAIN = {
   verdantMaw: 'forest',
   lagoonCoast: 'grass',
   frozenTundra: 'rock',
+  glacialHollow: 'rock',
   spaceship: 'rock',
   workspace: 'rock',
   depths: 'rock',
+  homeSylva: 'rock',
+  homeBram: 'rock',
+  homeSprig: 'rock',
 };
 
 // Per-zone player spawn positions — places player near the entry/exit portal
@@ -18,9 +22,13 @@ export const ZONE_SPAWN_POS = {
   verdantMaw:   [0, 14],
   lagoonCoast:  [15, 0],
   frozenTundra: [0, -15],
+  glacialHollow: [0, -13],
   spaceship:    [0, -3],
   workspace:    [0, 7],
   depths:       [0, -4],
+  homeSylva:    [0, 2.6],
+  homeBram:     [0, 2.6],
+  homeSprig:    [0, 2.6],
 };
 
 export function createSwitchZone({
@@ -29,7 +37,9 @@ export function createSwitchZone({
   mineDelve = null,
   onAfterSwitch,
 }) {
-  return function switchZone(zoneName) {
+  // spawnOverride ([x, z], optional) lands the player somewhere other than the
+  // zone default — doorways use it so leaving a home returns to its doorstep.
+  return function switchZone(zoneName, spawnOverride = null) {
     // Delve lifecycle: descending into the Mine from the surface re-rolls the
     // cave; surfacing arms the next descent. Entering the Mine from The Depths
     // keeps the same delve. This runs before env.switchZone so the builder sees
@@ -45,7 +55,7 @@ export function createSwitchZone({
     sceneManager.setZoneAmbience(zoneName);
     sceneManager.scene.add(player.group);
 
-    const spawnPos = ZONE_SPAWN_POS[zoneName] || [0, 0];
+    const spawnPos = spawnOverride || ZONE_SPAWN_POS[zoneName] || [0, 0];
     player.teleportTo(spawnPos[0], spawnPos[1]);
     player.currentTerrain = ZONE_TERRAIN[zoneName] || 'grass';
 

@@ -7,8 +7,18 @@ import { createToonMaterial, addOutline } from '../scene/ToonMaterials.js';
 // scale corrects each model's native export size to roughly match the procedural
 // shape it replaces (Fiber_Node.glb is exported tiny, Glowing_Ore.glb is exported large).
 const _nodeModelInfo = {
-  fiber:  { path: './models/Fiber_Node.glb',  scale: 1.4 },
-  quartz: { path: './models/Glowing_Ore.glb', scale: 0.38 },
+  fiber:    { path: './models/Fiber_Node.glb',    scale: 1.4 },
+  quartz:   { path: './models/Glowing_Ore.glb',   scale: 0.38 },
+  // Tundra ores — exported pre-normalized to world scale (see Assets/3D/FrozenTundra).
+  titanium: { path: './models/Node_Titanium.glb', scale: 1.0 },
+  tungsten: { path: './models/Node_Tungsten.glb', scale: 1.0 },
+  silver:   { path: './models/Node_Silver.glb',   scale: 1.0 },
+  // Verdant Maw harvestables (Assets/3D/VerdantMaw) — exported at Rodin-native
+  // ~1.9 max extent, scaled here down to interactable-node size (~1 unit).
+  timber:         { path: './models/Node_Timber.glb',        scale: 0.55 },
+  resin:          { path: './models/Node_Resin.glb',         scale: 0.5 },
+  silica:         { path: './models/Node_Silica.glb',        scale: 0.5 },
+  carbon_biomass: { path: './models/Node_CarbonBiomass.glb', scale: 0.55 },
 };
 const _nodeModels = {};
 const _nodeLoader = new GLTFLoader();
