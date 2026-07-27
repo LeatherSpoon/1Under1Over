@@ -40,7 +40,7 @@ const BOSS_DEFS = [
   {
     id: 'boss_depths', zone: 'depths', label: 'The Unmaker',
     bonus: { type: 'damage', value: 1.25, label: '+25% damage' },
-    unlocks: null,
+    unlocks: 'atlantis', // the deepest seal breaks open the drowned world
   },
 ];
 

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { createToonMaterial, addOutline } from '../scene/ToonMaterials.js';
-import { CONFIG } from '../config.js';
+import { CONFIG, getPlayerBounds } from '../config.js';
 
 // Rigged player character GLB (armature + Idle/Run clips), preloaded once.
 // The procedural capsule body below stays as the fallback until it arrives.
@@ -34,8 +34,21 @@ export class Player {
     // Terrain — set by main.js when zone changes
     this.currentTerrain = 'grass';
 
+    // Playable bounds — set by switchZone alongside terrain. Per-zone, so a
+    // biome can be any size; see CONFIG.ZONE_BOUNDS.
+    this.bounds = getPlayerBounds('landingSite');
+
     // Energy speed multiplier — set by main.js each frame
     this.energySpeedMult = 1.0;
+
+    // Push direction for this frame (see _updateMovement)
+    this.moveDirX = 0;
+    this.moveDirZ = 0;
+
+    // Position at the start of this frame's movement — main.js uses it to
+    // revert/slide when a move has no walkable surface (multi-level zones).
+    this.prevX = 0;
+    this.prevZ = 0;
 
     // Gathering state
     this.isGathering = false;
@@ -213,6 +226,14 @@ export class Player {
   }
 
   _updateMovement(keysDown, delta, touchInput) {
+    // Cleared up front so the early returns below (combat, gathering) can't
+    // leave a stale push direction behind for main.js to act on. prevX/prevZ
+    // likewise capture the frame-start position on every path, so the height
+    // resolver always has a known-good spot to fall back to.
+    this.moveDirX = 0;
+    this.moveDirZ = 0;
+    this.prevX = this.position.x;
+    this.prevZ = this.position.z;
     if (this.isInCombat) return;
 
     const hasE = keysDown.has('KeyE') || (touchInput?.actionPressed ?? false);
@@ -264,6 +285,13 @@ export class Player {
       dz *= inv;
     }
 
+    // The direction the player is actively pushing this frame, zeroed when
+    // idle. main.js reads it during collision resolution to tell "walking into
+    // a rock" (mine it) apart from "sliding along one" (don't) — mine corridors
+    // are walled with mineable rock, so grazing must not trigger a dig.
+    this.moveDirX = dx;
+    this.moveDirZ = dz;
+
     if (dx !== 0 || dz !== 0) {
       this._movedThisFrame = true;
       this._lastSpeed = speed;
@@ -274,9 +302,11 @@ export class Player {
       this.position.x += dx * dist;
       this.position.z += dz * dist;
 
-      const half = CONFIG.GROUND_SIZE / 2 - 1;
-      this.position.x = Math.max(-half, Math.min(half, this.position.x));
-      this.position.z = Math.max(-half, Math.min(half, this.position.z));
+      // Playable bounds are per-zone (switchZone sets `bounds`); the fallback
+      // is the default zone footprint so a zone that never set them still works.
+      const b = this.bounds || getPlayerBounds(null);
+      this.position.x = Math.max(b.minX, Math.min(b.maxX, this.position.x));
+      this.position.z = Math.max(b.minZ, Math.min(b.maxZ, this.position.z));
 
       this._totalDist += dist;
       const steps = Math.floor(this._totalDist / CONFIG.STEP_LENGTH);
@@ -315,8 +345,8 @@ export class Player {
     return s;
   }
 
-  teleportTo(x, z) {
-    this.position.set(x, 0, z);
+  teleportTo(x, z, y = 0) {
+    this.position.set(x, y, z);
     this.group.position.copy(this.position);
   }
 }

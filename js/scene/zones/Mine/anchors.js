@@ -9,13 +9,16 @@ export const MINE_GRID_SIZE = 25;
 //   shaft mouth      : connective spine
 //   working cavern   : drill (9,12)
 //   depths chamber   : depths shaft (17,14)
-//   breach chamber   : verdantMaw (9,21), frozenTundra (15,21), lagoon (12,23)
+//   breach chamber   : one gate gallery on row 21 — atlantis (6), verdantMaw (9),
+//                      ancient ring (12), frozenTundra (15), lagoon (18).
+//                      Row 23 holds no gate: the map's south shell wall is tall
+//                      enough to hide that row from the fixed camera.
 export const ANCHOR_ROOMS = [
   { c0: 9,  r0: 1,  c1: 15, r1: 3  },
   { c0: 11, r0: 4,  c1: 13, r1: 8  },
   { c0: 6,  r0: 9,  c1: 13, r1: 15 },
   { c0: 15, r0: 12, c1: 19, r1: 16 },
-  { c0: 7,  r0: 19, c1: 17, r1: 23 },
+  { c0: 6,  r0: 19, c1: 18, r1: 23 }, // breach — c6/c18 are the end gate bays
 ];
 
 // Straight floor runs guaranteeing connectivity between the rooms.
@@ -23,8 +26,8 @@ export const CORRIDOR_SEGMENTS = [
   { c0: 12, r0: 2,  c1: 12, r1: 21 }, // spine: entrance -> breach
   { c0: 9,  r0: 12, c1: 12, r1: 12 }, // spur to drill
   { c0: 12, r0: 14, c1: 17, r1: 14 }, // spur to depths
-  { c0: 9,  r0: 21, c1: 15, r1: 21 }, // breach cross-gallery (side gates)
-  { c0: 12, r0: 21, c1: 12, r1: 23 }, // lagoon gate drop
+  { c0: 6,  r0: 21, c1: 18, r1: 21 }, // breach gate gallery — all five gates sit on this run
+  { c0: 12, r0: 21, c1: 12, r1: 23 }, // drop into the south alcove
 ];
 
 export function blankGrid() {

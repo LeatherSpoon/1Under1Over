@@ -33,7 +33,10 @@ const GLOW_CYAN = 0x7fe8ff;
  * wall ring, the frozen pool, the ice pillars and the lights.
  *
  * ── Connections ───────────────────────────────────────────────────────────────
- *   frozenTundra  →  (0, -16)  always unlocked (return)
+ *   frozenTundra   →  (0, -16)  always unlocked (return)
+ *   meltwaterRift  →  (0, 19)   walk-in rift passage through the wall-ring gap
+ *                     at +z, past the Rimefather; framed by the crystal/rubble
+ *                     props in ZONE_ASSETS. Warm light spills up from below.
  */
 export function build(env) {
   const rng = seededRandom(70424);
@@ -155,4 +158,23 @@ export function build(env) {
   // ── Connections ───────────────────────────────────────────────────────────
   env._addPortal(0, -16, 'frozenTundra', 0, 'Frozen Tundra');
   env._addReturnBeacon(0, -16);
+
+  // The Meltwater Rift — down through the wall-ring gap the Rimefather
+  // guards. No mouth GLB: the gap IS the opening; the crystal/rubble frame in
+  // ZONE_ASSETS narrows it onto the trigger and seals the back. The warm glow
+  // is the tell that something lives below the ice.
+  env._addCaveEntrance(0, 19, 'meltwaterRift', 'Meltwater Rift');
+  const spillMat = new THREE.MeshBasicMaterial({ color: 0xffb054, transparent: true, opacity: 0.28 });
+  const spill = new THREE.Mesh(new THREE.CircleGeometry(1.9, 18), spillMat);
+  spill.rotation.x = -Math.PI / 2;
+  spill.position.set(0, 0.025, 19.6);
+  env.group.add(spill);
+  const spillCore = new THREE.Mesh(new THREE.CircleGeometry(0.85, 14),
+    new THREE.MeshBasicMaterial({ color: 0xffd394, transparent: true, opacity: 0.4 }));
+  spillCore.rotation.x = -Math.PI / 2;
+  spillCore.position.set(0, 0.03, 20.1);
+  env.group.add(spillCore);
+  const spillLight = new THREE.PointLight(0xffb054, 1.7, 11, 1);
+  spillLight.position.set(0, 1.6, 20);
+  env.group.add(spillLight);
 }

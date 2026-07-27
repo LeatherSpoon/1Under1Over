@@ -69,7 +69,31 @@ export const CONFIG = {
   },
 
   // Environment
+  // Default zone footprint — the ground plane and debug grid for any zone that
+  // does not declare its own bounds below. This is a *default*, not a ceiling.
   GROUND_SIZE: 80,
+  // Per-zone playable footprint, in world units: { minX, maxX, minZ, maxZ }.
+  // Zones absent from this map fall back to a GROUND_SIZE square, which is
+  // exactly the extent every zone had when bounds were a single global.
+  // Declare an entry here to make a zone any size — the expanded biomes run
+  // 100×100. Bounds are the *ground* extent; the player stops WORLD_EDGE_MARGIN
+  // inside it so the plane's edge is never visible underfoot.
+  ZONE_BOUNDS: {
+    // Expanded biomes land here as their content ships (see
+    // Plans/Expanded-Biome-Worlds-Implementation.md). Enlarging a zone before
+    // it has content to fill the new ground just adds blank floor.
+    // Verdant Maw: the River Expanse pushes the canopy corridor north over
+    // four rivers (zones/VerdantMaw/canopy.js EXPANSE_BANDS end ~z −99), and
+    // beyond Riversend the Well of Souls sanctum runs to ~z −144.
+    verdantMaw: { minX: -40, maxX: 40, minZ: -148, maxZ: 40 },
+    // Frozen Tundra: the snowfield ran to about z −24 and had no entry here,
+    // so it fell back to the GROUND_SIZE square — a field crossed in 3.4 s at
+    // endgame move speed. The glacier round grows it north over three shelves
+    // to the arch plaza (zones/FrozenTundra/glacier.js Z_SHELF_3 ends at −58),
+    // with the aurora curtain standing beyond that.
+    frozenTundra: { minX: -34, maxX: 34, minZ: -62, maxZ: 32 },
+  },
+  WORLD_EDGE_MARGIN: 1,
   LANDING_PAD_RADIUS: 2.5,
   TREE_COUNT: 18,
   FOREST_RADIUS: 14,
@@ -89,6 +113,7 @@ export const CONFIG = {
     verdantMaw: 2000,
     lagoonCoast: 15000,
     frozenTundra: 8000,
+    atlantis: 20000,
   },
 
   // Energy
@@ -120,6 +145,8 @@ export const CONFIG = {
     frozenTundra: 25000,
     depths: 2000,
     glacialHollow: 0, // sub-area of the tundra — free once you can reach the mouth
+    meltwaterRift: 0, // sub-area below the hollow — free once you can reach the rift
+    atlantis: 50000,  // gate marker only — the real gate is Unmaker clearance or steps
   },
 
   // Status effects
@@ -161,3 +188,25 @@ export const CONFIG = {
     water:  { speedMult: 0.3, hpCost: 1.0 },
   },
 };
+
+/**
+ * Ground extent for a zone — what the floor plane covers.
+ * Falls back to a GROUND_SIZE square for zones with no CONFIG.ZONE_BOUNDS entry.
+ */
+export function getZoneBounds(zoneName) {
+  const b = CONFIG.ZONE_BOUNDS[zoneName];
+  if (b) return b;
+  const half = CONFIG.GROUND_SIZE / 2;
+  return { minX: -half, maxX: half, minZ: -half, maxZ: half };
+}
+
+/**
+ * Playable extent for a zone — the ground inset by WORLD_EDGE_MARGIN, which is
+ * where the player is clamped. Zones with no bounds entry land on ±39, matching
+ * the old global `GROUND_SIZE / 2 - 1` clamp exactly.
+ */
+export function getPlayerBounds(zoneName) {
+  const g = getZoneBounds(zoneName);
+  const m = CONFIG.WORLD_EDGE_MARGIN;
+  return { minX: g.minX + m, maxX: g.maxX - m, minZ: g.minZ + m, maxZ: g.maxZ - m };
+}

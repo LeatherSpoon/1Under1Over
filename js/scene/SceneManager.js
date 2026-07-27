@@ -6,6 +6,9 @@ import { CONFIG } from '../config.js';
  * Cave zones go dark so lantern/rune point lights (added by the zone builders)
  * carry the mood.
  */
+// Height of the player's carried lamp (see _playerLight below).
+const PLAYER_LIGHT_Y = 2.4;
+
 const ZONE_AMBIENCE = {
   default: {
     clear: 0x87ceeb,
@@ -13,6 +16,9 @@ const ZONE_AMBIENCE = {
     ambient: { color: 0xfff5e0, intensity: 0.55 },
     sun: { color: 0xfff8dc, intensity: 1.1 },
     fill: { color: 0xb0d8ff, intensity: 0.3 },
+    // Faint outdoors on purpose — a lamp that reads in daylight blows out
+    // everything the player walks past. Presets that omit this inherit it.
+    playerLight: { color: 0xffe9c8, intensity: 1.6, distance: 9 },
   },
   mine: {
     clear: 0x050403,
@@ -20,6 +26,7 @@ const ZONE_AMBIENCE = {
     ambient: { color: 0xffd9b0, intensity: 0.28 },
     sun: { color: 0xbfd0e8, intensity: 0.5 },
     fill: { color: 0x6a5cae, intensity: 0.14 },
+    playerLight: { color: 0xffc27a, intensity: 9, distance: 16 },
   },
   depths: {
     clear: 0x030308,
@@ -27,24 +34,47 @@ const ZONE_AMBIENCE = {
     ambient: { color: 0x8090ff, intensity: 0.3 },
     sun: { color: 0x9fb4ff, intensity: 0.45 },
     fill: { color: 0x4444aa, intensity: 0.12 },
+    playerLight: { color: 0xa8b8ff, intensity: 9, distance: 16 },
   },
-  // Jungle understorey: green-tinted humid haze, canopy-filtered warm sun,
-  // and a lush green fill so shadows read mossy rather than grey.
+  // Pandora after dark: deep teal-indigo night, a pale moon instead of sun,
+  // violet bounce in the shadows. The glow shrooms, canopy lights and the
+  // player's own bio-lamp carry the near light — the preset deliberately
+  // leaves the jungle dim so the bioluminescence reads.
   verdantMaw: {
-    clear: 0xa8d890,
-    fog: { color: 0xa8d890, near: 30, far: 72 },
-    ambient: { color: 0xeaffdc, intensity: 0.62 },
-    sun: { color: 0xfff8c8, intensity: 1.1 },
-    fill: { color: 0x8fd87a, intensity: 0.35 },
+    clear: 0x0c1e2e,
+    fog: { color: 0x102a3a, near: 24, far: 62 },
+    ambient: { color: 0x8fb4d8, intensity: 0.48 },
+    sun: { color: 0xbfe0ff, intensity: 0.5 },
+    fill: { color: 0x7a5fd8, intensity: 0.32 },
+    playerLight: { color: 0xa8f0e0, intensity: 4.2, distance: 12 },
+    // The northern TRANSITIONAL PHASE (owner, Raya/Kumandra direction): the
+    // teal night lerps toward warm golden-green as the player pushes past the
+    // third river; full warmth by the Emberglade approach. Colors only —
+    // intensities/fog range stay put. Applied per-frame in update() from the
+    // player's z, smoothstepped between z0 and z1.
+    zGradient: {
+      z0: -64, z1: -102,
+      clear: 0x1a2410, fog: 0x2a3a1c,
+      ambient: 0xd8cfa0, sun: 0xffe4b8, fill: 0xb08a48,
+      playerLight: 0xf2e4b0,
+    },
   },
-  // Arctic daylight: pale high sky, cold blue fill in the shadows, and a low
-  // warm winter sun so the snow reads white-gold against teal ice.
+  // Arctic dusk under an aurora. The old preset was near-monochrome — sky
+  // 0xbfd8ee, fog 0xc8dcf0 and ground 0xe2ecf5 were the same value, so 55.7%
+  // of the frame landed in one 8-level luminance band and nothing had form.
+  // Three deliberate changes: the sky goes DARKER than the snow (so there is
+  // a horizon at all), the shadow fill goes hard blue-violet (snow is a mirror
+  // — it takes the sky in shadow), and the sun drops low and warm so crests
+  // catch gold against it. Fog pulled back so the arch is visible from the
+  // portal apron 45 units south; it existed to hide an empty north, and the
+  // north is no longer empty.
   frozenTundra: {
-    clear: 0xbfd8ee,
-    fog: { color: 0xc8dcf0, near: 26, far: 62 },
-    ambient: { color: 0xdce8ff, intensity: 0.6 },
-    sun: { color: 0xfff2e0, intensity: 0.95 },
-    fill: { color: 0x9fb8e8, intensity: 0.35 },
+    clear: 0x5f7ea6,
+    fog: { color: 0x89a8c8, near: 46, far: 108 },
+    ambient: { color: 0xcfe0f5, intensity: 0.52 },
+    sun: { color: 0xffdfae, intensity: 1.25 },
+    fill: { color: 0x4a68b4, intensity: 0.55 },
+    playerLight: { color: 0xffe2b4, intensity: 2.0, distance: 10 },
   },
   // Ice cave: near-black cold sky and tight fog so the wall ring reads as
   // enclosure, with a blue-white ambient that keeps the ice legible. The
@@ -55,6 +85,29 @@ const ZONE_AMBIENCE = {
     ambient: { color: 0xbcd8ee, intensity: 0.42 },
     sun: { color: 0xcfe4ff, intensity: 0.5 },
     fill: { color: 0x4a7ab0, intensity: 0.22 },
+    playerLight: { color: 0xbfe4ff, intensity: 7, distance: 15 },
+  },
+  // Geothermal rift under the hollow: same near-black enclosure, but the
+  // dark leans warm and the shadow fill is ember instead of glacier blue —
+  // the cold-to-warm shift is carried by the builder's cyan/amber lights.
+  meltwaterRift: {
+    clear: 0x0a0810,
+    fog: { color: 0x120c10, near: 15, far: 42 },
+    ambient: { color: 0xd8ccc0, intensity: 0.4 },
+    sun: { color: 0xe8d8c8, intensity: 0.45 },
+    fill: { color: 0xa06a48, intensity: 0.22 },
+    playerLight: { color: 0xffcf9a, intensity: 6.5, distance: 14 },
+  },
+  // Drowned city in a sea-grotto: near-black teal enclosure, dense watery fog,
+  // pale blue-green light from everywhere and nowhere. The builder's cyan
+  // glyph-lights and the Crystal Heart hub carry the legibility.
+  atlantis: {
+    clear: 0x061218,
+    fog: { color: 0x082028, near: 16, far: 46 },
+    ambient: { color: 0xa8d8e0, intensity: 0.42 },
+    sun: { color: 0x9fd8e8, intensity: 0.5 },
+    fill: { color: 0x2a7a88, intensity: 0.25 },
+    playerLight: { color: 0x9fe8ff, intensity: 6.5, distance: 15 },
   },
   // Ship cabin: warm lamplight over the wood-and-brass interior, deep space
   // beyond the hull. Fog pushed far out — the room is only 22 units across.
@@ -138,6 +191,14 @@ export class SceneManager {
     this._fill.position.set(-10, 10, -10);
     this.scene.add(this._fill);
 
+    // A lamp the player carries. Rides just above head height so it pools on
+    // the ground around them rather than only lighting their scalp. Physical
+    // units with decay 1, same convention as the mine lanterns (~4.5) — so the
+    // daylight default is deliberately faint and the caves carry the real work.
+    this._playerLight = new THREE.PointLight(0xffe9c8, 0, 9, 1);
+    this._playerLight.position.set(0, PLAYER_LIGHT_Y, 0);
+    this.scene.add(this._playerLight);
+
     // Target position for camera follow
     this._camTarget = new THREE.Vector3(0, 0, 0);
 
@@ -161,6 +222,10 @@ export class SceneManager {
    */
   setZoneAmbience(zoneName) {
     const p = ZONE_AMBIENCE[zoneName] || ZONE_AMBIENCE.default;
+    // Stash for the per-frame z-gradient lerp (zones without zGradient never
+    // touch the gradient path); force a re-apply on the next update.
+    this._ambPreset = p;
+    this._gradT = -1;
     this.renderer.setClearColor(p.clear);
     this.scene.fog.color.setHex(p.fog.color);
     this.scene.fog.near = p.fog.near;
@@ -171,6 +236,10 @@ export class SceneManager {
     this._sun.intensity = p.sun.intensity;
     this._fill.color.setHex(p.fill.color);
     this._fill.intensity = p.fill.intensity;
+    const pl = p.playerLight || ZONE_AMBIENCE.default.playerLight;
+    this._playerLight.color.setHex(pl.color);
+    this._playerLight.intensity = pl.intensity;
+    this._playerLight.distance = pl.distance;
   }
 
   _updateCameraFrustum() {
@@ -198,13 +267,40 @@ export class SceneManager {
       this._zoom += (this._zoomTarget - this._zoom) * CONFIG.ZOOM_LERP;
       this._updateCameraFrustum();
     }
+    // Zone z-gradient: lerp the palette (colors only) from the player's z.
+    const g = this._ambPreset && this._ambPreset.zGradient;
+    if (g) {
+      let t = (playerPos.z - g.z0) / (g.z1 - g.z0);
+      t = t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
+      if (Math.abs(t - this._gradT) > 0.003) {
+        this._gradT = t;
+        const p = this._ambPreset;
+        if (!this._gradA) { this._gradA = new THREE.Color(); this._gradB = new THREE.Color(); }
+        const mix = (baseHex, warmHex, apply) => {
+          this._gradA.setHex(baseHex);
+          this._gradB.setHex(warmHex);
+          apply(this._gradA.lerp(this._gradB, t));
+        };
+        mix(p.clear, g.clear, c => this.renderer.setClearColor(c));
+        mix(p.fog.color, g.fog, c => this.scene.fog.color.copy(c));
+        mix(p.ambient.color, g.ambient, c => this._ambient.color.copy(c));
+        mix(p.sun.color, g.sun, c => this._sun.color.copy(c));
+        mix(p.fill.color, g.fill, c => this._fill.color.copy(c));
+        mix((p.playerLight || ZONE_AMBIENCE.default.playerLight).color, g.playerLight,
+          c => this._playerLight.color.copy(c));
+      }
+    }
+    this._playerLight.position.set(playerPos.x, playerPos.y + PLAYER_LIGHT_Y, playerPos.z);
     const { x, y, z } = CONFIG.CAMERA_OFFSET;
-    this._camTarget.set(playerPos.x + x, y, playerPos.z + z);
+    // The rig rides the player's height (canopy climbs lift the whole camera),
+    // lerping smoothly like the XZ follow always has.
+    this._camTarget.set(playerPos.x + x, playerPos.y + y, playerPos.z + z);
     this.camera.position.lerp(this._camTarget, CONFIG.CAMERA_LERP);
-    // Keep lookAt direction constant
+    // Keep lookAt direction constant: look from wherever the camera is back
+    // along the fixed offset vector (generalizes the old y=0 ground look).
     const lookAt = new THREE.Vector3(
       this.camera.position.x - x,
-      0,
+      this.camera.position.y - y,
       this.camera.position.z - z
     );
     this.camera.lookAt(lookAt);

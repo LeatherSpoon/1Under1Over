@@ -12,8 +12,8 @@ export class GameStatistics {
     this.energyDepleted = 0;
   }
 
-  // landingSite, mine, depths, verdantMaw, lagoonCoast, frozenTundra, spaceship, workspace
-  static get TOTAL_WORLDS() { return 12; }
+  // One per zone in Environment.getZoneLabel() — enforced by zoneWiring.test.js
+  static get TOTAL_WORLDS() { return 14; }
 
   recordEnemyDefeated(zone) {
     this.enemiesDefeated++;

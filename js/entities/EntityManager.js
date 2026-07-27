@@ -32,16 +32,19 @@ export class EntityManager {
     this._spawnTimer = 0;
 
     // Store spawn configs (with archetype) for respawning — bosses are unique
-    // and never respawn on the timer.
+    // and never respawn on the timer. y/patrolR carry through so canopy
+    // spawns respawn at height with their tight patrol leash.
     this._spawnPositions = enemySpawns.filter(s => !s.boss).map(s => ({
-      x: s.x, z: s.z, archetype: s.archetype || 'serpendrill'
+      x: s.x, z: s.z, archetype: s.archetype || 'serpendrill',
+      y: s.y || 0, patrolR: s.patrolR,
     }));
 
     for (const s of enemySpawns) {
-      this.enemies.push(new Enemy(this.scene, s.x, s.z, s.archetype || 'serpendrill'));
+      this.enemies.push(new Enemy(this.scene, s.x, s.z, s.archetype || 'serpendrill',
+        { y: s.y || 0, patrolR: s.patrolR }));
     }
     for (const s of nodeSpawns) {
-      const node = new ResourceNode(this.scene, s.x, s.z, s.type);
+      const node = new ResourceNode(this.scene, s.x, s.z, s.type, s.y || 0);
       if (s.richness && s.richness > 1) {
         node.maxRichness = s.richness;
         node._richness = s.richness;
@@ -78,7 +81,8 @@ export class EntityManager {
       const maxEnemies = Math.min(this._spawnPositions.length, 3);
       if (this.enemies.length < maxEnemies) {
         const spawn = this._spawnPositions[Math.floor(Math.random() * this._spawnPositions.length)];
-        this.enemies.push(new Enemy(this.scene, spawn.x, spawn.z, spawn.archetype));
+        this.enemies.push(new Enemy(this.scene, spawn.x, spawn.z, spawn.archetype,
+          { y: spawn.y || 0, patrolR: spawn.patrolR }));
       }
     }
   }
@@ -97,7 +101,7 @@ export class EntityManager {
   getNodeCollisionCircles() {
     return this.resourceNodes
       .filter(n => !n.isDepleted)
-      .map(n => ({ x: n.position.x, z: n.position.z, r: n.collisionR }));
+      .map(n => ({ x: n.position.x, z: n.position.z, r: n.collisionR, y: n.position.y }));
   }
 
   findNearestNode(playerPos) {

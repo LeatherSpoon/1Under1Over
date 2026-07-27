@@ -55,6 +55,8 @@ const NODE_VISUALS = {
   silver:   { color: 0xccddee, shape: 'crystal', height: 0.6 },
   titanium: { color: 0x88aacc, shape: 'rock',    height: 0.6 },
   tungsten: { color: 0x445566, shape: 'rock',    height: 0.55 },
+  obsidian: { color: 0x2a2438, shape: 'crystal', height: 0.6 },
+  embermoss: { color: 0xd4622a, shape: 'plant',  height: 0.4 },
   resin:        { color: 0xaa7722, shape: 'plant',   height: 0.45 },
   ferrous_ore:  { color: 0x8b3a1a, shape: 'rock',    height: 0.55 },
   silica_sand:  { color: 0xe8d89a, shape: 'rock',    height: 0.35 },
@@ -64,10 +66,10 @@ const NODE_VISUALS = {
 let nodeIdCounter = 0;
 
 export class ResourceNode {
-  constructor(scene, x, z, materialType) {
+  constructor(scene, x, z, materialType, y = 0) {
     this.id = ++nodeIdCounter;
     this.scene = scene;
-    this.position = new THREE.Vector3(x, 0, z);
+    this.position = new THREE.Vector3(x, y, z); // y > 0 = canopy platform node
     this.materialType = materialType;
     this.gatherTime = 2.0; // seconds base
     this.respawnTime = 30; // seconds

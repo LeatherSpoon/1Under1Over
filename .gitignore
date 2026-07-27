@@ -20,3 +20,6 @@ Thumbs.db
 Desktop.ini
 .DS_Store
 *.blend1
+
+# Python bytecode from Blender build-script imports
+__pycache__/

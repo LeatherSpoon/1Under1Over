@@ -1,5 +1,6 @@
 import { SceneManager } from './scene/SceneManager.js';
 import { Environment } from './scene/Environment.js';
+import { resolveHeight } from './scene/walkableSurfaces.js';
 import { LootPopups } from './scene/LootPopups.js';
 import { Player, playerModelReady } from './entities/Player.js';
 import { EntityManager } from './entities/EntityManager.js';
@@ -549,7 +550,8 @@ gameStats.recordZoneVisit('landingSite'); // starting zone
 const ZONE_LORE = {
   landingSite: 'theLanding', mine: 'theMine', depths: 'theDepths',
   verdantMaw: 'theMaw', lagoonCoast: 'theCoast', frozenTundra: 'theTundra',
-  glacialHollow: 'theHollow', spaceship: 'theShip',
+  glacialHollow: 'theHollow', meltwaterRift: 'theRift', atlantis: 'theSunkenCity',
+  spaceship: 'theShip',
   homeSylva: 'denSylva', homeBram: 'lodgeBram', homeSprig: 'burrowSprig',
 };
 codexSystem.discover(ZONE_LORE.landingSite);
@@ -785,10 +787,39 @@ let _gatherDuration = 0;
 let _gatherType   = null;  // 'tree' | 'rock'
 let _gatherHintCooldown = 0;  // suppresses gather hints briefly after completion
 
+// How squarely the player must push into a block's face for walk-into mining to
+// fire. 1 = dead-on only, 0 = any contact including a pure slide. 0.8 sits above
+// the 0.707 a 45° diagonal produces, which is the case that matters: squeezing
+// along a corridor on W+A must not quietly dig the wall you are brushing past,
+// while heading straight at a face does.
+const WALK_MINE_PUSH_DOT = 0.8;
+
 function _energyCost(base) {
   const afterTech = techTree?.owned.has('energyEfficiency') ? base - 1 : base;
   // Frugal Circuits & other modifiers fold their energyCostMult in here.
   return Math.max(1, Math.round(afterTech * modifiers.energyCostMult));
+}
+
+/**
+ * Start drilling a rock. Shared by the [E] prompt and by walk-into mining, so
+ * both pay the same energy, honour the same tool gate and run the same timer —
+ * bumping a block must never be cheaper than deliberately mining it.
+ * Returns false (changing nothing) if the dig can't start.
+ */
+function _beginRockGather(rock) {
+  if (!rock || !rock.alive || _gatherType || _gatherHintCooldown > 0) return false;
+  if (!rock.props && !inventorySystem.hasTool('rockDrill')) return false; // surface boulder
+  const energyCost = _energyCost(rock.props ? rock.props.cost : CONFIG.ENERGY_COST_ROCK);
+  if (statsSystem.currentEnergy < energyCost) return false;
+
+  statsSystem.spendEnergy(energyCost);
+  _gatherTarget = rock;
+  _gatherTimer = 0;
+  _gatherDuration = (rock.props ? rock.props.duration : 3.0)
+    * (techTree?.owned.has('efficientMining') ? 0.75 : 1)
+    / (statsSystem.gatherSpeedMult * modifiers.gatherMult * ascension.gatherMultiplier);
+  _gatherType = 'rock';
+  return true;
 }
 
 const SPECIALTY_TOOL_NAMES = {
@@ -927,13 +958,7 @@ function handleExtendedGather(delta) {
 
     if (statsSystem.currentEnergy >= energyCost) {
       hud.showInteractHint(`[E/ACT] ${label}`);
-      if (keysDown.has('KeyE') || touchInput.actionPressed) {
-        statsSystem.spendEnergy(energyCost);
-        _gatherTarget = _nearestRock;
-        _gatherTimer = 0;
-        _gatherDuration = duration * (techTree?.owned.has('efficientMining') ? 0.75 : 1) / (statsSystem.gatherSpeedMult * modifiers.gatherMult * ascension.gatherMultiplier);
-        _gatherType = 'rock';
-      }
+      if (keysDown.has('KeyE') || touchInput.actionPressed) _beginRockGather(_nearestRock);
     } else {
       hud.showInteractHint(`${label} – need ${energyCost} energy`);
     }
@@ -1298,7 +1323,7 @@ let _actionCooldown = 0; // prevents instant re-trigger of [E] across interactio
 let _energyWasEmpty = false; // latch for the energy_empty achievement counter
 let _farmDirectorAt = 0;     // Farm Director module's 5s advance timer
 let _portalRefreshTimer = 0;
-window.__debugSystems = { inventorySystem, codexSystem, questSystem, hud, ppSystem, combatSim, trainingAreas, tripartite, statsSystem, modifiers, ascension, factorySystem, gameStats, pedometer, craftingSystem, chapters: chapterSystem, bossSystem, compute: computeSystem, offlineSystem, expedition, droneSystem, extractorSystem, sceneManager };
+window.__debugSystems = { inventorySystem, codexSystem, questSystem, hud, ppSystem, combatSim, trainingAreas, tripartite, statsSystem, modifiers, ascension, factorySystem, gameStats, pedometer, craftingSystem, chapters: chapterSystem, bossSystem, compute: computeSystem, offlineSystem, expedition, droneSystem, extractorSystem, sceneManager, entityManager };
 window.__debugSnapshot = () => {
   const hint = document.getElementById('interact-hint');
   const nearestNode = entityManager.findNearestNode(player.position);
@@ -1306,7 +1331,7 @@ window.__debugSnapshot = () => {
   const nearestTree = env.findNearestTree(player.position);
   return {
     zone: env.currentZone,
-    pos: { x: player.position.x, z: player.position.z },
+    pos: { x: player.position.x, y: player.position.y, z: player.position.z },
     hint: { text: hint?.textContent, hidden: hint?.hidden },
     state: {
       _gatherType, _pendingZone, _actionCooldown,
@@ -1346,8 +1371,16 @@ function gameLoop(now) {
   if (!player.isInCombat) {
     const PLAYER_R = 0.35;
 
+    // Collision circles carry an optional height (c.y, default 0) so canopy
+    // props don't block ground walkers and ground props don't block canopy
+    // walkers. The band is generous enough that a prop still blocks anyone
+    // on its own level.
+    const LEVEL_BAND = 1.6;
+    const py = player.position.y;
+
     // Circle collision (trees, portals, boulders, spaceship walls, etc.)
     for (const c of env.getCollisionCircles()) {
+      if (Math.abs((c.y || 0) - py) > LEVEL_BAND) continue;
       const cdx = player.position.x - c.x;
       const cdz = player.position.z - c.z;
       const dist = Math.hypot(cdx, cdz);
@@ -1361,6 +1394,7 @@ function gameLoop(now) {
 
     // Resource node collision
     for (const c of entityManager.getNodeCollisionCircles()) {
+      if (Math.abs((c.y || 0) - py) > LEVEL_BAND) continue;
       const cdx = player.position.x - c.x;
       const cdz = player.position.z - c.z;
       const dist = Math.hypot(cdx, cdz);
@@ -1380,6 +1414,7 @@ function gameLoop(now) {
       const dx = px - clampX, dz = pz - clampZ;
       const dist = Math.hypot(dx, dz);
       if (dist < PLAYER_R) {
+        let nx, nz;
         if (dist < 0.001) {
           // Player center inside box — push out via shortest face exit
           const exits = [
@@ -1391,13 +1426,68 @@ function gameLoop(now) {
           const e = exits.reduce((a, b) => a.gap < b.gap ? a : b);
           player.position.x += e.nx * (e.gap + PLAYER_R);
           player.position.z += e.nz * (e.gap + PLAYER_R);
+          nx = e.nx; nz = e.nz;
         } else {
-          const nx = dx / dist, nz = dz / dist;
+          nx = dx / dist; nz = dz / dist;
           player.position.x = clampX + nx * PLAYER_R;
           player.position.z = clampZ + nz * PLAYER_R;
         }
         player.group.position.copy(player.position);
+
+        // Walk-into mining: leaning on a mineable block digs it, no [E] needed.
+        // (nx, nz) points from the block out toward the player, so pushing *into*
+        // it means moving against that normal. `_beginRockGather` owns the
+        // energy/tool rules, and the block still blocks — the player passes only
+        // once it is actually mined out.
+        //
+        // Face contacts only. At a *corner* the normal is diagonal, so a diagonal
+        // move reads as dead-on — and since blocks abut, the player squeezing
+        // along a wall clips the corner of the next cell at every boundary and
+        // would dig the whole wall while just trying to walk past it. On a face
+        // the normal is axis-aligned, so W+A along it scores 0.707 and is
+        // correctly ignored, while walking straight at it scores 1.
+        const onFace = dist < 0.001 || dx === 0 || dz === 0;
+        if (onFace && box.rock && box.rock.props) {
+          const push = player.moveDirX * nx + player.moveDirZ * nz;
+          if (push <= -WALK_MINE_PUSH_DOT) _beginRockGather(box.rock);
+        }
       }
+    }
+
+    // Multi-level zones (canopy climbs): resolve which surface the player
+    // stands on at their final XZ this frame. A move onto nothing reachable
+    // (platform edge, wall of air) EDGE-FOLLOWS: the intended step is retried
+    // at increasing rotations toward each side, and the first legal direction
+    // wins — so walking against a curved rim (a helix band, a pad edge)
+    // glides along it instead of halting. Axis-aligned sliding was tried
+    // first and made descending the Hometree ramp feel like fighting a wall:
+    // on a curved edge, both single-axis fallbacks routinely leave the band
+    // at once, which reads as random sticking. Only if every probe fails
+    // (a dead-on inside corner) does the move revert outright.
+    const surfaces = env.getWalkableSurfaces();
+    if (surfaces.length > 0) {
+      const p = player.position;
+      let h = resolveHeight(surfaces, p.x, p.z, p.y);
+      if (h === null) {
+        const mdx = p.x - player.prevX, mdz = p.z - player.prevZ;
+        let resolved = false;
+        if (Math.hypot(mdx, mdz) > 1e-6) {
+          for (const a of [0.5, -0.5, 1.0, -1.0, 1.35, -1.35]) { // radians off intended
+            const ca = Math.cos(a), sa = Math.sin(a);
+            const nx = player.prevX + (mdx * ca - mdz * sa);
+            const nz = player.prevZ + (mdx * sa + mdz * ca);
+            const hh = resolveHeight(surfaces, nx, nz, p.y);
+            if (hh !== null) { p.x = nx; p.z = nz; h = hh; resolved = true; break; }
+          }
+        }
+        if (!resolved) {
+          p.x = player.prevX; p.z = player.prevZ;
+          h = resolveHeight(surfaces, p.x, p.z, p.y);
+          if (h === null) h = p.y; // collision shoved us somewhere odd — stay put
+        }
+      }
+      p.y = h;
+      player.group.position.copy(p);
     }
   }
 
@@ -1476,6 +1566,9 @@ function gameLoop(now) {
 
   // Mine chunked view — materialize rock visuals near the player, tear down far ones
   if (env._mineChunks) env._mineChunks.update(player.position);
+
+  // Spatial sectors — the same idea for large outdoor zones (js/scene/SectorView.js)
+  if (env._sectors) env._sectors.update(player.position);
 
   // Cave reveal ("transparency radius") — walls open a hole around the player.
   // Now redundant with the always-on through-wall ghost silhouette (Player.js),
@@ -1625,6 +1718,12 @@ function gameLoop(now) {
       if (dist < 2.5) {
         showingHint = true;
         showingPortalHint = true;
+        // Sealed future-zone thresholds (env._addSealedGate): hint only, no
+        // enter action — there is no zone behind them yet.
+        if (portal.sealed) {
+          hud.showInteractHint(portal.hint || `Sealed: ${portal.label}`);
+          break;
+        }
         const zoneUnlocked = portal.ppRequired === 0
           || pedometer.isZoneUnlocked(portal.targetZone)
           || bossSystem.hasClearance(portal.targetZone);
@@ -1659,6 +1758,45 @@ function gameLoop(now) {
 
   // Camera follows player
   sceneManager.update(player.position);
+
+  // Off-screen landmark indicators — portals and live bosses in the current
+  // zone. Unthrottled (called every frame, not through hud.update()'s 100ms
+  // throttle) so the arrows track smoothly as the player moves.
+  {
+    const navTargets = [];
+    for (const portal of env.getPortals()) {
+      if (portal.sealed) continue; // future-zone thresholds aren't real nav targets yet
+      navTargets.push({
+        id: `portal-${portal.position.x}-${portal.position.z}`,
+        label: portal.label || 'Gate',
+        kind: 'portal',
+        locked: portal.accessible === false,
+        x: portal.position.x, y: portal.position.y, z: portal.position.z,
+        distance: player.position.distanceTo(portal.position),
+      });
+    }
+    for (const enemy of entityManager.enemies) {
+      if (!enemy.boss || enemy.hp <= 0) continue;
+      navTargets.push({
+        id: `boss-${enemy.archetype}`,
+        label: enemy.name,
+        kind: 'boss',
+        x: enemy.position.x, y: enemy.position.y, z: enemy.position.z,
+        distance: player.position.distanceTo(enemy.position),
+      });
+    }
+    for (const lm of env.getNavLandmarks()) {
+      navTargets.push({
+        id: `lm-${lm.label}`,
+        label: lm.label,
+        kind: 'landmark',
+        x: lm.x, y: lm.y, z: lm.z,
+        distance: Math.hypot(lm.x - player.position.x, lm.y - player.position.y,
+                             lm.z - player.position.z),
+      });
+    }
+    hud.updateNavAid(sceneManager.camera, window.innerWidth, window.innerHeight, navTargets);
+  }
 
   // HUD update
   hud.update(now);

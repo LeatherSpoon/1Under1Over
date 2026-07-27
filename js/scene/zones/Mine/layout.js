@@ -42,9 +42,9 @@ export const MINE_MAP = [
   '           4...4         ', // r18
   '          4..4           ', // r19
   '        5.......5        ', // r20  the Breach
-  '       5.........5       ', // r21  ← ancient ring (0,28.8), world gates (±9.6,28.8)
+  '      .............5     ', // r21  ← gate gallery: Atlantis (-19.2), Maw (-9.6), ring (0), Tundra (9.6), Lagoon (19.2)
   '        .........        ', // r22
-  '          .....          ', // r23  ← Lagoon gate (0,35.2)
+  '         ......          ', // r23  ← south alcove (no gate — the shell wall hides this row)
   '                         ', // r24  z=+38.4
 ];
 
@@ -71,14 +71,20 @@ export const MINE_DRILL_POS  = { x: -9.6, z: 0 };
 export const MINE_BREACH_Z   = 14;
 
 // All zone gates. The return portal sits at the entrance; the Depths shaft is
-// in the working cavern (the mine keeps going down); the three world gates
+// in the working cavern (the mine keeps going down); the four world gates
 // stand inside the Breach chamber.
 export const MINE_ZONE_PORTALS = {
   landingSite:  { x: 0,    z: -32   }, // entrance (surface lift)
   depths:       { x: 16,   z: 6.4   }, // cavern — descending shaft
   verdantMaw:   { x: -9.6, z: 28.8  }, // Breach — west gate
   frozenTundra: { x: 9.6,  z: 28.8  }, // Breach — east gate
-  lagoonCoast:  { x: 0,    z: 35.2  }, // Breach — far gate
+  lagoonCoast:  { x: 19.2, z: 28.8 }, // Breach — east end of the gate gallery
+  // The far wall (row 23) sits in the shadow of the map's south shell wall, which
+  // is tall enough to hide anything standing there from the fixed camera — which
+  // is why this gate was hard to find. Row 21 is the row that reads, so the
+  // drowned gate stands at its west end, 9.6 out from Verdant Maw exactly as
+  // Verdant Maw and Frozen Tundra are spaced from the ring.
+  atlantis:     { x: -19.2, z: 28.8 }, // Breach — drowned gate, west end of the gate gallery
 };
 
 // 5-tier ore properties, indexed by tier
@@ -158,6 +164,33 @@ export function getMineableWallBlocks() {
     }
   }
   return blocks;
+}
+
+/**
+ * Mineable cells that are *not* exposed — the interior of the rock mass.
+ *
+ * These get a visual only: no logic object, no collision, no loot. They exist
+ * because without them the mine renders as a one-cell-thick shell of rock
+ * standing on open floor — you see straight past a rock face to the floor
+ * behind it, and digging appears to *create* the next rock rather than reveal
+ * it. A filler cell is by definition not adjacent to open floor, so the player
+ * can never reach one; when digging exposes it, the filler is swapped for the
+ * real mineable block (see _promoteFill in Mine/index.js).
+ *
+ * Same shape as getMineWallCells() on purpose — both render through
+ * _materializeWallCell, so a plain-rock filler and the block it becomes are
+ * pixel-identical.
+ */
+export function getMineFillCells() {
+  const cells = [];
+  for (let r = 0; r < _activeMap.length; r++) {
+    for (let c = 0; c < _activeMap[r].length; c++) {
+      if (!isMineableCell(cellAt(c, r)) || hasOpenNeighbor(c, r)) continue;
+      const { x, z } = mineCellToWorld(c, r);
+      cells.push({ x, z, c, r, region: mineRegionForRow(r) });
+    }
+  }
+  return cells;
 }
 
 /**

@@ -16,6 +16,8 @@ const MATERIAL_NAMES = [
   'copper', 'timber', 'stone', 'iron', 'carbon', 'quartz', 'silica',
   'fiber', 'silver', 'gold', 'titanium', 'tungsten', 'resin', 'epoxy',
   'elastomer', 'magnet', 'glass', 'lumber', 'seed',
+  // Meltwater Rift gatherables (crafting sinks land with that zone's tier)
+  'obsidian', 'embermoss',
   // Enemy drops
   'circuitWire', 'ironSpike', 'powerCore', 'armorPlate', 'burstCapacitor', 'logicChip',
   // Factory Raw

@@ -447,6 +447,8 @@ export class CombatSystem {
                     { mat: 'resin',          label: 'Resin',           chance: 0.30 }],
       bloomfang:   [{ mat: 'resin',          label: 'Resin',           chance: 0.50 },
                     { mat: 'silica',         label: 'Silica',          chance: 0.25 }],
+      duskdart:    [{ mat: 'fiber',          label: 'Fiber',           chance: 0.50 },
+                    { mat: 'resin',          label: 'Resin',           chance: 0.25 }],
       frostfang:   [{ mat: 'silver',         label: 'Silver',          chance: 0.50 },
                     { mat: 'quartz',         label: 'Quartz',          chance: 0.30 }],
       glacierback: [{ mat: 'armorPlate',     label: 'Armor Plate',     chance: 0.50 },
@@ -467,6 +469,14 @@ export class CombatSystem {
                     { mat: 'stone',          label: 'Stone',           chance: 0.40 }],
       bramblemaw:  [{ mat: 'ironSpike',      label: 'Iron Spike',      chance: 0.45 },
                     { mat: 'quartz',         label: 'Quartz',          chance: 0.30 }],
+      // Landing Site pack — T1 starter drops feed the first crafts (timber,
+      // fiber, stone) rather than anything the player cannot yet use.
+      mossback:    [{ mat: 'fiber',          label: 'Fiber',           chance: 0.55 },
+                    { mat: 'timber',         label: 'Timber',          chance: 0.35 }],
+      burrfang:    [{ mat: 'fiber',          label: 'Fiber',           chance: 0.50 },
+                    { mat: 'carbon_biomass', label: 'Carbon Biomass',  chance: 0.25 }],
+      stiltbeak:   [{ mat: 'stone',          label: 'Stone',           chance: 0.45 },
+                    { mat: 'quartz',         label: 'Quartz',          chance: 0.25 }],
       // Bosses — guaranteed hauls
       boss_landing: [{ mat: 'powerCore',   label: 'Power Core',   chance: 1, qty: 3 },
                      { mat: 'circuitWire', label: 'Circuit Wire', chance: 1, qty: 5 }],
