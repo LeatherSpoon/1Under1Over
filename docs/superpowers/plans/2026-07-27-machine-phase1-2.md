@@ -601,7 +601,7 @@ test('machine: staged delivery spends bills and the final stage installs', () =>
   assert.equal(machine.deliverStage('gen0'), false, 'installed part takes no more deliveries');
 });
 
-test('machine: grants recompute on install (generic keyed applier)', () => {
+test('machine: grants go live on install through the live getters', () => {
   const { machine } = makeMachine();
   machine.chapters.rungCrossed = () => true;
   machine.deliverStage('gen0'); machine.deliverStage('gen0');
@@ -722,6 +722,8 @@ Also add the import of `MACHINE_RESTORE_KEYS` to the test file's existing import
 
 Run: `npm test`
 Expected: PASS.
+
+**Review carry-forwards folded into this task (Task 3 quality review):** generic `hasCapability(cap)` + `analysisUnlocked` via `'analysisBay'` capability (data-edit remappability); a comment on `update()` routing future catch-up through `simulateOffline`; shortfall/unknown-id enqueue test; edge-behavior pin test (overflow discard, callback suppression + restoration, zero-second no-op, queued-job payment).
 
 - [ ] **Step 5: Commit**
 

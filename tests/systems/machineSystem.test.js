@@ -190,3 +190,101 @@ test('machine: simulateOffline finishes jobs closed-form and suppresses callback
   assert.equal(machine.simulateOffline(140), 1, 'remainder finishes');
   assert.equal(machine.labFindings('gen1').complete, true);
 });
+
+function completeInvestigation(machine, partId) {
+  const p = machine.getPart(partId);
+  if (p.findings.zoneLore) machine.codex.discover(p.findings.zoneLore);
+  for (const c of p.findings.codex) machine.codex.discover(c);
+  if (p.findings.boss) machine.bosses.recordDefeat(p.findings.boss);
+  for (const a of p.analyses) machine.enqueueAnalysis(partId, a.id);
+  machine.simulateOffline(1e7);
+}
+
+test('machine: staged delivery spends bills and the final stage installs', () => {
+  const { machine, pp, inv } = makeMachine();
+  let installed = null;
+  machine.onInstall = (part) => { installed = part.id; };
+  const ppBefore = pp.ppTotal;
+  const stoneBefore = inv.materials.stone;
+  assert.equal(machine.deliverStage('gen0'), true);
+  assert.equal(pp.ppTotal, ppBefore - 40);
+  assert.equal(inv.materials.stone, stoneBefore - 6);
+  assert.equal(machine.partState('gen0'), 'building', 'one stage left');
+  assert.equal(machine.deliverStage('gen0'), true);
+  assert.equal(installed, 'gen0', 'final stage fires onInstall');
+  assert.equal(machine.currentGen, 0);
+  assert.equal(machine.deliverStage('gen0'), false, 'installed part takes no more deliveries');
+});
+
+test('machine: grants go live on install through the live getters', () => {
+  const { machine } = makeMachine();
+  machine.chapters.rungCrossed = () => true;
+  machine.deliverStage('gen0'); machine.deliverStage('gen0');
+  assert.equal(machine.gatherMult, 1);
+  completeInvestigation(machine, 'gen1');
+  assert.equal(machine.partState('gen1'), 'building');
+  for (let i = 0; i < 3; i++) assert.equal(machine.deliverStage('gen1'), true, `gen1 stage ${i}`);
+  assert.ok(Math.abs(machine.gatherMult - 1.15) < 1e-9, 'gen1 grant live');
+  assert.deepEqual(machine.restoreTiers(), { baseCapStart: 225 });
+});
+
+test('machine: restore tiers only ever use run-layer keys', () => {
+  // The run-layer guarantee is structural: the registry key set is closed and
+  // every key names a field recompileReset()/recompile() already clears.
+  for (const p of MACHINE_PARTS) {
+    for (const k of Object.keys(p.restore)) {
+      assert.ok(MACHINE_RESTORE_KEYS.includes(k), `${p.id}: restore key '${k}' outside the closed run-layer set`);
+    }
+  }
+});
+
+test('machine: expansion racks scale bills ×1.6 and stack +4% PP each', () => {
+  const { machine } = makeMachine();
+  machine.deliverStage('gen0'); machine.deliverStage('gen0');
+  assert.equal(machine.canBuildMinor(), false, 'no warden rungs crossed');
+  machine.chapters.wardensCrossedLifetime = () => 2;
+  assert.equal(machine.minorsAvailable, 2);
+  const bill0 = machine.minorBill();
+  assert.equal(bill0.pp, 400);
+  assert.equal(machine.buildMinor(), true);
+  const bill1 = machine.minorBill();
+  assert.equal(bill1.pp, Math.ceil(400 * 1.6));
+  assert.equal(bill1.mats.iron, Math.ceil(10 * 1.6));
+  assert.equal(machine.buildMinor(), true);
+  assert.equal(machine.minorsAvailable, 0);
+  assert.equal(machine.buildMinor(), false, 'no rack without a crossed rung behind it');
+  assert.ok(Math.abs(machine.ppMult - 1.08) < 1e-9, 'two racks = +8%');
+});
+
+test('machine: enqueue fails without payment and consumes nothing', () => {
+  const { machine, inv } = makeMachine();
+  machine.chapters.rungCrossed = () => true;
+  machine.installed.add('gen0');
+  inv.materials.fiber = 3; // meadow_flora needs 8
+  assert.equal(machine.enqueueAnalysis('gen1', 'meadow_flora'), false);
+  assert.equal(inv.materials.fiber, 3, 'shortfall must not consume');
+  assert.equal(machine.analysisJob, null);
+  assert.equal(machine.enqueueAnalysis('gen1', 'not_an_analysis'), false);
+  assert.equal(machine.enqueueAnalysis('nope', 'meadow_flora'), false);
+});
+
+test('machine: analysis bay edge behaviors are pinned', () => {
+  const { machine, inv } = makeMachine();
+  machine.chapters.rungCrossed = () => true;
+  machine.installed.add('gen0');
+  const copperBefore = inv.materials.copper;
+  machine.enqueueAnalysis('gen1', 'meadow_flora');   // 240s
+  machine.enqueueAnalysis('gen1', 'scrap_alloys');   // 300s, queued
+  assert.equal(inv.materials.copper, copperBefore - 8, 'queued job also paid at enqueue');
+  let fired = 0;
+  machine.onAnalysisComplete = () => { fired++; };
+  machine.update(500); // overshoots job 1 by 260s
+  assert.equal(machine.analysisJob.progress, 0, 'overflow is deliberately discarded online');
+  assert.equal(fired, 1, 'online completion fires the callback');
+  assert.equal(machine.simulateOffline(0), 0, 'zero seconds is a no-op');
+  assert.equal(machine.simulateOffline(300), 1, 'remainder finishes silently');
+  assert.equal(fired, 1, 'offline completion did not fire');
+  machine.enqueueAnalysis('gen2', 'ore_bands');      // 420s
+  machine.update(421);
+  assert.equal(fired, 2, 'callback restored after offline suppression');
+});

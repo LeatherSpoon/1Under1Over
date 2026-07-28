@@ -47,7 +47,11 @@ export class MachineSystem {
     return g;
   }
 
-  get analysisUnlocked() { return this.installed.has('gen0'); }
+  hasCapability(cap) {
+    return MACHINE_PARTS.some(p => this.installed.has(p.id) && p.capability === cap);
+  }
+
+  get analysisUnlocked() { return this.hasCapability('analysisBay'); }
 
   consoleHint() {
     return this.currentGen < 0
@@ -118,6 +122,7 @@ export class MachineSystem {
   }
 
   update(delta) {
+    // Frame-tick path (delta ≤ 0.1 s via main.js clamp). Any future catch-up or time-skip must route through simulateOffline — this path deliberately completes at most one job per call.
     if (!this.analysisJob) return;
     this.analysisJob.progress += delta;
     if (this.analysisJob.progress >= this.analysisJob.duration) this._completeAnalysis();
@@ -151,6 +156,69 @@ export class MachineSystem {
     }
     this.onAnalysisComplete = savedCb;
     return completed;
+  }
+
+  // ── Build stages + install ──────────────────────────────────────────────────
+  stageBill(partId) {
+    const p = this.getPart(partId);
+    if (!p || this.installed.has(partId)) return null;
+    return p.stageBills[this.stagesDelivered[partId] || 0] || null;
+  }
+
+  canDeliverStage(partId) {
+    if (this.partState(partId) !== 'building') return false;
+    const bill = this.stageBill(partId);
+    return !!bill && this.pp.ppTotal >= bill.pp && this.inventory.hasMaterials(bill.mats);
+  }
+
+  deliverStage(partId) {
+    if (!this.canDeliverStage(partId)) return false;
+    const bill = this.stageBill(partId);
+    if (!this.pp.spend(bill.pp)) return false;
+    for (const [mat, qty] of Object.entries(bill.mats)) this.inventory.removeMaterial(mat, qty);
+    this.stagesDelivered[partId] = (this.stagesDelivered[partId] || 0) + 1;
+    const p = this.getPart(partId);
+    if (this.stagesDelivered[partId] >= p.stageBills.length) this._install(p);
+    return true;
+  }
+
+  _install(part) {
+    this.installed.add(part.id);
+    if (this.onInstall) this.onInstall(part);
+  }
+
+  // ── Expansion Racks — one earned per crossed warden rung, forever ──────────
+  get minorsAvailable() {
+    const crossed = this.chapters ? this.chapters.wardensCrossedLifetime() : 0;
+    return Math.max(0, crossed - this.minorsBuilt);
+  }
+
+  minorBill() {
+    const scale = Math.pow(MACHINE_MINOR.billGrowth, this.minorsBuilt);
+    const mats = {};
+    for (const [m, q] of Object.entries(MACHINE_MINOR.billBase.mats)) mats[m] = Math.ceil(q * scale);
+    return { pp: Math.ceil(MACHINE_MINOR.billBase.pp * scale), mats };
+  }
+
+  canBuildMinor() {
+    if (this.currentGen < 0 || this.minorsAvailable <= 0) return false;
+    const bill = this.minorBill();
+    return this.pp.ppTotal >= bill.pp && this.inventory.hasMaterials(bill.mats);
+  }
+
+  buildMinor() {
+    if (!this.canBuildMinor()) return false;
+    const bill = this.minorBill();
+    if (!this.pp.spend(bill.pp)) return false;
+    for (const [mat, qty] of Object.entries(bill.mats)) this.inventory.removeMaterial(mat, qty);
+    this.minorsBuilt += 1;
+    if (this.onInstall) {
+      this.onInstall({
+        id: `minor_${this.minorsBuilt}`, gen: this.currentGen,
+        name: `${MACHINE_MINOR.name} ${this.minorsBuilt}`, minor: true,
+      });
+    }
+    return true;
   }
 
   // ── Grants — live getters over the registry (the modularity contract) ──────
