@@ -58,6 +58,7 @@ import { ChallengeSystem } from './systems/ChallengeSystem.js';
 import { NeuralImplantSystem } from './systems/NeuralImplantSystem.js';
 import { TrainingAreaSystem } from './systems/TrainingAreaSystem.js';
 import { ComputeSystem } from './systems/ComputeSystem.js';
+import { MachineSystem } from './systems/MachineSystem.js';
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
 
@@ -133,6 +134,7 @@ const tripartite      = new TripartiteSystem(ppSystem);
 const questSystem     = new QuestSystem();
 const bossSystem      = new BossSystem(ppSystem);
 const chapterSystem   = new ChapterSystem(bossSystem, ppSystem);
+const machineSystem   = new MachineSystem(inventorySystem, ppSystem);
 const expedition      = new ExpeditionSystem(ppSystem, statsSystem, inventorySystem);
 const challenges      = new ChallengeSystem(ppSystem);
 const neuralImplant   = new NeuralImplantSystem(ppSystem, statsSystem);
@@ -541,6 +543,26 @@ syncClient.bootstrap();
 
 hud.prog.chapters = chapterSystem; // chapter chain drives tab gates + identity display
 hud.compute = computeSystem; // allocation board section in the ALLOC panel
+machineSystem.codex = codexSystem;
+machineSystem.bosses = bossSystem;
+machineSystem.chapters = chapterSystem;
+hud.machine = machineSystem;
+env._machineState = () => ({ gen: machineSystem.currentGen, minors: machineSystem.minorsBuilt });
+machineSystem.onInstall = (part) => {
+  hud.showAchievementToast({
+    icon: '🛠️',
+    label: `${part.name} installed`,
+    desc: part.minor ? 'The machine grows.' : `Machine generation ${part.gen} online.`,
+    reward: 0,
+  });
+  env.refreshMachine();
+  const panel = document.getElementById('machine-panel');
+  if (panel && !panel.hidden) hud._refreshMachine();
+};
+machineSystem.onAnalysisComplete = () => {
+  const panel = document.getElementById('machine-panel');
+  if (panel && !panel.hidden) hud._refreshMachine();
+};
 hud.setZoneLabel(env.getZoneLabel());
 gameStats.recordZoneVisit('landingSite'); // starting zone
 // questSystem.recordZoneVisit fires on switchZone; record start zone explicitly after wiring
@@ -606,6 +628,7 @@ const saveSystem = new SaveSystem({
   mineDelve,
   trainingAreas,
   compute: computeSystem,
+  machine: machineSystem,
 });
 
 // World-space effects (offload burst, etc.)
@@ -817,7 +840,7 @@ function _beginRockGather(rock) {
   _gatherTimer = 0;
   _gatherDuration = (rock.props ? rock.props.duration : 3.0)
     * (techTree?.owned.has('efficientMining') ? 0.75 : 1)
-    / (statsSystem.gatherSpeedMult * modifiers.gatherMult * ascension.gatherMultiplier);
+    / (statsSystem.gatherSpeedMult * modifiers.gatherMult * ascension.gatherMultiplier * machineSystem.gatherMult);
   _gatherType = 'rock';
   return true;
 }
@@ -930,7 +953,7 @@ function handleExtendedGather(delta) {
           statsSystem.spendEnergy(_energyCost(CONFIG.ENERGY_COST_TREE));
           _gatherTarget = _nearestTree;
           _gatherTimer = 0;
-          _gatherDuration = 2.5 * (techTree?.owned.has('swiftHarvest') ? 0.8 : 1) / (statsSystem.gatherSpeedMult * modifiers.gatherMult * ascension.gatherMultiplier);
+          _gatherDuration = 2.5 * (techTree?.owned.has('swiftHarvest') ? 0.8 : 1) / (statsSystem.gatherSpeedMult * modifiers.gatherMult * ascension.gatherMultiplier * machineSystem.gatherMult);
           _gatherType = 'tree';
         }
       } else {
@@ -1513,6 +1536,7 @@ function gameLoop(now) {
     trainingAreas.setActive(null);
   }
   trainingAreas.update(delta);
+  machineSystem.update(delta);
   hud.updateTrainingOverlay(trainingAreas);
   worldEffects.update(delta);
 
@@ -1624,7 +1648,8 @@ function gameLoop(now) {
 
   // Keep permanent multipliers synced: ascension × challenge rewards on PP,
   // boss trophies × challenge rewards on damage (also feeds the expedition sim)
-  ppSystem.globalMultiplier = ascension.ppMultiplier * challenges.ppRateMult * factorySystem.moduleGlobalMult;
+  ppSystem.globalMultiplier = ascension.ppMultiplier * challenges.ppRateMult * factorySystem.moduleGlobalMult * machineSystem.ppMult;
+  craftingSystem.speedMult = machineSystem.craftSpeedMult;
   combatSystem.permDamageMult = bossSystem.damageMult * challenges.damageMult * ascension.combatMultiplier;
   expedition.damageMult = combatSystem.damageMult * combatSystem.permDamageMult;
 
@@ -1696,6 +1721,28 @@ function gameLoop(now) {
   // Workspace station interactions
   if (!showingHint && !player.isInCombat) {
     if (handleWorkspaceInteractions()) showingHint = true;
+  }
+
+  // The Machine — surface computer console (Landing Site plot). Not folded
+  // into handleSpaceshipInteractions' reg() candidates list above: that
+  // function returns false at its very top for every zone but 'spaceship',
+  // so a reg() call added there would never fire on the Landing Site. This
+  // check instead runs every frame; getMachineConsolePos() is null on every
+  // zone except the Landing Site (reset in Environment.switchZone, set only
+  // by that zone's builder), so the null check is the only gate it needs.
+  if (!showingHint && !player.isInCombat) {
+    const machinePos = env.getMachineConsolePos();
+    if (machinePos) {
+      const dist = Math.hypot(player.position.x - machinePos.x, player.position.z - machinePos.z);
+      if (dist < 2.2) {
+        showingHint = true;
+        hud.showInteractHint(machineSystem.consoleHint());
+        if ((keysDown.has('KeyE') || touchInput.actionPressed) && _actionCooldown <= 0) {
+          togglePanel('machine-panel');
+          _actionCooldown = 0.5;
+        }
+      }
+    }
   }
 
   // Resource node gathering

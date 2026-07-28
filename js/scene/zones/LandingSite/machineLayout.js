@@ -51,9 +51,11 @@ export function consolePos(gen) {
 
 // Expansion racks march east of the core in seeded 3-row columns. Anchored to
 // the WIDEST core (gen2, the last GEN_CORE row) rather than whichever gen is
-// current, so a rack placed while the core is still small (gen0/gen1) can
-// never end up swallowed once a later upgrade grows the core body — the
-// anchor is fixed at the largest size the core will ever reach.
+// current, so a rack's position — and its collision circle — never moves
+// when the core later upgrades; the anchor is fixed at the largest size the
+// core will ever reach. That fixed anchor is also what lets rackSlot() stay
+// a pure, single-argument function of the rack index alone — it never needs
+// the current gen to compute a slot.
 const RACK_ANCHOR_W = GEN_CORE[GEN_CORE.length - 1].w;
 const RACK_COL_PITCH = 0.9;
 const RACK_ROW_PITCH = 1.4;
@@ -77,8 +79,9 @@ export function rackSlot(i) {
 // brushes the world boundary) gives:
 //   MACHINE_CORE.x(20) + 2.7 + 0.9c + 0.5 <= 34  =>  0.9c <= 10.8  =>  c <= 12
 // Column 12 is last reached by rack index 38 (floor(38/3) = 12), so the cap
-// is 39 racks (indices 0..38). Excess racks beyond the cap densify rather
-// than sprawl further east — the kit pass owns that visual.
+// is 39 racks (indices 0..38). Racks beyond the cap simply aren't drawn — no
+// mesh, no collision circle — bounded rather than sprawling further east;
+// a denser layout for the excess is left to the kit pass.
 export const RACK_DRAW_CAP = 39;
 
 export function drawnRacks(minors) {

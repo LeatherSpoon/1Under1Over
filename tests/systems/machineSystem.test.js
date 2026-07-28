@@ -447,7 +447,7 @@ test('the console pedestal tracks the collision-blocked approach point at every 
   // player at r + PLAYER_R (0.35) from a prop's centre, so the console must
   // stay close to where a west-approaching player actually stops walking,
   // or the interact prompt never fires.
-  for (let gen = 0; gen < GEN_CORE.length; gen++) {
+  for (let gen = -1; gen < GEN_CORE.length; gen++) {
     const [coreCircle] = machineCircles(gen, 0);
     const stopX = MACHINE_CORE.x - (coreCircle.r + 0.35);
     const diff = Math.abs(stopX - consolePos(gen).x);
@@ -481,4 +481,14 @@ test('core silhouette grows monotonically across every generation', () => {
     assert.ok(f.coreD > prev.coreD, `gen ${g} must be deeper than gen ${g - 1}`);
     prev = f;
   }
+});
+
+test('main.js feeds the machine (wiring pins)', () => {
+  const src = fs.readFileSync(new URL('../../js/main.js', import.meta.url), 'utf8');
+  assert.ok(/\* machineSystem\.ppMult;/.test(src), 'ppMult not folded into globalMultiplier');
+  assert.ok(/craftingSystem\.speedMult = machineSystem\.craftSpeedMult;/.test(src), 'craft speed feed missing');
+  assert.equal((src.match(/\* machineSystem\.gatherMult\)/g) || []).length, 2, 'gatherMult must fold into BOTH gather-duration sites');
+  assert.ok(/machineSystem\.update\(delta\);/.test(src), 'tick missing from the game loop');
+  assert.ok(/machine:\s*machineSystem,/.test(src), 'machine missing from the SaveSystem bag');
+  assert.ok(/env\._machineState = /.test(src), 'env._machineState feed missing');
 });
