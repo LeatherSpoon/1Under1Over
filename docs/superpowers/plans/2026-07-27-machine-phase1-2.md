@@ -1666,6 +1666,19 @@ git commit -m "feat(machine): console panel — dossiers, analysis bay, staged b
 Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
+**Review pass** (post-Step-5, `js/ui/HUD.js` only — `fix(machine): panel review pass`):
+
+1. ANALYZE buttons gate on `!machine.analysisUnlocked || !this.inventory.hasMaterials(a.input)`, not just materials; an investigating/building card with analyses shows a one-time `Analysis Bay offline — assemble the Field Core first.` hint (`#8899aa`) while the bay isn't installed.
+2. The 1s live-refresh block (`machine-panel` added alongside the other idle panels) now calls a new `_updateMachineLive()` instead of a full `_refreshMachine()`: it rewrites the running analysis's `%` text in place and refreshes every ANALYZE/DELIVER STAGE/BUILD RACK button's `.disabled`, falling back to a full rebuild only when the running job's identity changes (started/completed/swapped). `_refreshMachine()` stashes `this._machineLive = { runningEl, running, gated }` at the end of each rebuild and clears it to `null` at the top (stale-node hygiene).
+3. Expansion Racks line fixed: `built N · M ready to build (...)` — `minorsAvailable` is unbuilt-but-earned, not a lifetime warden count; the old "earned N" copy misreported a fully-built player as having crossed zero wardens.
+4. Material keys in bill text and ANALYZE input lists now route through the existing module-scope `_matLabel()` helper; a new `GRANT_LABELS` map (module scope, beside `_matLabel`/`ICON_IMG_KEYS` — physically the closest a module-level const can sit to a method this deep inside the `HUD` class) gives grants friendly names (`Gather speed`/`Craft speed`/`PP rate`), falling back to `_matLabel()` for any future grant key.
+5. Locked-part hint now reads `machine.chapters?.rungInfo(part.rung)` and renders `Locked until CH.N — <label>.`, falling back to the old rung-number sentence if chapters is unwired or the rung has no label.
+6. `machine-contents`' `scrollTop` is captured before each rebuild and restored after, so an open card list doesn't jump to the top every refresh.
+8. The `building`-state stage row/button only render when `machine.stageBill(part.id)` is truthy, so a data-only shortening of a part's `stageBills` can't blank the whole card for an existing save.
+9. Badge glyph for the installed state changed from `✅` to `✔` (house check mark, matching the ☑/☐ glyphs used elsewhere in the panel).
+
+Item 7 (shared console-card styling — extracting the repeated card/badge/button look into a common class instead of the ad hoc inline styles used here and in `_refreshTraining()`) is deferred to the polish/asset pass, not addressed in this round.
+
 ---
 
 ### Task 10: Live verification + docs

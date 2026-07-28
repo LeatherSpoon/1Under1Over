@@ -101,6 +101,12 @@ function _matLabel(key) {
     .replace(/\b\w/g, c => c.toUpperCase());      // title-case each word
 }
 
+// Friendly labels for Machine-part grant keys (used by _refreshMachine() below —
+// physically module scope like the other lookup maps here, since that method
+// lives deep inside the HUD class and can't host a sibling const). Falls back
+// to _matLabel() for any grant key not listed here (e.g. a future computeUnits grant).
+const GRANT_LABELS = { gatherMult: 'Gather speed', craftSpeedMult: 'Craft speed', ppMult: 'PP rate' };
+
 // Items with hand-painted art in Assets/Inventory/icons/ (128px, generated from
 // the 1024px originals in Assets/Inventory/). Keys not listed here fall back to
 // the colored-label INV_ICONS style.
@@ -895,6 +901,8 @@ export class HUD {
     const el = document.getElementById('machine-contents');
     const machine = this.machine;
     if (!el || !machine) return;
+    this._machineLive = null; // stale-node hygiene — rebuilt fresh below
+    const savedScrollTop = el.scrollTop;
     el.innerHTML = '';
 
     const head = document.createElement('div');
@@ -905,7 +913,12 @@ export class HUD {
     el.appendChild(head);
 
     const billText = (bill) => [`${bill.pp} PP`]
-      .concat(Object.entries(bill.mats).map(([m, q]) => `${m} ×${q}`)).join(' · ');
+      .concat(Object.entries(bill.mats).map(([m, q]) => `${_matLabel(m)} ×${q}`)).join(' · ');
+
+    // Live-tick bookkeeping — filled in as cards are built, stashed on this._machineLive below.
+    let liveRunningEl = null;
+    let liveRunning = null;
+    const liveGated = [];
 
     for (const part of machine.constructor.PARTS) {
       const state = machine.partState(part.id);
@@ -914,7 +927,7 @@ export class HUD {
 
       const title = document.createElement('div');
       title.style.cssText = 'display:flex;justify-content:space-between;gap:8px;';
-      const badge = { locked: '🔒 LOCKED', investigating: '🔬 INVESTIGATING', building: '🔧 BUILDING', installed: '✅ INSTALLED' }[state] || state;
+      const badge = { locked: '🔒 LOCKED', investigating: '🔬 INVESTIGATING', building: '🔧 BUILDING', installed: '✔ INSTALLED' }[state] || state;
       title.innerHTML = `<b>GEN ${part.gen} — ${part.name}</b><span>${badge}</span>`;
       card.appendChild(title);
 
@@ -928,7 +941,10 @@ export class HUD {
       if (state === 'locked') {
         const hint = document.createElement('div');
         hint.style.cssText = 'color:#8899aa;font-size:0.8rem;';
-        hint.textContent = `Cross chapter rung ${part.rung} to open this dossier.`;
+        const info = machine.chapters?.rungInfo(part.rung);
+        hint.textContent = info?.label
+          ? `Locked until CH.${part.rung} — ${info.label}.`
+          : `Cross chapter rung ${part.rung} to open this dossier.`;
         card.appendChild(hint);
         el.appendChild(card);
         continue;
@@ -942,6 +958,14 @@ export class HUD {
           r.textContent = `${row.done ? '☑' : '☐'} ${row.label}`;
           card.appendChild(r);
         }
+
+        if (!machine.analysisUnlocked && part.analyses.length > 0) {
+          const bayHint = document.createElement('div');
+          bayHint.style.cssText = 'color:#8899aa;font-size:0.8rem;';
+          bayHint.textContent = 'Analysis Bay offline — assemble the Field Core first.';
+          card.appendChild(bayHint);
+        }
+
         for (const a of part.analyses) {
           const row = document.createElement('div');
           row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;gap:8px;';
@@ -953,33 +977,40 @@ export class HUD {
           label.style.color = done ? '#7fd8a8' : '#aab8cc';
           label.textContent = `${done ? '☑' : '☐'} ${a.label}${running ? ' — analyzing' + pct : queued ? ' — queued' : ''}`;
           row.appendChild(label);
+          if (running) { liveRunningEl = label; liveRunning = { partId: part.id, analysisId: a.id }; }
           if (!done && !queued) {
             const btn = document.createElement('button');
-            btn.textContent = `ANALYZE (${Object.entries(a.input).map(([m, q]) => `${m} ×${q}`).join(', ')})`;
+            btn.textContent = `ANALYZE (${Object.entries(a.input).map(([m, q]) => `${_matLabel(m)} ×${q}`).join(', ')})`;
+            btn.disabled = !machine.analysisUnlocked || !this.inventory.hasMaterials(a.input);
             btn.addEventListener('click', () => { machine.enqueueAnalysis(part.id, a.id); this._refreshMachine(); });
             row.appendChild(btn);
+            liveGated.push({ el: btn, enabled: () => machine.analysisUnlocked && this.inventory.hasMaterials(a.input) });
           }
           card.appendChild(row);
         }
       }
 
       if (state === 'building') {
-        const delivered = machine.stagesDelivered[part.id] || 0;
-        const stage = document.createElement('div');
-        stage.style.cssText = 'margin-top:6px;font-size:0.8rem;color:#cfe8ff;';
-        stage.textContent = `Build stage ${delivered + 1} / ${part.stageBills.length} — ${billText(machine.stageBill(part.id))}`;
-        card.appendChild(stage);
-        const btn = document.createElement('button');
-        btn.textContent = 'DELIVER STAGE';
-        btn.disabled = !machine.canDeliverStage(part.id);
-        btn.addEventListener('click', () => { machine.deliverStage(part.id); this._refreshMachine(); });
-        card.appendChild(btn);
+        const bill = machine.stageBill(part.id);
+        if (bill) {
+          const delivered = machine.stagesDelivered[part.id] || 0;
+          const stage = document.createElement('div');
+          stage.style.cssText = 'margin-top:6px;font-size:0.8rem;color:#cfe8ff;';
+          stage.textContent = `Build stage ${delivered + 1} / ${part.stageBills.length} — ${billText(bill)}`;
+          card.appendChild(stage);
+          const btn = document.createElement('button');
+          btn.textContent = 'DELIVER STAGE';
+          btn.disabled = !machine.canDeliverStage(part.id);
+          btn.addEventListener('click', () => { machine.deliverStage(part.id); this._refreshMachine(); });
+          card.appendChild(btn);
+          liveGated.push({ el: btn, enabled: () => machine.canDeliverStage(part.id) });
+        }
       }
 
       if (state === 'installed' && Object.keys(part.grants).length) {
         const g = document.createElement('div');
         g.style.cssText = 'color:#7fd8a8;font-size:0.8rem;';
-        g.textContent = 'Online: ' + Object.entries(part.grants).map(([k, v]) => `${k} ×${v}`).join(' · ');
+        g.textContent = 'Online: ' + Object.entries(part.grants).map(([k, v]) => `${GRANT_LABELS[k] || _matLabel(k)} ×${v}`).join(' · ');
         card.appendChild(g);
       }
 
@@ -991,7 +1022,7 @@ export class HUD {
     minor.className = 'training-program';
     const avail = machine.minorsAvailable;
     const mTitle = document.createElement('div');
-    mTitle.innerHTML = `<b>EXPANSION RACKS</b> — built ${machine.minorsBuilt}, earned ${avail} (one per Sim Warden crossed)`;
+    mTitle.innerHTML = `<b>EXPANSION RACKS</b> — built ${machine.minorsBuilt} · ${avail} ready to build (one per Sim Warden crossed)`;
     minor.appendChild(mTitle);
     if (machine.currentGen >= 0 && avail > 0) {
       const bill = document.createElement('div');
@@ -1003,8 +1034,43 @@ export class HUD {
       btn.disabled = !machine.canBuildMinor();
       btn.addEventListener('click', () => { machine.buildMinor(); this._refreshMachine(); });
       minor.appendChild(btn);
+      liveGated.push({ el: btn, enabled: () => machine.canBuildMinor() });
     }
     el.appendChild(minor);
+
+    el.scrollTop = savedScrollTop;
+    this._machineLive = { runningEl: liveRunningEl, running: liveRunning, gated: liveGated };
+  }
+
+  // In-place 1s tick for the open Machine console — avoids a full DOM rebuild
+  // every second (which would thrash scroll position and any button the
+  // player has mid-hover/click). Only rewrites the running-analysis % text
+  // and button .disabled states; falls back to a full _refreshMachine() the
+  // moment the running job's identity changes (started/completed/swapped).
+  _updateMachineLive() {
+    const panel = document.getElementById('machine-panel');
+    const live = this._machineLive;
+    if (!panel || panel.hidden || !live) return;
+    const machine = this.machine;
+    if (!machine) return;
+
+    const job = machine.analysisJob;
+    const jobKey = job ? `${job.partId}:${job.analysisId}` : null;
+    const liveKey = live.running ? `${live.running.partId}:${live.running.analysisId}` : null;
+
+    if (jobKey !== liveKey) {
+      this._refreshMachine();
+      return;
+    }
+    if (job && live.runningEl) {
+      const part = machine.getPart(job.partId);
+      const a = part?.analyses.find(x => x.id === job.analysisId);
+      if (a) {
+        const pct = Math.floor(job.progress / job.duration * 100);
+        live.runningEl.textContent = `☐ ${a.label} — analyzing ${pct}%`;
+      }
+    }
+    for (const g of live.gated) g.el.disabled = !g.enabled();
   }
 
   /**
@@ -3139,6 +3205,7 @@ export class HUD {
         ['challenges-panel', () => this._refreshChallenges()],
         ['implant-panel',    () => this._refreshImplant()],
         ['ascension-panel',  () => this._refreshAscension()],
+        ['machine-panel',    () => this._updateMachineLive()],
       ]) {
         const p = document.getElementById(id);
         if (p && !p.hidden) fn();
