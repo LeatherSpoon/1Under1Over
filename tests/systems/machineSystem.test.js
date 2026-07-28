@@ -387,3 +387,9 @@ test('machine: stage delivery refuses on material shortfall and charges nothing'
   assert.equal(inv.materials.stone, 1);
   assert.equal(machine.stagesDelivered.gen0 || 0, 0, 'stage did not advance');
 });
+
+test('CraftingSystem exposes the machine speed hook', () => {
+  const src = fs.readFileSync(new URL('../../js/systems/CraftingSystem.js', import.meta.url), 'utf8');
+  assert.ok(src.includes('this.speedMult = 1'), 'speedMult field missing');
+  assert.ok(/\* \(this\.speedMult \|\| 1\)\)/.test(src), 'craft-time divisor must include speedMult');
+});
