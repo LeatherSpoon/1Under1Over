@@ -9,6 +9,12 @@ import {
   MACHINE_PARTS, MACHINE_MINOR,
 } from '../../server/definitions/systemsData.js';
 
+// Grant keys with a live consumer wired in main.js TODAY. The registry may
+// declare more (MACHINE_GRANT_KEYS) for later phases, but a part may only
+// USE a key once its consumer exists — pinned by the registry test so a
+// data edit can never silently do nothing in-game.
+export const CONSUMED_GRANT_KEYS = ['gatherMult', 'craftSpeedMult', 'ppMult'];
+
 export class MachineSystem {
   static get PARTS() { return MACHINE_PARTS; }
   static get MINOR() { return MACHINE_MINOR; }
@@ -30,8 +36,6 @@ export class MachineSystem {
 
     this.onInstall = null;           // fn(part) — toast + world refresh in main.js
     this.onAnalysisComplete = null;  // fn(partId, analysisId)
-    this._mults = null;
-    this._recompute();
   }
 
   // ── Registry lookups ───────────────────────────────────────────────────────
@@ -43,7 +47,6 @@ export class MachineSystem {
     return g;
   }
 
-  get nextPart() { return MACHINE_PARTS.find(p => !this.installed.has(p.id)) || null; }
   get analysisUnlocked() { return this.installed.has('gen0'); }
 
   consoleHint() {
@@ -58,13 +61,14 @@ export class MachineSystem {
     if (!p) return { rows: [], done: 0, total: 0, complete: false };
     const rows = [];
     if (p.findings.zoneLore) {
-      rows.push({ label: 'Zone surveyed', done: !!(this.codex && this.codex.isDiscovered(p.findings.zoneLore)) });
+      rows.push({ label: 'Zone surveyed', done: !!this.codex?.isDiscovered(p.findings.zoneLore) });
     }
     if (p.findings.boss) {
-      rows.push({ label: 'Apex threat neutralized', done: !!(this.bosses && this.bosses.isDefeated(p.findings.boss)) });
+      rows.push({ label: 'Apex threat neutralized', done: !!this.bosses?.isDefeated(p.findings.boss) });
     }
     for (const key of p.findings.codex) {
-      rows.push({ label: `Specimen logged: ${key}`, done: !!(this.codex && this.codex.isDiscovered(key)) });
+      const entry = this.codex ? this.codex.constructor.ENTRIES[key] : null;
+      rows.push({ label: `Specimen logged: ${entry ? entry.label : key}`, done: !!this.codex?.isDiscovered(key) });
     }
     const done = rows.filter(r => r.done).length;
     return { rows, done, total: rows.length, complete: done === rows.length };
@@ -74,7 +78,8 @@ export class MachineSystem {
     const p = this.getPart(partId);
     if (!p) return { done: 0, total: 0, complete: false };
     const set = this.analysesDone[partId] || new Set();
-    return { done: set.size, total: p.analyses.length, complete: set.size >= p.analyses.length };
+    const done = p.analyses.filter(a => set.has(a.id)).length;
+    return { done, total: p.analyses.length, complete: done >= p.analyses.length };
   }
 
   // locked → investigating → building → installed
@@ -88,24 +93,27 @@ export class MachineSystem {
   }
 
   // ── Grants — generic keyed applier (the modularity contract) ───────────────
-  _recompute() {
-    const m = { gatherMult: 1, craftSpeedMult: 1, ppMult: 1 };
+  // Live getters — recomputed on every read (BossSystem/ChallengeSystem
+  // convention), so direct mutation of `installed`/`minorsBuilt` can never
+  // leave a stale cache. Keys listed in CONSUMED_GRANT_KEYS are the ones
+  // with live consumers; the registry test pins parts to that list.
+  _grantProduct(key) {
+    let v = 1;
     for (const p of MACHINE_PARTS) {
-      if (!this.installed.has(p.id)) continue;
-      for (const [k, v] of Object.entries(p.grants)) {
-        if (k in m) m[k] *= v;
-      }
+      if (this.installed.has(p.id) && p.grants[key]) v *= p.grants[key];
     }
-    m.ppMult *= 1 + MACHINE_MINOR.ppMultPerPart * this.minorsBuilt;
-    this._mults = m;
+    return v;
   }
 
-  get gatherMult() { return this._mults.gatherMult; }
-  get craftSpeedMult() { return this._mults.craftSpeedMult; }
-  get ppMult() { return this._mults.ppMult; }
+  get gatherMult() { return this._grantProduct('gatherMult'); }
+  get craftSpeedMult() { return this._grantProduct('craftSpeedMult'); }
+  get ppMult() {
+    return this._grantProduct('ppMult') * (1 + MACHINE_MINOR.ppMultPerPart * this.minorsBuilt);
+  }
 
   restoreTiers() {
     const out = {};
+    // Later generations supersede earlier ones — tiers are cumulative fidelity, not stacking bonuses (last write wins; registry order is gen-ascending, test-pinned).
     for (const p of MACHINE_PARTS) {
       if (!this.installed.has(p.id)) continue;
       for (const [k, v] of Object.entries(p.restore)) out[k] = v;
@@ -113,5 +121,8 @@ export class MachineSystem {
     return out;
   }
 
-  applyBonuses() { this._recompute(); }
+  // Grants are live getters, so there is nothing to re-apply after a load;
+  // kept as a documented no-op because SaveSystem.apply() calls it by
+  // convention, and phase 4's additive grants (computeUnits) will need it.
+  applyBonuses() {}
 }

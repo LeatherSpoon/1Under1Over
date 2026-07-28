@@ -13,6 +13,8 @@ import { InventorySystem } from '../../js/systems/InventorySystem.js';
 import { BossSystem } from '../../js/systems/BossSystem.js';
 import { CodexSystem } from '../../js/systems/CodexSystem.js';
 import { ChapterSystem } from '../../js/systems/ChapterSystem.js';
+import { MachineSystem, CONSUMED_GRANT_KEYS } from '../../js/systems/MachineSystem.js';
+import { PPSystem } from '../../js/systems/PPSystem.js';
 
 const MATS = new Set(InventorySystem.MATERIAL_NAMES);
 const BOSS_IDS = new Set(BossSystem.BOSS_DEFS.map(b => b.id));
@@ -87,8 +89,14 @@ test('machine registry: part ids and analysis ids are unique save keys', () => {
   }
 });
 
-import { MachineSystem } from '../../js/systems/MachineSystem.js';
-import { PPSystem } from '../../js/systems/PPSystem.js';
+test('machine registry: every grant a part actually uses has a live consumer', () => {
+  const consumed = new Set(CONSUMED_GRANT_KEYS);
+  for (const p of MACHINE_PARTS) {
+    for (const k of Object.keys(p.grants)) {
+      assert.ok(consumed.has(k), `${p.id}: grant '${k}' has no live consumer yet — wire it (and add to CONSUMED_GRANT_KEYS) before using it in data`);
+    }
+  }
+});
 
 // Real systems where cheap, tiny stubs where not (chapterSystem.test.js idiom).
 function makeMachine() {
@@ -127,4 +135,25 @@ test('machine: field findings compute live from codex + bosses, never stored', (
   machine.codex.discover('burrfang');
   machine.codex.discover('stiltbeak');
   assert.equal(machine.fieldFindings('gen1').complete, true);
+});
+
+test('machine: lab findings gate partState alongside field findings', () => {
+  const { machine } = makeMachine();
+  machine.chapters.rungCrossed = () => true;
+  machine.codex.discover('theLanding');
+  machine.codex.discover('mossback');
+  machine.codex.discover('burrfang');
+  machine.codex.discover('stiltbeak');
+  machine.bosses.recordDefeat('boss_landing');
+  assert.equal(machine.fieldFindings('gen1').complete, true);
+  assert.equal(machine.partState('gen1'), 'investigating', 'lab findings still incomplete');
+  assert.equal(machine.labFindings('gen1').total, 2);
+});
+
+test('machine: unwired refs fail closed and unknown ids are inert', () => {
+  const machine = new MachineSystem(new InventorySystem(), new PPSystem());
+  assert.equal(machine.partState('gen1'), 'locked', 'no chapters ref → locked');
+  assert.equal(machine.fieldFindings('gen1').complete, false, 'no codex/bosses → nothing done');
+  assert.equal(machine.partState('nope'), 'unknown');
+  assert.deepEqual(machine.fieldFindings('nope'), { rows: [], done: 0, total: 0, complete: false });
 });
