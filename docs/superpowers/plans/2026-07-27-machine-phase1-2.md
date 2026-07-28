@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-07-27-physical-computer-design.md` (§4 loop, §5 grants, §6 architecture + modularity contract, §9 phases 1–2).
 
-**Deliberately deferred to later plans** (do NOT build here): Postgres integration (phase 3), capability handlers `fieldBeacon`/`schematicPrinter` and Gens 3–7 (phase 4), `OfflineSystem` analysis row + away-banner entry (phase 3/4), interior zone (phase 5), GLB kit + `_registerStationModel`/`modelKeys` entries (phase 6). Known accepted nit for this plan: a mid-session LOAD while standing on the Landing Site shows stale machine visuals until zone re-entry (live installs refresh correctly; boot restore builds fresh); a crafting job restored mid-flight recomputes its duration before the per-frame speedMult feed runs, so it completes un-boosted (same family as the LOAD visual nit).
+**Deliberately deferred to later plans** (do NOT build here): Postgres integration (phase 3), capability handlers `fieldBeacon`/`schematicPrinter` and Gens 3–7 (phase 4), `OfflineSystem` analysis row + away-banner entry (phase 3/4), interior zone (phase 5), GLB kit + `_registerStationModel`/`modelKeys` entries (phase 6). SaveSystem.apply feeds crafting.speedMult from the machine before crafting recomputes restored-job durations (apply-order guarantee, pinned by the wiring test's position-independence).
 
 **Conventions used throughout (verified against source 2026-07-27):**
 - `InventorySystem`: zero-arg constructor; `this.materials[name]` public map; `hasMaterials({mat: qty})` → boolean; `removeMaterial(name, qty)` → boolean; `static MATERIAL_NAMES`.

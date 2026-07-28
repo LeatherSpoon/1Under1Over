@@ -485,9 +485,16 @@ test('core silhouette grows monotonically across every generation', () => {
 
 test('main.js feeds the machine (wiring pins)', () => {
   const src = fs.readFileSync(new URL('../../js/main.js', import.meta.url), 'utf8');
-  assert.ok(/\* machineSystem\.ppMult;/.test(src), 'ppMult not folded into globalMultiplier');
+  // main.js sets ppSystem.globalMultiplier in two places: a one-time bootstrap
+  // assignment and the per-frame recompute (only the latter feeds the
+  // machine) — matchAll + .some() so the earlier, untouched bootstrap
+  // statement can't shadow the real one the way a bare .match() would.
+  const gms = [...src.matchAll(/ppSystem\.globalMultiplier\s*=\s*([^;]+);/g)];
+  assert.ok(gms.some(m => /machineSystem\.ppMult/.test(m[1])), 'ppMult not folded into globalMultiplier');
   assert.ok(/craftingSystem\.speedMult = machineSystem\.craftSpeedMult;/.test(src), 'craft speed feed missing');
-  assert.equal((src.match(/\* machineSystem\.gatherMult\)/g) || []).length, 2, 'gatherMult must fold into BOTH gather-duration sites');
+  const gathers = [...src.matchAll(/_gatherDuration\s*=\s*([^;]+);/g)];
+  const folded = gathers.filter(m => /machineSystem\.gatherMult/.test(m[1]));
+  assert.equal(folded.length, 2, `gatherMult folds into ${folded.length} of the expected 2 gather-duration statements`);
   assert.ok(/machineSystem\.update\(delta\);/.test(src), 'tick missing from the game loop');
   assert.ok(/machine:\s*machineSystem,/.test(src), 'machine missing from the SaveSystem bag');
   assert.ok(/env\._machineState = /.test(src), 'env._machineState feed missing');

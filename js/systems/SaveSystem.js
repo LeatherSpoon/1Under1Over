@@ -329,6 +329,14 @@ export class SaveSystem {
     if (autoCombat && data.autoCombatEnabled !== undefined) autoCombat.enabled = data.autoCombatEnabled;
     if (techTree && data.techTree) techTree.deserialize(data.techTree);
     if (mastery && data.mastery) mastery.deserialize(data.mastery);
+    if (machine) {
+      machine.deserialize(data.machine ?? null);
+      machine.applyBonuses(); // grants are live getters; call kept by convention
+      // Feed the crafting speed grant BEFORE crafting.load() recomputes any
+      // restored job's duration — otherwise a mid-flight craft loads un-boosted
+      // (the per-frame feed in main.js only starts on the first frame).
+      if (crafting) crafting.speedMult = machine.craftSpeedMult;
+    }
     if (crafting && data.crafting) crafting.load(data.crafting);
     if (factory && data.factory) factory.deserialize(data.factory);
     if (assembly && data.assembly) assembly.deserialize(data.assembly);
@@ -369,10 +377,6 @@ export class SaveSystem {
     // leaves the pool unseeded and ComputeSystem.maybeSeed() auto-assigns on the
     // first frame the board is unlocked (migration + fresh saves share one path).
     if (compute) compute.deserialize(data.compute ?? null);
-    if (machine) {
-      machine.deserialize(data.machine ?? null);
-      machine.applyBonuses(); // grants are live getters; call kept by convention
-    }
     // Legacy: migrate old taskSystem saves (no-op if not present)
 
 

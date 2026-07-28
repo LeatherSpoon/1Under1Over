@@ -73,8 +73,10 @@ export function buildMachinePlot(env) {
       mast.position.set(MACHINE_CORE.x + f.coreW * 0.3, f.coreH + 0.55, MACHINE_CORE.z);
       g.add(mast);
       // Expansion racks — seeded jitter on top of the pure rackSlot() centers
-      // (visual only, so collision stays jitter-independent). Excess racks
-      // past the draw cap densify rather than sprawl — kit pass owns the visual.
+      // (visual only, so collision stays jitter-independent). Racks beyond
+      // the draw cap simply aren't drawn — no mesh, no collision circle —
+      // bounded rather than sprawling further east; a denser layout for the
+      // excess is left to the kit pass.
       const rng = seededRandom(90260);
       const racksToDraw = drawnRacks(minors);
       for (let i = 0; i < racksToDraw; i++) {

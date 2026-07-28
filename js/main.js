@@ -1730,7 +1730,7 @@ function gameLoop(now) {
   // check instead runs every frame; getMachineConsolePos() is null on every
   // zone except the Landing Site (reset in Environment.switchZone, set only
   // by that zone's builder), so the null check is the only gate it needs.
-  if (!showingHint && !player.isInCombat) {
+  if (!showingHint && !player.isInCombat && !player.isGathering) {
     const machinePos = env.getMachineConsolePos();
     if (machinePos) {
       const dist = Math.hypot(player.position.x - machinePos.x, player.position.z - machinePos.z);
