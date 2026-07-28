@@ -64,7 +64,7 @@ Each generation grants: one **capability** (a thing you can now do), one **boost
 | 6 | Equipment Mirror | **Loadout snapshots** — save/one-click-restore equipment + modifier configurations | +12 h offline buffer, +20% drone efficiency | *Equipment configs:* Recompile grants an instant refill to 50% of the new cap |
 | 7 | Continuity Core | **Continuity Restore** — one-click reapply of pre-rebirth compute allocation + modifiers + training config | ×1.5 global PP | *Neural continuity:* ladder floor ⌊peak/3⌋ and momentum knee halved |
 
-**Minor parts** (one per warden rung, infinite): **Expansion Racks** — +4% each, additive into one named machine PP multiplier; bill scales ×1.6 per part. Optional texture (implementer's call): every 5th rack +1 analysis queue depth.
+**Minor parts** (one per warden rung, infinite): **Expansion Racks** — +4% each, additive into one named machine PP multiplier; bill: PP scales ×1.6 per part forever; each material line scales ×1.6 but clamps at `matCap` (60) so the infinite tail stays payable inside the 99-per-material bag stack. Optional texture (implementer's call): every 5th rack +1 analysis queue depth.
 
 Guardrails: capabilities never touch moveSpeed (deferred topic) and never bypass boss/chapter gates (the machine trails the spine). Restore tiers touch only fields `recompileReset()` already clears — pinned by test.
 

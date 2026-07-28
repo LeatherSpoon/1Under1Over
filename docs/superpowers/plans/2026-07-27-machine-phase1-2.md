@@ -209,6 +209,9 @@ export const MACHINE_MINOR = {
   ppMultPerPart: 0.04,   // +4% each, additive: ppMult factor = 1 + n × this
   billBase: { pp: 400, mats: { iron: 10, copper: 10, stone: 10 } },
   billGrowth: 1.6,       // whole bill (pp and every mat) scales ×1.6^built
+  matCap: 60,            // per-material ceiling — bag stacks cap at 99, so material
+                         // lines clamp here to keep the infinite rack tail payable;
+                         // PP is the leg that scales forever
 };
 ```
 
@@ -690,7 +693,9 @@ Insert between the Analysis Bay block and the Grants section:
   minorBill() {
     const scale = Math.pow(MACHINE_MINOR.billGrowth, this.minorsBuilt);
     const mats = {};
-    for (const [m, q] of Object.entries(MACHINE_MINOR.billBase.mats)) mats[m] = Math.ceil(q * scale);
+    for (const [m, q] of Object.entries(MACHINE_MINOR.billBase.mats)) {
+      mats[m] = Math.min(MACHINE_MINOR.matCap, Math.ceil(q * scale));
+    }
     return { pp: Math.ceil(MACHINE_MINOR.billBase.pp * scale), mats };
   }
 
@@ -724,6 +729,8 @@ Run: `npm test`
 Expected: PASS.
 
 **Review carry-forwards folded into this task (Task 3 quality review):** generic `hasCapability(cap)` + `analysisUnlocked` via `'analysisBay'` capability (data-edit remappability); a comment on `update()` routing future catch-up through `simulateOffline`; shortfall/unknown-id enqueue test; edge-behavior pin test (overflow discard, callback suppression + restoration, zero-second no-op, queued-job payment).
+
+**Second review pass (Task 4 quality review):** fixed a Critical design collision — Expansion Rack material bills grew unbounded (×1.6 per part) and would exceed the 99-per-material bag-stack cap around rack 6, contradicting the "infinite racks" decision, so `MACHINE_MINOR.matCap` (60) now clamps every material line in `minorBill()` while PP keeps scaling forever; added two gate-pinning tests (`'machine: purchases actually charge and gates actually gate'`, `'machine: racks stay payable forever (mat cap under the bag stack)'`) after a mutation battery found the payment/entitlement gates unprotected; and deleted `'machine: restore tiers only ever use run-layer keys'` as redundant with the registry test's existing restore-key assertion over the same data.
 
 - [ ] **Step 5: Commit**
 

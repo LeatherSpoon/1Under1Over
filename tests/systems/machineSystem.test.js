@@ -70,6 +70,10 @@ test('machine registry: every effect key, material, boss and codex ref is real',
   }
   assert.ok(MACHINE_MINOR.ppMultPerPart > 0, 'ppMultPerPart must be > 0');
   assert.ok(MACHINE_MINOR.billGrowth > 1, 'billGrowth must be > 1');
+  assert.ok(MACHINE_MINOR.matCap > 0 && MACHINE_MINOR.matCap <= 99, 'matCap must be payable within the 99 bag stack');
+  for (const [m, q] of Object.entries(MACHINE_MINOR.billBase.mats)) {
+    assert.ok(q <= MACHINE_MINOR.matCap, `minor bill base ${m} exceeds matCap`);
+  }
 });
 
 test('machine registry: generations contiguous from 0, rungs strictly ascend', () => {
@@ -228,16 +232,6 @@ test('machine: grants go live on install through the live getters', () => {
   assert.deepEqual(machine.restoreTiers(), { baseCapStart: 225 });
 });
 
-test('machine: restore tiers only ever use run-layer keys', () => {
-  // The run-layer guarantee is structural: the registry key set is closed and
-  // every key names a field recompileReset()/recompile() already clears.
-  for (const p of MACHINE_PARTS) {
-    for (const k of Object.keys(p.restore)) {
-      assert.ok(MACHINE_RESTORE_KEYS.includes(k), `${p.id}: restore key '${k}' outside the closed run-layer set`);
-    }
-  }
-});
-
 test('machine: expansion racks scale bills ×1.6 and stack +4% PP each', () => {
   const { machine } = makeMachine();
   machine.deliverStage('gen0'); machine.deliverStage('gen0');
@@ -287,4 +281,34 @@ test('machine: analysis bay edge behaviors are pinned', () => {
   machine.enqueueAnalysis('gen2', 'ore_bands');      // 420s
   machine.update(421);
   assert.equal(fired, 2, 'callback restored after offline suppression');
+});
+
+test('machine: purchases actually charge and gates actually gate', () => {
+  const { machine, pp, inv } = makeMachine();
+  machine.chapters.rungCrossed = () => false;
+  assert.equal(machine.canDeliverStage('gen1'), false, 'locked part not deliverable');
+  assert.equal(machine.deliverStage('gen1'), false);
+  machine.chapters.rungCrossed = () => true;
+  assert.equal(machine.canDeliverStage('gen1'), false, 'investigating part not deliverable');
+  machine.deliverStage('gen0'); machine.deliverStage('gen0');
+  assert.equal(machine.hasCapability('analysisBay'), true);
+  assert.equal(machine.hasCapability('schematicPrinter'), false, 'capabilities discriminate');
+  machine.chapters.wardensCrossedLifetime = () => 1;
+  const ppBefore = pp.ppTotal;
+  const ironBefore = inv.materials.iron;
+  assert.equal(machine.buildMinor(), true);
+  assert.equal(pp.ppTotal, ppBefore - 400, 'rack charges PP');
+  assert.equal(inv.materials.iron, ironBefore - 10, 'rack charges materials');
+});
+
+test('machine: racks stay payable forever (mat cap under the bag stack)', () => {
+  const { machine, pp } = makeMachine();
+  machine.deliverStage('gen0'); machine.deliverStage('gen0');
+  machine.chapters.wardensCrossedLifetime = () => 41;
+  machine.minorsBuilt = 40;
+  pp.ppTotal = 1e12;
+  const bill = machine.minorBill();
+  assert.equal(bill.mats.iron, MACHINE_MINOR.matCap, 'materials clamp at matCap');
+  assert.ok(bill.mats.iron <= 99, 'payable within the bag stack cap');
+  assert.equal(machine.canBuildMinor(), true, 'rack 41 still buildable');
 });

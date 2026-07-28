@@ -235,4 +235,7 @@ export const MACHINE_MINOR = {
   ppMultPerPart: 0.04,   // +4% each, additive: ppMult factor = 1 + n × this
   billBase: { pp: 400, mats: { iron: 10, copper: 10, stone: 10 } },
   billGrowth: 1.6,       // whole bill (pp and every mat) scales ×1.6^built
+  matCap: 60,            // per-material ceiling — bag stacks cap at 99, so material
+                         // lines clamp here to keep the infinite rack tail payable;
+                         // PP is the leg that scales forever
 };

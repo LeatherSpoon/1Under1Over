@@ -34,7 +34,8 @@ export class MachineSystem {
     this.analysisQueue = [];      // [{ partId, analysisId, duration }]
     this.minorsBuilt = 0;
 
-    this.onInstall = null;           // fn(part) — toast + world refresh in main.js
+    this.onInstall = null;           // fn(part) — {id, gen, name, minor?} guaranteed;
+                                     // registry fields (grants/restore/...) on majors only
     this.onAnalysisComplete = null;  // fn(partId, analysisId)
   }
 
@@ -196,7 +197,9 @@ export class MachineSystem {
   minorBill() {
     const scale = Math.pow(MACHINE_MINOR.billGrowth, this.minorsBuilt);
     const mats = {};
-    for (const [m, q] of Object.entries(MACHINE_MINOR.billBase.mats)) mats[m] = Math.ceil(q * scale);
+    for (const [m, q] of Object.entries(MACHINE_MINOR.billBase.mats)) {
+      mats[m] = Math.min(MACHINE_MINOR.matCap, Math.ceil(q * scale));
+    }
     return { pp: Math.ceil(MACHINE_MINOR.billBase.pp * scale), mats };
   }
 
