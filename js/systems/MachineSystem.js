@@ -280,7 +280,7 @@ export class MachineSystem {
     this.analysesDone = {};
     for (const [k, v] of Object.entries(data.analysesDone || {})) this.analysesDone[k] = new Set(v);
     this.analysisJob = data.analysisJob ? { ...data.analysisJob } : null;
-    this.analysisQueue = (data.analysisQueue || []).map(q => ({ ...q }));
+    this.analysisQueue = (data.analysisQueue || []).filter(q => q && q.duration > 0).map(q => ({ ...q }));
     this.minorsBuilt = Number(data.minorsBuilt) || 0;
     // A hand-edited or corrupted blob can carry a malformed job: no positive
     // duration → drop it (a NaN job would jam the bay forever, while still

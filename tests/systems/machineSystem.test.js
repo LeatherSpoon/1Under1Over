@@ -383,6 +383,8 @@ test('machine: deserialize clamps an overshooting analysis progress', () => {
   machine.deserialize({ installed: ['gen0'], minorsBuilt: 'x', analysisJob: { partId: 'gen1', analysisId: 'scrap_alloys', progress: 5 } });
   assert.equal(machine.analysisJob, null, 'job with no positive duration is dropped');
   assert.equal(machine.minorsBuilt, 0, 'non-numeric minorsBuilt coerces to 0');
+  machine.deserialize({ installed: ['gen0'], analysisQueue: [{ partId: 'gen1', analysisId: 'meadow_flora' }, { partId: 'gen1', analysisId: 'scrap_alloys', duration: 300 }] });
+  assert.equal(machine.analysisQueue.length, 1, 'malformed queue entries are dropped, valid ones survive');
 });
 
 test('machine: stage delivery refuses on material shortfall and charges nothing', () => {
