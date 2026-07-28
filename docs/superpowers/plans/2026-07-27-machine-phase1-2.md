@@ -823,6 +823,11 @@ Expected: FAIL — `machine.serialize is not a function`
     this.analysisJob = data.analysisJob ? { ...data.analysisJob } : null;
     this.analysisQueue = (data.analysisQueue || []).map(q => ({ ...q }));
     this.minorsBuilt = data.minorsBuilt || 0;
+    // A hand-edited or corrupted blob can carry progress past duration; clamp so
+    // simulateOffline's remaining-time math can never go negative (see Task 3 review).
+    if (this.analysisJob && !(this.analysisJob.progress <= this.analysisJob.duration)) {
+      this.analysisJob.progress = Math.min(this.analysisJob.progress || 0, this.analysisJob.duration);
+    }
   }
 ```
 
@@ -851,6 +856,8 @@ In `js/systems/SaveSystem.js`:
 
 Run: `npm test`
 Expected: PASS.
+
+**Review carry-forwards folded into this task:** deserialize progress clamp + pin test (Task 3 review); stage/rack material-shortfall refusal pins and the n=2 ceil pin (Task 4 re-review); `import fs` placed in the top import block.
 
 - [ ] **Step 6: Commit**
 

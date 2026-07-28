@@ -5,6 +5,7 @@
 // fails here by name instead of silently doing nothing in-game.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import fs from 'node:fs';
 import {
   MACHINE_PARTS, MACHINE_MINOR,
   MACHINE_GRANT_KEYS, MACHINE_RESTORE_KEYS, MACHINE_CAPABILITIES,
@@ -245,6 +246,7 @@ test('machine: expansion racks scale bills ×1.6 and stack +4% PP each', () => {
   assert.equal(bill1.pp, Math.ceil(400 * 1.6));
   assert.equal(bill1.mats.iron, Math.ceil(10 * 1.6));
   assert.equal(machine.buildMinor(), true);
+  assert.equal(machine.minorBill().mats.iron, 26, 'ceil pins fractional scaling (10×1.6² = 25.6 → 26)');
   assert.equal(machine.minorsAvailable, 0);
   assert.equal(machine.buildMinor(), false, 'no rack without a crossed rung behind it');
   assert.ok(Math.abs(machine.ppMult - 1.08) < 1e-9, 'two racks = +8%');
@@ -299,6 +301,13 @@ test('machine: purchases actually charge and gates actually gate', () => {
   assert.equal(machine.buildMinor(), true);
   assert.equal(pp.ppTotal, ppBefore - 400, 'rack charges PP');
   assert.equal(inv.materials.iron, ironBefore - 10, 'rack charges materials');
+  machine.chapters.wardensCrossedLifetime = () => 2;
+  inv.materials.iron = 5; // rack #2 needs 16
+  const pp2 = pp.ppTotal;
+  assert.equal(machine.canBuildMinor(), false, 'material shortfall refuses');
+  assert.equal(machine.buildMinor(), false);
+  assert.equal(pp.ppTotal, pp2, 'refusal charges nothing');
+  assert.equal(inv.materials.iron, 5);
 });
 
 test('machine: racks stay payable forever (mat cap under the bag stack)', () => {
@@ -311,4 +320,62 @@ test('machine: racks stay payable forever (mat cap under the bag stack)', () => 
   assert.equal(bill.mats.iron, MACHINE_MINOR.matCap, 'materials clamp at matCap');
   assert.ok(bill.mats.iron <= 99, 'payable within the bag stack cap');
   assert.equal(machine.canBuildMinor(), true, 'rack 41 still buildable');
+});
+
+test('machine: serialize → deserialize → applyBonuses round-trips exactly', () => {
+  const { machine } = makeMachine();
+  machine.chapters.rungCrossed = () => true;
+  machine.chapters.wardensCrossedLifetime = () => 3;
+  machine.deliverStage('gen0'); machine.deliverStage('gen0');
+  completeInvestigation(machine, 'gen1');
+  machine.deliverStage('gen1');
+  machine.buildMinor();
+  machine.enqueueAnalysis('gen2', 'ore_bands');
+  machine.update(100);
+
+  const blob = JSON.parse(JSON.stringify(machine.serialize()));
+  const { machine: fresh } = makeMachine();
+  fresh.deserialize(blob);
+  fresh.applyBonuses();
+
+  assert.equal(fresh.currentGen, 0);
+  assert.equal(fresh.stagesDelivered.gen1, 1);
+  assert.equal(fresh.minorsBuilt, 1);
+  assert.equal(fresh.analysisDone('gen1', 'meadow_flora'), true);
+  assert.ok(Math.abs(fresh.analysisJob.progress - 100) < 1e-9, 'in-flight analysis survives');
+  assert.ok(Math.abs(fresh.ppMult - 1.04) < 1e-9, 'grants recomputed after load');
+  assert.equal(fresh.deserialize(null), undefined, 'null blob (pre-v15 save) is a no-op');
+});
+
+test('SaveSystem carries the machine (v15 wiring)', () => {
+  const src = fs.readFileSync(new URL('../../js/systems/SaveSystem.js', import.meta.url), 'utf8');
+  assert.ok(src.includes('const SAVE_VERSION = 15'), 'SAVE_VERSION must be 15');
+  const destructures = src.match(/const \{[\s\S]*?\} = this\.systems;/g) || [];
+  assert.equal(destructures.length, 2, 'expected the two systems destructures');
+  for (const d of destructures) assert.ok(/\bmachine\b/.test(d), 'machine missing from a systems destructure');
+  assert.ok(/machine:\s*machine \? machine\.serialize\(\) : null,/.test(src), 'serialize entry missing');
+  assert.ok(/machine\.deserialize\(data\.machine \?\? null\)/.test(src), 'apply entry missing');
+  assert.ok(/machine\.applyBonuses\(\)/.test(src), 'applyBonuses call missing');
+});
+
+test('machine: deserialize clamps an overshooting analysis progress', () => {
+  const { machine } = makeMachine();
+  machine.deserialize({
+    installed: ['gen0'],
+    analysisJob: { partId: 'gen1', analysisId: 'meadow_flora', progress: 9999, duration: 240 },
+  });
+  assert.equal(machine.analysisJob.progress, 240, 'progress clamped to duration');
+  assert.equal(machine.simulateOffline(1), 1, 'clamped job completes normally, budget math sane');
+  assert.equal(machine.analysisDone('gen1', 'meadow_flora'), true);
+});
+
+test('machine: stage delivery refuses on material shortfall and charges nothing', () => {
+  const { machine, pp, inv } = makeMachine();
+  inv.materials.stone = 1; // gen0 stage 1 needs 6
+  const ppBefore = pp.ppTotal;
+  assert.equal(machine.canDeliverStage('gen0'), false);
+  assert.equal(machine.deliverStage('gen0'), false);
+  assert.equal(pp.ppTotal, ppBefore, 'no PP charged on refusal');
+  assert.equal(inv.materials.stone, 1);
+  assert.equal(machine.stagesDelivered.gen0 || 0, 0, 'stage did not advance');
 });

@@ -258,4 +258,34 @@ export class MachineSystem {
   // kept as a documented no-op because SaveSystem.apply() calls it by
   // convention, and phase 4's additive grants (computeUnits) will need it.
   applyBonuses() {}
+
+  // ── Persistence (SaveSystem v15) ────────────────────────────────────────────
+  serialize() {
+    return {
+      installed: [...this.installed],
+      stagesDelivered: { ...this.stagesDelivered },
+      analysesDone: Object.fromEntries(
+        Object.entries(this.analysesDone).map(([k, v]) => [k, [...v]])
+      ),
+      analysisJob: this.analysisJob ? { ...this.analysisJob } : null,
+      analysisQueue: this.analysisQueue.map(q => ({ ...q })),
+      minorsBuilt: this.minorsBuilt,
+    };
+  }
+
+  deserialize(data) {
+    if (!data) return;
+    this.installed = new Set(data.installed || []);
+    this.stagesDelivered = { ...(data.stagesDelivered || {}) };
+    this.analysesDone = {};
+    for (const [k, v] of Object.entries(data.analysesDone || {})) this.analysesDone[k] = new Set(v);
+    this.analysisJob = data.analysisJob ? { ...data.analysisJob } : null;
+    this.analysisQueue = (data.analysisQueue || []).map(q => ({ ...q }));
+    this.minorsBuilt = data.minorsBuilt || 0;
+    // A hand-edited or corrupted blob can carry progress past duration; clamp so
+    // simulateOffline's remaining-time math can never go negative (see Task 3 review).
+    if (this.analysisJob && !(this.analysisJob.progress <= this.analysisJob.duration)) {
+      this.analysisJob.progress = Math.min(this.analysisJob.progress || 0, this.analysisJob.duration);
+    }
+  }
 }
