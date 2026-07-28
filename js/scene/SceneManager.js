@@ -295,7 +295,13 @@ export class SceneManager {
     // The rig rides the player's height (canopy climbs lift the whole camera),
     // lerping smoothly like the XZ follow always has.
     this._camTarget.set(playerPos.x + x, playerPos.y + y, playerPos.z + z);
-    this.camera.position.lerp(this._camTarget, CONFIG.CAMERA_LERP);
+    // XZ keeps its long-standing weight; height follows on its own faster lerp
+    // (see CONFIG.CAMERA_LERP_Y — level changes snap, so a slow Y follow trails
+    // the player for the length of a climb).
+    this.camera.position.x += (this._camTarget.x - this.camera.position.x) * CONFIG.CAMERA_LERP;
+    this.camera.position.z += (this._camTarget.z - this.camera.position.z) * CONFIG.CAMERA_LERP;
+    this.camera.position.y += (this._camTarget.y - this.camera.position.y)
+      * (CONFIG.CAMERA_LERP_Y ?? CONFIG.CAMERA_LERP);
     // Keep lookAt direction constant: look from wherever the camera is back
     // along the fixed offset vector (generalizes the old y=0 ground look).
     const lookAt = new THREE.Vector3(

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createToonMaterial, addOutline, addOutlineToGroup } from '../../ToonMaterials.js';
+import { createToonMaterial, addOutline } from '../../ToonMaterials.js';
 import { addPathRibbon } from '../../PathRibbon.js';
 import { CONFIG } from '../../../config.js';
 import { KNOLL_SURFACES, KNOLL_CIRCLES } from './knoll.js';
@@ -15,8 +15,30 @@ const GROUND_HEX = 0x5a8c3c;
 // at its centre — collision holds the player off the rock face, and a trigger
 // buried in the cliff never comes within its own interact radius (the door-zone
 // gotcha in CLAUDE.md).
-const ADIT = { x: -11.9, z: -11.9 };
+// Seating (from build_mountain.py's JS| print): the mountain's flattened
+// portal face lies 9.6 units out from MOUNTAIN_POS along the 45-degree
+// bearing; the facade prop sits at t 9.3 so its rock surround beds 1.0 into
+// the pocket and its timber face stands 0.49 proud of the rock.
+const ADIT = { x: -11.42, z: -11.42 };
 const ADIT_ENTRY = { x: -10.63, z: -10.63 };
+
+// The lifter, parked tail-toward the landing pad. Its GLB is authored nose
+// toward +z with the cargo ramp running back to local z -9, so with this
+// rotation the ramp foot lands just off the pad's north-east edge — roughly
+// where the old Spaceship gate stood, so the ship is found where players
+// already look for it. Placement is mirrored in ZoneAssets.landingSite.
+const SHIP = { x: 9.0, z: -10.5, rotY: 2.45 };
+
+/** Model-local (x, z) → world, using the ship's placement rotation. */
+function shipPoint(lx, lz) {
+  const c = Math.cos(SHIP.rotY), s = Math.sin(SHIP.rotY);
+  return { x: SHIP.x + lx * c + lz * s, z: SHIP.z - lx * s + lz * c };
+}
+
+// Foot of the cargo ramp — the boarding threshold, and where leaving the ship
+// puts you back down (Spaceship/index.js passes it as its exit spawnOverride,
+// so stepping off the ramp and stepping back on are the same spot).
+export const SHIP_RAMP_FOOT = shipPoint(0, -8.2);
 
 function seededRandom(seed) {
   let s = seed | 0;
@@ -46,7 +68,7 @@ export function build(env) {
   _addRocks(env);
   _addArena(env);
   env._addSignpost(-3, -3, Math.PI * 0.75, 'TO MINE');
-  env._addPortal(4,    -3,  'spaceship', 0, 'Spaceship');
+  _addShip(env);
 
   // The mine is a walk-in cave mouth, not an Ancient World Gate: the adit cut
   // into the mountain IS the door (owner call — the gate standing on the grass
@@ -117,6 +139,32 @@ function _addPathToMountain(env) {
   });
 }
 
+// ── The ship: hull footprint + the boarding threshold ─────────────────────────
+// Boarding is a walk-in up the rear cargo ramp, not a gate standing on the
+// grass (owner call). `_addCaveEntrance` is the right helper despite the name —
+// it registers the portal record main.js's proximity prompt needs while
+// setting `noGate: true`, so no Ancient World Gate, fallback ring or energy
+// material is spawned and the ship itself is the door.
+//
+// Collision is laid here rather than via the ZoneAssets `r` field because a
+// single circle cannot describe this shape: it would have to be big enough to
+// cover a 15-unit wingspan, which would also wall off the ramp the player is
+// meant to walk up. Instead the fuselage gets a chain of circles that stops
+// short of the ramp hinge, leaving the boarding corridor deliberately open.
+function _addShip(env) {
+  for (let lz = 5.4; lz >= -4.4; lz -= 1.6) {
+    const p = shipPoint(0, lz);
+    env._collisionCircles.push({ x: p.x, z: p.z, r: 1.7 });
+  }
+  // The four engine pods hang low enough to walk into.
+  for (const lx of [-5.95, -3.6, 3.6, 5.95]) {
+    const p = shipPoint(lx, -0.5);
+    env._collisionCircles.push({ x: p.x, z: p.z, r: 1.0 });
+  }
+  env._addCaveEntrance(SHIP_RAMP_FOOT.x, SHIP_RAMP_FOOT.z, 'spaceship', 'Board Ship');
+  env._addNavLandmark(SHIP.x, 3.2, SHIP.z, 'Ship');
+}
+
 // ── Procedural forest ring ────────────────────────────────────────────────────
 function _addForest(env) {
   const rng   = seededRandom(12345);
@@ -127,13 +175,14 @@ function _addForest(env) {
   const gapHalfWidth = Math.PI * 0.12;
 
   // Keep trees away from portals and large landmarks
+  // The ship is 15 units nose-to-ramp, so it needs a run of keep-outs along its
+  // axis rather than the single point the old 4-unit scout ship used.
   const portalPositions = [
-    { x:   4, z:  -3 },   // Spaceship
     { x: -10, z: -10 },   // Mine
     { x:   0, z:  20 },   // Verdant Maw
     { x:  20, z:   0 },   // Lagoon Coast
     { x:   0, z: -20 },   // Frozen Tundra
-    { x: 6.8, z: -6.2 },  // grounded scout ship (ZoneAssets)
+    ...[-8.2, -4, 0, 4, 6.2].map(lz => shipPoint(0, lz)),
   ];
   const _tooCloseToPortal = (tx, tz) =>
     portalPositions.some(p => Math.hypot(tx - p.x, tz - p.z) < 3.5);
@@ -185,6 +234,7 @@ function _addOuterWoods(env) {
     { x: 24, z: -12, r: 3 },
     { x: -22, z: 6, r: 3 },
     { x: 9.4, z: 8.6, r: 5 },    // survivor camp
+    { x: SHIP.x, z: SHIP.z, r: 10 },  // the lifter — hull, wings and ramp run
     { x: -19, z: 9, r: 2 },      // outer resource nodes
     { x: 21, z: -14, r: 2 },
     { x: 24, z: 6, r: 2 },
@@ -206,56 +256,53 @@ function _addOuterWoods(env) {
 }
 
 // ── Mountain ──────────────────────────────────────────────────────────────────
-// Was a single 8-sided ConeGeometry(7,14) with a snow cap and a skirt hill —
-// from the camera's 46° pitch that reads as one enormous flat grey triangle,
-// and it is the landmark the tutorial path walks you toward. A ridge of
-// offset masses at different heights and rotations breaks the silhouette, and
-// the east flank is deliberately kept low so the mine adit placed at
-// (-12.8,-12.8) sits against rock rather than floating off a sheer face.
+// The rock itself is now `Landing_Mountain.glb`, placed from ZoneAssets — an
+// authored ridge with the mine adit boolean-cut into its south-east face. All
+// that lives here is the collision footprint, because the one thing a prop's
+// `r` field cannot express is a landform with a doorway in it.
+//
+// A perimeter RING blocks the mass, with an arc left open on the adit bearing
+// so the player can walk off the path into the mouth. Inside that gap the
+// tunnel is boxed by two flank circles and a back-stop at its far end, so the
+// alcove is enclosed — you can enter the adit and not walk through the
+// mountain. The old single `{ r: 9 }` circle could only do one or the other.
+const MOUNTAIN_ADIT_DIR = Math.PI / 4;   // south-east — matches build_mountain.py
+const MOUNTAIN_GAP = 0.42;               // half-width of the open arc, radians
+const MOUNTAIN_RING_R = 7.6;             // ring radius from the mountain centre
+
 function _addMountain(env) {
   const { x, z } = CONFIG.MOUNTAIN_POS;
-  const rng = seededRandom(20260725);
-  const group = new THREE.Group();
+  const at = (lx, lz) => ({ x: x + lx, z: z + lz });
 
-  const stone = createToonMaterial(0x8899aa);
-  const stoneDark = createToonMaterial(0x6d7d88);
-  const snowMat = createToonMaterial(0xeeeeff);
-
-  // [dx, dz, radius, height, material, snowCap]
-  const masses = [
-    [0,     0,    6.4, 13.5, stone,     2.0],   // main peak
-    [4.2,   2.6,  4.4,  8.6, stone,     1.3],   // south-east shoulder
-    [-3.4,  3.8,  3.8,  6.4, stoneDark, 0  ],   // low spur toward the meadow
-    [-2.8, -4.0,  4.6,  9.8, stone,     1.4],   // north-west sister peak
-    [3.0,  -3.4,  3.2,  5.2, stoneDark, 0  ],
-  ];
-
-  for (const [dx, dz, r, h, mat, cap] of masses) {
-    const cone = new THREE.Mesh(new THREE.ConeGeometry(r, h, 7), mat);
-    cone.position.set(dx, h / 2, dz);
-    cone.rotation.y = rng() * Math.PI * 2;
-    cone.castShadow = true;
-    group.add(cone);
-    if (cap > 0) {
-      const snow = new THREE.Mesh(new THREE.ConeGeometry(cap, cap * 1.6, 7), snowMat);
-      snow.position.set(dx, h - cap * 0.8, dz);
-      snow.rotation.y = cone.rotation.y;
-      group.add(snow);
-    }
+  // Perimeter. 14 circles at r 2.7 sit 3.4 apart along the ring — comfortably
+  // under the 2r + 2·PLAYER_R the player would need to squeeze between them.
+  const N = 14;
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2;
+    let d = Math.abs(a - MOUNTAIN_ADIT_DIR);
+    if (d > Math.PI) d = Math.PI * 2 - d;
+    if (d < MOUNTAIN_GAP) continue;                       // the doorway
+    const p = at(Math.cos(a) * MOUNTAIN_RING_R, Math.sin(a) * MOUNTAIN_RING_R);
+    env._collisionCircles.push({ x: p.x, z: p.z, r: 2.7 });
   }
 
-  // Broad skirt tying the masses into one hill so they don't read as separate
-  // cones standing in a field. Radius 8.8 (not 9.6) so the mine adit placed at
-  // (-11.9,-11.9) meets rock at its foot instead of being swallowed mid-slope.
-  const skirt = new THREE.Mesh(new THREE.ConeGeometry(8.8, 4.4, 9), stoneDark);
-  skirt.position.y = 2.2;
-  skirt.rotation.y = rng() * Math.PI * 2;
-  group.add(skirt);
-
-  group.position.set(x, 0, z);
-  addOutlineToGroup(group, 0.03);
-  env.group.add(group);
-  env._collisionCircles.push({ x, z, r: 9 });
+  // The mouth: flank walls either side of the pocket, and a stop just inside
+  // the timber line (t 9.7 against the face plane at 9.6) — the adit prop is a
+  // facade with its own dark panel at mid-depth, so the player steps into the
+  // doorway but never clips through the painted backdrop. The zone-switch
+  // prompt (ADIT_ENTRY, radius 2.5) is live well before the stop.
+  const ux = Math.cos(MOUNTAIN_ADIT_DIR), uz = Math.sin(MOUNTAIN_ADIT_DIR);
+  for (const side of [-1, 1]) {
+    const p = at(ux * 9.0 - uz * 2.5 * side, uz * 9.0 + ux * 2.5 * side);
+    env._collisionCircles.push({ x: p.x, z: p.z, r: 1.35 });
+    // Jamb guards: without these a player shoving diagonally at the face
+    // BESIDE the mouth wedges between the ring-gap edge and the flank to
+    // ~1.6 units inside the flattened rock face (caught by the walk sim).
+    const j = at(ux * 8.2 - uz * 3.6 * side, uz * 8.2 + ux * 3.6 * side);
+    env._collisionCircles.push({ x: j.x, z: j.z, r: 1.6 });
+  }
+  const back = at(ux * 6.75, uz * 6.75);
+  env._collisionCircles.push({ x: back.x, z: back.z, r: 2.6 });
 }
 
 // ── Boss arena ────────────────────────────────────────────────────────────────

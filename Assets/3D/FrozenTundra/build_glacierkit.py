@@ -48,7 +48,7 @@ def mat(name, hexstr, emissive=None, strength=1.4):
     return m
 
 
-def obj_from_bm(bm, name, material, parts, recalc=False):
+def obj_from_bm(bm, name, material, parts, recalc=False, smooth=False):
     """Finalise a bmesh into a flat-shaded object linked in the scene.
 
     `recalc` fixes hand-wound box strips. A quad list written by hand is easy
@@ -63,8 +63,13 @@ def obj_from_bm(bm, name, material, parts, recalc=False):
     bm.to_mesh(me)
     bm.free()
     me.materials.append(material)
+    # Flat shading is the house look and right for caps, talus and icicles. It
+    # is WRONG for the big lofted wall faces: any per-row change in the surface
+    # gives every row its own normal, and a tiled wall then reads as a ladder
+    # of rungs. Smoothing just those faces blends the rows and leaves only the
+    # silhouette and the vertical fluting, which is what should read.
     for p in me.polygons:
-        p.use_smooth = False
+        p.use_smooth = smooth
     ob = bpy.data.objects.new(name, me)
     bpy.context.scene.collection.objects.link(ob)
     parts.append(ob)
@@ -89,6 +94,51 @@ def bake_hull(objs, name, parts, inflate=0.05):
         bpy.data.meshes.remove(me)
     bmesh.ops.reverse_faces(bm, faces=bm.faces)
     return obj_from_bm(bm, name, INK, parts)
+
+
+
+def beam(bm, n, ringfn):
+    """A continuous lofted beam: ringfn(t) returns 4 corner points, and
+    consecutive rings are bridged. Built as ONE tube rather than N separate
+    boxes on purpose — a run of abutting boxes leaves a hard seam at every
+    join, and tiled along a shelf those seams read as regular rungs (the whole
+    glacier looked like scaffolding until this changed)."""
+    rings = []
+    for i in range(n + 1):
+        pts = ringfn(i / n)
+        rings.append([bm.verts.new(p) for p in pts])
+    for a, b in zip(rings, rings[1:]):
+        for k in range(4):
+            bm.faces.new((a[k], a[(k + 1) % 4], b[(k + 1) % 4], b[k]))
+    bm.faces.new(tuple(reversed(rings[0])))
+    bm.faces.new(rings[-1])
+    bm.normal_update()
+
+
+
+def rock_into(bm, cx, cy, cz, s, rnd, subdiv=2):
+    """A noise-displaced rock blob merged into `bm`.
+
+    create_icosphere(subdivisions=1) is 80 flat triangles, and at the game's
+    camera every one of them is legible — the owner flagged exactly this ("I
+    can see the primitive triangles"). Three subdivisions plus per-vertex
+    displacement gives a silhouette that reads as broken ice rather than a
+    faceted ball. Two subdivisions, not three: these are ~20px on screen and
+    the shelf wall carrying them is instanced ~30x across the zone."""
+    tmp = bmesh.new()
+    bmesh.ops.create_icosphere(tmp, subdivisions=subdiv, radius=s)
+    ax, ay, az = rnd.uniform(0, 9), rnd.uniform(0, 9), rnd.uniform(0, 9)
+    sx, sy, sz = (0.72 + rnd.random() * 0.6, 0.72 + rnd.random() * 0.6, 0.62 + rnd.random() * 0.5)
+    for v in tmp.verts:
+        n = (math.sin(v.co.x * 3.1 + ax) * math.cos(v.co.y * 2.7 + ay)
+             + 0.55 * math.sin(v.co.z * 5.3 + az) * math.cos(v.co.x * 4.1 + ay)
+             + 0.30 * math.sin(v.co.y * 8.7 + az))
+        v.co *= 1.0 + 0.17 * n
+        v.co.x *= sx; v.co.y *= sy; v.co.z *= sz
+        v.co.x += cx; v.co.y += cy; v.co.z += cz
+    me = bpy.data.meshes.new('tmp')
+    tmp.to_mesh(me); tmp.free()
+    bm.from_mesh(me); bpy.data.meshes.remove(me)
 
 
 def surface_mass(pfn, nx, ny, close_bottom=True, base=-0.15):
@@ -187,15 +237,20 @@ try:
             return (x, y, H * span(u) * cross * hscale)
 
         parts = []
-        body = obj_from_bm(surface_mass(surf, 30, 16), name + '_Body', SNOW, parts)
-        # A shadowed leeward apron, offset a hair above the body so it reads as
-        # a second value rather than z-fighting the crest. Leeward half only
-        # (v from 0.5), so the bright windward scarp stays untouched.
-        apron = obj_from_bm(
-            surface_mass(lambda u, v: surf(u, 0.5 + 0.5 * v, 0.34), 24, 10, close_bottom=False),
-            name + '_Lee', SNOW_LEE, parts)
-        apron.location.z = 0.012
-        bake_hull([body], name + '_OutlineHull', parts, inflate=0.045)
+        body = obj_from_bm(surface_mass(surf, 30, 16), name + '_Body', SNOW, parts,
+                           smooth=True)
+        # No leeward apron. It was a second surface following the body at 0.34
+        # height, 0.012 above it — but body and apron both fall to zero at the
+        # dune's perimeter, so they converge there and z-fight across the whole
+        # rim, which renders as a crosshatch of triangles. Smooth shading now
+        # carries the light-to-shadow turn on its own.
+        # NO baked hull on the dunes. An inflated shell over a large, soft,
+        # low-curvature surface pokes back through the body wherever curvature
+        # varies, and renders as a fine triangular hatch across the whole dune
+        # — visible triangles, which is precisely what the owner rejected. The
+        # placements carry noOutline so the runtime does not add one either;
+        # a drift is a ground feature that blends into snow, not a prop that
+        # wants an ink silhouette.
         collections.append((name, parts, ox))
         return parts
 
@@ -242,27 +297,17 @@ try:
             bm.faces.new((cols[0][k], cols[0][k + 1], back[0][k + 1], back[0][k]))
             bm.faces.new((back[nx][k], back[nx][k + 1], cols[nx][k + 1], cols[nx][k]))
         bm.normal_update()
-        face = obj_from_bm(bm, name + '_Face', ICE_FACE, parts)
+        face = obj_from_bm(bm, name + '_Face', ICE_FACE, parts, smooth=True)
 
         # Snow cap overhanging the lip — the bright horizontal line that reads
         # as an edge from across the zone.
         bmc = bmesh.new()
-        ncx = 22
-        for i in range(ncx):
-            x0 = -W / 2 + W * i / ncx
-            x1 = -W / 2 + W * (i + 1) / ncx
-            lip = -0.62 - rnd.uniform(0.0, 0.14)
-            t = 0.30 + rnd.uniform(0.0, 0.10)
-            vs = [bmc.verts.new(p) for p in (
-                (x0, lip, H), (x1, lip, H), (x1, 0.5, H), (x0, 0.5, H),
-                (x0, lip, H + t), (x1, lip, H + t), (x1, 0.5, H + t), (x0, 0.5, H + t))]
-            for quad in ((0, 1, 2, 3), (7, 6, 5, 4), (4, 5, 1, 0),
-                         (6, 7, 3, 2), (5, 6, 2, 1), (7, 4, 0, 3)):
-                try:
-                    bmc.faces.new([vs[q] for q in quad])
-                except ValueError:
-                    pass
-        bmc.normal_update()
+        def cap_ring(t):
+            x = -W / 2 + W * t
+            lip = -0.62 - 0.09 * (0.5 + 0.5 * math.sin(x * 2.3 + 0.7))
+            th = 0.30 + 0.09 * (0.5 + 0.5 * math.sin(x * 1.7 + 2.1))
+            return [(x, lip, H), (x, 0.5, H), (x, 0.5, H + th), (x, lip, H + th)]
+        beam(bmc, 30, cap_ring)
         cap = obj_from_bm(bmc, name + '_Cap', SNOW, parts, recalc=True)
 
         # Icicle fringe under the overhang. Sparse and short: 16 evenly spaced
@@ -291,18 +336,11 @@ try:
         for i in range(11):
             x = -W / 2 + W * (i + 0.5) / 11 + rnd.uniform(-0.3, 0.3)
             s = rnd.uniform(0.16, 0.42)
-            tmp = bmesh.new()
-            bmesh.ops.create_icosphere(tmp, subdivisions=1, radius=s)
-            for v in tmp.verts:
-                v.co.x += x
-                v.co.y += -0.62 - rnd.uniform(0.0, 0.34)
-                v.co.z += s * 0.45
-            me = bpy.data.meshes.new('tmp'); tmp.to_mesh(me); tmp.free()
-            bmt.from_mesh(me); bpy.data.meshes.remove(me)
+            rock_into(bmt, x, -0.62 - rnd.uniform(0.0, 0.34), s * 0.45, s, rnd)
         bmt.normal_update()
         obj_from_bm(bmt, name + '_Talus', ICE_LIP, parts)
 
-        bake_hull([face, cap], name + '_OutlineHull', parts, inflate=0.05)
+        bake_hull([face], name + '_OutlineHull', parts, inflate=0.022)
         collections.append((name, parts, ox))
 
     shelf_wall('Tundra_ShelfWall', 8.0, 3.0, 30.0)
@@ -312,16 +350,22 @@ try:
     # (ICE_FACE lip → ICE_DEEP floor) so looking into the rift reads as DEPTH.
     def rift_wall(name, W, H, ox):
         parts = []
+        # FLAT-SHADED, so any per-ROW change in y gives every row its own normal
+        # and the wall reads as a ladder of rungs — which is exactly what the
+        # first version did (10 rows, a 0.30 undercut ramped over them, and a
+        # flute whose depth also varied with height). Flutes are now purely
+        # vertical and the undercut is gentle over few rows, so neighbouring
+        # rows share a normal and only the vertical fluting survives.
         bm = bmesh.new()
-        nx, nz = 26, 10
+        nx, nz = 26, 4
         cols = []
         for i in range(nx + 1):
             x = -W / 2 + W * i / nx
             col = []
             for k in range(nz + 1):
                 z = H * k / nz
-                flute = 0.16 * math.sin(x * 3.1) * (z / H) ** 0.5
-                y = -0.25 + flute - 0.30 * (1 - z / H) ** 1.6   # undercut at the base
+                flute = 0.17 * math.sin(x * 3.1) + 0.06 * math.sin(x * 7.7 + 1.1)
+                y = -0.25 + flute - 0.10 * (1 - z / H)          # slight undercut at the base
                 col.append(bm.verts.new((x, y, z)))
             cols.append(col)
         for i in range(nx):
@@ -338,7 +382,7 @@ try:
             bm.faces.new((cols[0][k], cols[0][k + 1], back[0][k + 1], back[0][k]))
             bm.faces.new((back[nx][k], back[nx][k + 1], cols[nx][k + 1], cols[nx][k]))
         bm.normal_update()
-        deep = obj_from_bm(bm, name + '_Deep', ICE_DEEP, parts)
+        deep = obj_from_bm(bm, name + '_Deep', ICE_DEEP, parts, smooth=True)
 
         # Upper band in the lighter ice, inset so it layers over the deep mass.
         bm2 = bmesh.new()
@@ -346,35 +390,28 @@ try:
         for i in range(nx + 1):
             x = -W / 2 + W * i / nx
             col = []
-            for k in range(5):
-                z = H * (0.60 + 0.40 * k / 4)
-                flute = 0.16 * math.sin(x * 3.1) * (z / H) ** 0.5
-                col.append(bm2.verts.new((x, -0.27 + flute, z)))
+            for k in range(3):
+                z = H * (0.62 + 0.38 * k / 2)
+                flute = 0.17 * math.sin(x * 3.1) + 0.06 * math.sin(x * 7.7 + 1.1)
+                col.append(bm2.verts.new((x, -0.28 + flute, z)))
             cols2.append(col)
         for i in range(nx):
-            for k in range(4):
+            for k in range(2):
                 bm2.faces.new((cols2[i][k], cols2[i + 1][k], cols2[i + 1][k + 1], cols2[i][k + 1]))
         bm2.normal_update()
-        obj_from_bm(bm2, name + '_Upper', ICE_FACE, parts)
+        obj_from_bm(bm2, name + '_Upper', ICE_FACE, parts, smooth=True)
 
         # Snow lip along the rim
         bml = bmesh.new()
-        for i in range(nx):
-            x0 = -W / 2 + W * i / nx
-            x1 = -W / 2 + W * (i + 1) / nx
-            vs = [bml.verts.new(p) for p in (
-                (x0, -0.46, H), (x1, -0.46, H), (x1, 0.55, H), (x0, 0.55, H),
-                (x0, -0.46, H + 0.26), (x1, -0.46, H + 0.26), (x1, 0.55, H + 0.26), (x0, 0.55, H + 0.26))]
-            for quad in ((0, 1, 2, 3), (7, 6, 5, 4), (4, 5, 1, 0),
-                         (6, 7, 3, 2), (5, 6, 2, 1), (7, 4, 0, 3)):
-                try:
-                    bml.faces.new([vs[q] for q in quad])
-                except ValueError:
-                    pass
-        bml.normal_update()
+        def lip_ring(t):
+            x = -W / 2 + W * t
+            f = -0.46 + 0.07 * math.sin(x * 2.9)
+            th = 0.26 + 0.07 * (0.5 + 0.5 * math.sin(x * 2.1 + 1.3))
+            return [(x, f, H), (x, 0.55, H), (x, 0.55, H + th), (x, f, H + th)]
+        beam(bml, 30, lip_ring)
         lip = obj_from_bm(bml, name + '_Lip', SNOW, parts, recalc=True)
 
-        bake_hull([deep, lip], name + '_OutlineHull', parts, inflate=0.05)
+        bake_hull([deep], name + '_OutlineHull', parts, inflate=0.022)
         collections.append((name, parts, ox))
 
     rift_wall('Tundra_RiftWall', 8.0, 4.0, 46.0)

@@ -7,6 +7,14 @@ export const CONFIG = {
   // top-down, steep enough that gameplay legibility holds (69° was near-plan).
   CAMERA_OFFSET: { x: 0, y: 14, z: 13.5 },
   CAMERA_LERP: 0.08,
+  // Height gets its own, much faster follow. XZ motion is continuous, so 0.08
+  // reads as pleasant weight; HEIGHT is not — resolveHeight snaps the player
+  // between levels, and on a 0.25-grade ramp at endgame speed they gain ~4.2
+  // units/s, which at 0.08 leaves the camera trailing by several units for the
+  // whole climb. That lag is what reads as "camera delay" on the tundra
+  // shelves. Still lerped rather than hard-locked so a single step up a ramp
+  // does not jolt the frame.
+  CAMERA_LERP_Y: 0.28,
   // Scroll-wheel zoom — multiplies the ortho frustum size (smaller = closer)
   ZOOM_MIN: 0.45,
   ZOOM_MAX: 1.5,

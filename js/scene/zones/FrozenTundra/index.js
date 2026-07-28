@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { createToonMaterial } from '../../ToonMaterials.js';
 import { addPathRibbon } from '../../PathRibbon.js';
+import { addAurora } from './aurora.js';
 import {
-  SURFACES, ICE_ARCH, ICE_ARCH_LEGS, OVERLOOK_MOUTH, GALLERY_MOUTH,
+  SURFACES, GLACIER_COLLIDERS, ICE_ARCH, ICE_ARCH_LEGS, OVERLOOK_MOUTH, GALLERY_MOUTH,
   RIFT_MAIN, RIFT_WEST, Y_SHELF_1, Y_SHELF_2, Y_SHELF_3,
   Z_SHELF_1, Z_SHELF_2, Z_SHELF_3,
   SHELF_1, SHELF_2, SHELF_3, RAMPS_1, RAMPS_2, RAMPS_3, RIFT_DESCENT,
@@ -64,6 +65,12 @@ export function build(env) {
   // frame and nothing casts onto anything.
   addGlacierDecks(env);
 
+  // Ground-level chains that make the glacier SOLID. Without these the shelves
+  // block nothing at y 0 — resolveHeight always offers the ground plane, which
+  // spans the whole zone — so you could walk due north from the portal through
+  // the riser and on under the entire glacier. See glacier.js GLACIER_COLLIDERS.
+  for (const c of GLACIER_COLLIDERS) env._collisionCircles.push(c);
+
   // The arch is walked THROUGH, so it gets a circle per leg rather than one at
   // its centre. Both are height-banded to the plaza so they don't wall off the
   // rift floor 8 units below.
@@ -124,30 +131,42 @@ export function build(env) {
 
   // ── Routes ────────────────────────────────────────────────────────────────
   // PathRibbon worn mode — trodden snow, darker than the field.
+  //
+  // EVERY ribbon below gets its own y in a fixed stack. PathRibbons are OPAQUE,
+  // so two of them lying at the same height with any overlap have no stable
+  // depth winner and strobe as the camera moves — the owner-reported flicker
+  // "by the portal", and the same defect the Emberglade's ember web had
+  // (VerdantMaw/index.js WEB_Y_*). The three approach trails all converge on
+  // the portal apron at (0,−14), which is exactly where it showed.
+  // Steps are 5e-4: four orders above ortho depth resolution over this
+  // frustum, invisible at the 46° pitch.
   const SNOW_TRAIL = { width: 3.0, color: 0xa9c0d8, groundColor: 0xe2ecf5, strength: 1.5 };
+  const Y_MAIN = 0.016, Y_SPUR = 0.0205, Y_APPROACH = 0.025;
 
   // The original east-west trail across the southern flat, from the cave
-  // mouth's apron. Unchanged.
+  // mouth's apron. Unchanged but for its place in the stack.
   addPathRibbon(env, [
     [-15, 17.4], [-11.5, 17.9], [-8, 18.6], [-4.5, 19.0], [-1, 18.8],
     [2.5, 18.2], [6, 18.6], [9.5, 19.4], [13, 19.8], [16.5, 19.4], [20, 18.6],
-  ], { ...SNOW_TRAIL, seed: 7841 });
+  ], { ...SNOW_TRAIL, seed: 7841, y: Y_MAIN });
   // Short spur from the path up to the mouth itself
-  addPathRibbon(env, [[-15, 17.8], [-15, 16.6], [-15, 15.4]], { ...SNOW_TRAIL, width: 2.2, seed: 7842 });
+  addPathRibbon(env, [[-15, 17.8], [-15, 16.6], [-15, 15.4]],
+    { ...SNOW_TRAIL, width: 2.2, seed: 7842, y: Y_SPUR });
 
   // Approach trails from the portal apron to each ramp mouth, so the climb
   // reads as an invitation rather than something you find by bumping into it.
-  // They stop at the mouth — the ramps themselves are the route above.
+  // They stop at the mouth — the ramps themselves are the route above. Each
+  // gets its own rung of the stack because all three share the apron.
   for (const [i, r] of RAMPS_1.entries()) {
     addPathRibbon(env, [
       [0, -14], [r.x0 * 0.5, -15.5], [r.x0, -17], [r.x0, r.z0 + 0.5],
-    ], { ...SNOW_TRAIL, width: 2.4, seed: 7850 + i });
+    ], { ...SNOW_TRAIL, width: 2.4, seed: 7850 + i, y: Y_APPROACH + i * 0.0005 });
   }
 
   // Shelf-top trails, lifted onto their own levels — a worn line across each
   // shelf from the ramp it arrives on toward the next one up.
   const shelfTrail = (pts, y, seed, width = 2.4) => {
-    const m = addPathRibbon(env, pts, { ...SNOW_TRAIL, width, seed });
+    const m = addPathRibbon(env, pts, { ...SNOW_TRAIL, width, seed, y: Y_MAIN });
     if (m) m.position.y = y;
     return m;
   };
@@ -161,6 +180,12 @@ export function build(env) {
   // low, fast streaks of driven snow that skim the shelves — cheap, and they
   // do more for "this place is cold" than any static prop.
   addSpindrift(env, rng);
+
+  // ── The aurora ────────────────────────────────────────────────────────────
+  // Live curtains standing on the northern horizon, behind the arch. See
+  // aurora.js for why they are vertical and far away rather than overhead —
+  // the version that was cut failed on exactly that point.
+  addAurora(env);
 }
 
 /**

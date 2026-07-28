@@ -339,8 +339,15 @@ export const ZONE_ASSETS = {
     { model: 'boulder', x: -4,   z: 7,   scale: 0.85, rotY: 0.3,            r: 0.75 },
     { model: 'boulder', x: 9,    z: 5,   scale: 0.7,  rotY: 1.9,            r: 0.75 },
     { model: 'boulder', x: -8,   z: -5,  scale: 0.65, rotY: 0.8,            r: 0.75 },
-    // Grounded scout ship — the site's namesake, parked beside the Spaceship gate
-    { model: 'ship',    x: 6.8,  z: -6.2, scale: 2.0, rotY: -0.83,          r: 2.1  },
+    // The lifter the player arrived in — the site's namesake, and now the way
+    // aboard: its rear cargo ramp is down and boarding is a walk-in, so it is
+    // parked tail-toward the landing pad. Authored at true world scale
+    // (Assets/3D/LandingSite/build_dropship.py) so scale is 1.0. `r` is 0 on
+    // purpose: one circle at the hull centre would either wall off the ramp or
+    // leave the 15-unit wingspan walk-through, so the zone builder lays a real
+    // hull footprint with the ramp corridor left open (SHIP in
+    // zones/LandingSite/index.js).
+    { model: 'dropship', x: 9.0, z: -10.5, scale: 1.0, rotY: 2.45,          r: 0    },
     { model: 'mossyBoulder', x: -6, z: 9,   scale: 0.8, rotY: 0.7,          r: 0.8  },
     { model: 'mossyBoulder', x: 12, z: 2,   scale: 0.6, rotY: 2.4,          r: 0.65 },
     { model: 'rock',    x: 5,    z: -12, scale: 0.7,  rotY: 1.2,            r: 0.75 },
@@ -358,16 +365,34 @@ export const ZONE_ASSETS = {
     { model: 'landLog',      x: 11.2, z: 7.0,  scale: 1.0, rotY: 0.35, r: 0.6  },
 
     // ── Mine adit ───────────────────────────────────────────────────────────
-    // Set into the foot of the mountain's east flank, directly behind the Mine
-    // gate at (-10,-10) and turned to face it — so the Ancient World Gate now
-    // stands in the mouth of a timber-framed mine entrance instead of on blank
-    // grass in front of a featureless cone. The gate is still what transports
-    // the player; the adit is the reason the gate is standing there.
-    // Sits just inside the mountain's skirt cone (radius 8.8 at (-18,-18)) so
-    // it reads as cut *into* the hillside rather than propped against it, and
-    // is scaled up to 4.5 units tall — at the stock 3.6 it was a doorway lost
-    // against a 13.5-unit peak. The Mine gate at (-10,-10) stands ~2.7 in front.
-    { model: 'landAdit', x: -11.9, z: -11.9, scale: 1.25, rotY: 0.785, r: 1.9 },
+    // The mine mouth itself (a walk-in cave entrance since the portal was
+    // retired — see _addCaveEntrance in zones/LandingSite). The GLB is a
+    // FACADE: timber portal + rock surround + its own dark panel, 1.2 deep,
+    // fronting +game-z natively, so rotY 0.785 turns the timber toward the
+    // pad along the 45-degree approach bearing. Position comes from
+    // build_mountain.py's JS| print: the mountain presents a flattened face
+    // normal to that bearing at t 9.6 with a snug arched pocket cut behind
+    // it, and (-11.42,-11.42) = t 9.3 sinks the surround 1.0 into the pocket
+    // with the timber 0.49 proud — the frame is flush and NORMAL to the rock,
+    // which the first seat (floating 0.6 out, against an oblique face) wasn't.
+    // `r: 0` — it is meant to be walked into; the pocket flanks and back-stop
+    // (MOUNTAIN_* in the zone builder) stop the player just inside the timber
+    // line, in front of the facade's painted panel.
+    { model: 'landAdit', x: -11.42, z: -11.42, scale: 1.25, rotY: 0.785, r: 0 },
+
+    // ── The mountain ────────────────────────────────────────────────────────
+    // Was five ConeGeometry masses + a skirt built procedurally in the zone
+    // builder — the last primitive landmark in a zone that otherwise got a
+    // sculpted native pack, and the thing the tutorial path walks you toward.
+    // Now one authored ridge (Assets/3D/LandingSite/build_mountain.py) with the
+    // mine adit BOOLEAN-CUT into its south-east face, so the timber frame above
+    // stands in a real recessed opening instead of against a blank grey cone.
+    // Authored at true world scale centred on CONFIG.MOUNTAIN_POS, so scale 1.0
+    // and rotY 0; it carries a baked Mountain_OutlineHull so the runtime skips
+    // its auto-hull. `r` is 0 — a single circle cannot describe a landform with
+    // a doorway in it, so the zone builder lays a perimeter ring with the adit
+    // approach deliberately left open (MOUNTAIN_* in zones/LandingSite/index.js).
+    { model: 'landMountain', x: -18, z: -18, scale: 1.0, rotY: 0, r: 0 },
 
     // ── Outer ring ──────────────────────────────────────────────────────────
     // Everything past the r=14 treeline used to be empty ground out to ±39.
