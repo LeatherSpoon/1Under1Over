@@ -157,3 +157,36 @@ test('machine: unwired refs fail closed and unknown ids are inert', () => {
   assert.equal(machine.partState('nope'), 'unknown');
   assert.deepEqual(machine.fieldFindings('nope'), { rows: [], done: 0, total: 0, complete: false });
 });
+
+test('machine: analysis bay consumes inputs at enqueue and completes over time', () => {
+  const { machine, inv } = makeMachine();
+  machine.chapters.rungCrossed = () => true;
+  assert.equal(machine.enqueueAnalysis('gen1', 'meadow_flora'), false, 'bay offline before gen0');
+  machine.installed.add('gen0');
+  const fiberBefore = inv.materials.fiber;
+  assert.equal(machine.enqueueAnalysis('gen1', 'meadow_flora'), true);
+  assert.equal(inv.materials.fiber, fiberBefore - 8, 'inputs consumed at enqueue');
+  assert.equal(machine.enqueueAnalysis('gen1', 'meadow_flora'), false, 'no duplicate enqueue');
+  assert.equal(machine.enqueueAnalysis('gen1', 'scrap_alloys'), true, 'second analysis queues');
+  machine.update(239);
+  assert.equal(machine.labFindings('gen1').done, 0);
+  machine.update(2);
+  assert.equal(machine.labFindings('gen1').done, 1, 'first analysis complete');
+  assert.ok(machine.analysisJob, 'queued job auto-started');
+});
+
+test('machine: simulateOffline finishes jobs closed-form and suppresses callbacks', () => {
+  const { machine } = makeMachine();
+  machine.chapters.rungCrossed = () => true;
+  machine.installed.add('gen0');
+  let fired = 0;
+  machine.onAnalysisComplete = () => { fired++; };
+  machine.enqueueAnalysis('gen1', 'meadow_flora'); // 240s
+  machine.enqueueAnalysis('gen1', 'scrap_alloys'); // 300s
+  const completed = machine.simulateOffline(400);
+  assert.equal(completed, 1, '240s job done, 160s into the 300s job');
+  assert.equal(fired, 0, 'offline completion is silent');
+  assert.ok(Math.abs(machine.analysisJob.progress - 160) < 1e-9);
+  assert.equal(machine.simulateOffline(140), 1, 'remainder finishes');
+  assert.equal(machine.labFindings('gen1').complete, true);
+});

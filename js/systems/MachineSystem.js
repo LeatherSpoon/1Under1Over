@@ -92,7 +92,68 @@ export class MachineSystem {
     return 'building';
   }
 
-  // ── Grants — generic keyed applier (the modularity contract) ───────────────
+  // ── Analysis Bay (gen0 capability) — processing-node conventions:
+  // inputs consumed at enqueue, the queue IS the stock, offline closed form. ──
+  analysisDone(partId, analysisId) {
+    return (this.analysesDone[partId] || new Set()).has(analysisId);
+  }
+
+  analysisQueued(partId, analysisId) {
+    if (this.analysisJob && this.analysisJob.partId === partId && this.analysisJob.analysisId === analysisId) return true;
+    return this.analysisQueue.some(q => q.partId === partId && q.analysisId === analysisId);
+  }
+
+  enqueueAnalysis(partId, analysisId) {
+    if (!this.analysisUnlocked) return false;
+    const p = this.getPart(partId);
+    const a = p ? p.analyses.find(x => x.id === analysisId) : null;
+    if (!a) return false;
+    if (this.analysisDone(partId, analysisId) || this.analysisQueued(partId, analysisId)) return false;
+    if (!this.inventory.hasMaterials(a.input)) return false;
+    for (const [mat, qty] of Object.entries(a.input)) this.inventory.removeMaterial(mat, qty);
+    const job = { partId, analysisId, duration: a.duration };
+    if (this.analysisJob) this.analysisQueue.push(job);
+    else this.analysisJob = { ...job, progress: 0 };
+    return true;
+  }
+
+  update(delta) {
+    if (!this.analysisJob) return;
+    this.analysisJob.progress += delta;
+    if (this.analysisJob.progress >= this.analysisJob.duration) this._completeAnalysis();
+  }
+
+  _completeAnalysis() {
+    const { partId, analysisId } = this.analysisJob;
+    if (!this.analysesDone[partId]) this.analysesDone[partId] = new Set();
+    this.analysesDone[partId].add(analysisId);
+    const next = this.analysisQueue.shift() || null;
+    this.analysisJob = next ? { ...next, progress: 0 } : null;
+    if (this.onAnalysisComplete) this.onAnalysisComplete(partId, analysisId);
+  }
+
+  simulateOffline(seconds) {
+    if (!(seconds > 0)) return 0;
+    const savedCb = this.onAnalysisComplete;
+    this.onAnalysisComplete = null;
+    let completed = 0;
+    let budget = seconds;
+    while (this.analysisJob && budget > 0) {
+      const remaining = this.analysisJob.duration - this.analysisJob.progress;
+      if (remaining <= budget) {
+        budget -= remaining;
+        this._completeAnalysis();
+        completed++;
+      } else {
+        this.analysisJob.progress += budget;
+        budget = 0;
+      }
+    }
+    this.onAnalysisComplete = savedCb;
+    return completed;
+  }
+
+  // ── Grants — live getters over the registry (the modularity contract) ──────
   // Live getters — recomputed on every read (BossSystem/ChallengeSystem
   // convention), so direct mutation of `installed`/`minorsBuilt` can never
   // leave a stale cache. Keys listed in CONSUMED_GRANT_KEYS are the ones
@@ -113,7 +174,8 @@ export class MachineSystem {
 
   restoreTiers() {
     const out = {};
-    // Later generations supersede earlier ones — tiers are cumulative fidelity, not stacking bonuses (last write wins; registry order is gen-ascending, test-pinned).
+    // Later generations supersede earlier ones — tiers are cumulative fidelity,
+    // not stacking bonuses (last write wins; registry order is gen-ascending, test-pinned).
     for (const p of MACHINE_PARTS) {
       if (!this.installed.has(p.id)) continue;
       for (const [k, v] of Object.entries(p.restore)) out[k] = v;
