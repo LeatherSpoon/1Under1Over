@@ -532,7 +532,7 @@ export class HUD {
       'workshop-panel', 'constructor-panel', 'fabrication-panel', 'assembly-matrix-panel',
       'refinery-panel',
       'expedition-panel', 'challenges-panel', 'implant-panel', 'data-panel',
-      'training-panel',
+      'training-panel', 'machine-panel',
     ];
     for (const id of ids) {
       if (id === exceptId) continue;
@@ -567,6 +567,7 @@ export class HUD {
       case 'implant-panel': this._refreshImplant(); break;
       case 'data-panel': this._refreshDataCore(); break;
       case 'training-panel': this._refreshTraining(); break;
+      case 'machine-panel': this._refreshMachine(); break;
     }
   }
 
@@ -887,6 +888,123 @@ export class HUD {
       }
       el.appendChild(card);
     }
+  }
+
+  // ── The Machine console — dossiers, analysis bay, build stages ────────────
+  _refreshMachine() {
+    const el = document.getElementById('machine-contents');
+    const machine = this.machine;
+    if (!el || !machine) return;
+    el.innerHTML = '';
+
+    const head = document.createElement('div');
+    head.style.cssText = 'margin-bottom:10px;color:#9fd8c8;font-size:0.85rem;';
+    head.textContent = machine.currentGen < 0
+      ? 'Assemble the Field Core from dropship salvage to bring the machine online.'
+      : `Machine online — generation ${machine.currentGen} · ${machine.minorsBuilt} expansion rack${machine.minorsBuilt === 1 ? '' : 's'}.`;
+    el.appendChild(head);
+
+    const billText = (bill) => [`${bill.pp} PP`]
+      .concat(Object.entries(bill.mats).map(([m, q]) => `${m} ×${q}`)).join(' · ');
+
+    for (const part of machine.constructor.PARTS) {
+      const state = machine.partState(part.id);
+      const card = document.createElement('div');
+      card.className = 'training-program' + (state === 'building' ? ' selected' : '');
+
+      const title = document.createElement('div');
+      title.style.cssText = 'display:flex;justify-content:space-between;gap:8px;';
+      const badge = { locked: '🔒 LOCKED', investigating: '🔬 INVESTIGATING', building: '🔧 BUILDING', installed: '✅ INSTALLED' }[state] || state;
+      title.innerHTML = `<b>GEN ${part.gen} — ${part.name}</b><span>${badge}</span>`;
+      card.appendChild(title);
+
+      if (part.tierName) {
+        const tier = document.createElement('div');
+        tier.style.cssText = 'color:#88aacc;font-size:0.75rem;margin:2px 0 6px;';
+        tier.textContent = `Restore tier: ${part.tierName}`;
+        card.appendChild(tier);
+      }
+
+      if (state === 'locked') {
+        const hint = document.createElement('div');
+        hint.style.cssText = 'color:#8899aa;font-size:0.8rem;';
+        hint.textContent = `Cross chapter rung ${part.rung} to open this dossier.`;
+        card.appendChild(hint);
+        el.appendChild(card);
+        continue;
+      }
+
+      if (state !== 'installed') {
+        const f = machine.fieldFindings(part.id);
+        for (const row of f.rows) {
+          const r = document.createElement('div');
+          r.style.cssText = 'font-size:0.8rem;color:' + (row.done ? '#7fd8a8' : '#8899aa') + ';';
+          r.textContent = `${row.done ? '☑' : '☐'} ${row.label}`;
+          card.appendChild(r);
+        }
+        for (const a of part.analyses) {
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;gap:8px;';
+          const done = machine.analysisDone(part.id, a.id);
+          const queued = machine.analysisQueued(part.id, a.id);
+          const running = machine.analysisJob && machine.analysisJob.partId === part.id && machine.analysisJob.analysisId === a.id;
+          const pct = running ? ` ${Math.floor(machine.analysisJob.progress / machine.analysisJob.duration * 100)}%` : '';
+          const label = document.createElement('span');
+          label.style.color = done ? '#7fd8a8' : '#aab8cc';
+          label.textContent = `${done ? '☑' : '☐'} ${a.label}${running ? ' — analyzing' + pct : queued ? ' — queued' : ''}`;
+          row.appendChild(label);
+          if (!done && !queued) {
+            const btn = document.createElement('button');
+            btn.textContent = `ANALYZE (${Object.entries(a.input).map(([m, q]) => `${m} ×${q}`).join(', ')})`;
+            btn.addEventListener('click', () => { machine.enqueueAnalysis(part.id, a.id); this._refreshMachine(); });
+            row.appendChild(btn);
+          }
+          card.appendChild(row);
+        }
+      }
+
+      if (state === 'building') {
+        const delivered = machine.stagesDelivered[part.id] || 0;
+        const stage = document.createElement('div');
+        stage.style.cssText = 'margin-top:6px;font-size:0.8rem;color:#cfe8ff;';
+        stage.textContent = `Build stage ${delivered + 1} / ${part.stageBills.length} — ${billText(machine.stageBill(part.id))}`;
+        card.appendChild(stage);
+        const btn = document.createElement('button');
+        btn.textContent = 'DELIVER STAGE';
+        btn.disabled = !machine.canDeliverStage(part.id);
+        btn.addEventListener('click', () => { machine.deliverStage(part.id); this._refreshMachine(); });
+        card.appendChild(btn);
+      }
+
+      if (state === 'installed' && Object.keys(part.grants).length) {
+        const g = document.createElement('div');
+        g.style.cssText = 'color:#7fd8a8;font-size:0.8rem;';
+        g.textContent = 'Online: ' + Object.entries(part.grants).map(([k, v]) => `${k} ×${v}`).join(' · ');
+        card.appendChild(g);
+      }
+
+      el.appendChild(card);
+    }
+
+    // Expansion racks — the infinite tail
+    const minor = document.createElement('div');
+    minor.className = 'training-program';
+    const avail = machine.minorsAvailable;
+    const mTitle = document.createElement('div');
+    mTitle.innerHTML = `<b>EXPANSION RACKS</b> — built ${machine.minorsBuilt}, earned ${avail} (one per Sim Warden crossed)`;
+    minor.appendChild(mTitle);
+    if (machine.currentGen >= 0 && avail > 0) {
+      const bill = document.createElement('div');
+      bill.style.cssText = 'font-size:0.8rem;color:#cfe8ff;margin:4px 0;';
+      bill.textContent = billText(machine.minorBill()) + ` → +${Math.round(machine.constructor.MINOR.ppMultPerPart * 100)}% PP`;
+      minor.appendChild(bill);
+      const btn = document.createElement('button');
+      btn.textContent = 'BUILD RACK';
+      btn.disabled = !machine.canBuildMinor();
+      btn.addEventListener('click', () => { machine.buildMinor(); this._refreshMachine(); });
+      minor.appendChild(btn);
+    }
+    el.appendChild(minor);
   }
 
   /**

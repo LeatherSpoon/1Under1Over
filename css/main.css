@@ -1720,6 +1720,39 @@ body {
 }
 .training-program button:disabled { opacity: 0.45; cursor: default; }
 
+/* ── The Machine Console (dossiers, analysis bay, build stages) ────── */
+#machine-panel {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 150;
+  pointer-events: auto;
+}
+#machine-panel[hidden] { display: none !important; }
+
+#machine-modal {
+  background: rgba(6,10,20,0.97);
+  border: 1px solid #7fd8a8;
+  border-radius: 8px;
+  width: min(440px, 92vw);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(127,216,168,0.15);
+}
+
+#machine-modal #machine-contents {
+  overflow-y: auto;
+  flex: 1;
+  padding: 8px 10px;
+  scrollbar-width: thin;
+  scrollbar-color: #7fd8a8 transparent;
+}
+
 /* Immersion overlay while inside the chamber (below panels at z 150+) */
 #training-overlay {
   position: fixed;

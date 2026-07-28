@@ -440,6 +440,14 @@
       </div>
     </div>
 
+    <!-- The Machine: surface computer console (dossiers, analysis bay, build stages) -->
+    <div id="machine-panel" hidden>
+      <div id="machine-modal">
+        <div class="panel-header">MACHINE CONSOLE <button class="panel-close" onclick="document.getElementById('machine-panel').hidden=true">X</button></div>
+        <div id="machine-contents" class="panel-body"></div>
+      </div>
+    </div>
+
     <!-- Training chamber immersion overlay: looping sim feed + live readout -->
     <div id="training-overlay" hidden>
       <video id="training-video" loop muted autoplay playsinline hidden></video>
