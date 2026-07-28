@@ -86,3 +86,45 @@ test('machine registry: part ids and analysis ids are unique save keys', () => {
     assert.equal(new Set(aids).size, aids.length, `${p.id}: duplicate analysis id`);
   }
 });
+
+import { MachineSystem } from '../../js/systems/MachineSystem.js';
+import { PPSystem } from '../../js/systems/PPSystem.js';
+
+// Real systems where cheap, tiny stubs where not (chapterSystem.test.js idiom).
+function makeMachine() {
+  const pp = new PPSystem();
+  pp.ppTotal = 1e9;
+  const inv = new InventorySystem();
+  for (const m of InventorySystem.MATERIAL_NAMES) inv.materials[m] = 99;
+  const machine = new MachineSystem(inv, pp);
+  machine.codex = new CodexSystem();
+  machine.bosses = new BossSystem(pp);
+  machine.chapters = { rungCrossed: () => false, wardensCrossedLifetime: () => 0 };
+  return { machine, pp, inv };
+}
+
+test('machine: gen0 is buildable immediately; later parts lock on rung', () => {
+  const { machine } = makeMachine();
+  assert.equal(machine.currentGen, -1);
+  assert.equal(machine.partState('gen0'), 'building', 'gen0 has no findings and no rung gate');
+  assert.equal(machine.partState('gen1'), 'locked', 'rung 1 not crossed yet');
+  machine.chapters.rungCrossed = () => true;
+  assert.equal(machine.partState('gen1'), 'investigating', 'rung crossed but findings incomplete');
+});
+
+test('machine: field findings compute live from codex + bosses, never stored', () => {
+  const { machine } = makeMachine();
+  machine.chapters.rungCrossed = () => true;
+  let f = machine.fieldFindings('gen1');
+  assert.equal(f.total, 5, 'zone lore + boss + 3 codex specimens');
+  assert.equal(f.done, 0);
+  machine.codex.discover('theLanding');
+  machine.codex.discover('mossback');
+  machine.bosses.recordDefeat('boss_landing');
+  f = machine.fieldFindings('gen1');
+  assert.equal(f.done, 3);
+  assert.equal(f.complete, false);
+  machine.codex.discover('burrfang');
+  machine.codex.discover('stiltbeak');
+  assert.equal(machine.fieldFindings('gen1').complete, true);
+});
