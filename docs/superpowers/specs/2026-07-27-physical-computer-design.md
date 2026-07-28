@@ -18,6 +18,7 @@ The player is creating a physical computer that they help learn, and which in tu
 | Field data? | The player is **always inspecting** — ordinary participation is data collection; no survey chore. Specimens gathered in the field are studied in laboratory conditions at the machine |
 | Server? | **Use Postgres wherever possible** — full DB integration ships with the system, not deferred |
 | World presence? | Eastern meadow plot, Gen 0 near the dropship, growth extends east; generation leaps + endless minor modules; interior door at Gen 5 |
+| Modularity? (post-review) | **Assigning which improvements land at which chapter is a data edit** — one declarative parts registry, keyed effects, named capability handlers; no engine changes to remap |
 
 Standing constraints honored: flow-with-bottlenecks economy; no dodge mechanic; no calendar cadence; moveSpeed changes stay out (deferred to its own session); visuals authored in Blender; no real-money anything.
 
@@ -69,8 +70,10 @@ Guardrails: capabilities never touch moveSpeed (deferred topic) and never bypass
 
 ## 6. Systems architecture
 
+**Modularity contract (owner requirement).** All part content lives in ONE declarative registry, `MACHINE_PARTS`, defined in `server/definitions/systemsData.js` and imported client-side (the existing ProgressionDefinitions pattern — client already imports seed definitions from `server/definitions/`). One entry per part: `{ id, rung, name, tierName, capability, grants, restore, analyses, stageBills, glbKey }`. Effects are **keyed data, not code**: `grants` is a bag of known effect keys (`gatherMult`, `craftSpeedMult`, `damageMult`, `ppMult`, `computeUnits`, `offlineBufferH`, `droneMult`, `trainingMult`, …) folded by one generic loop into the per-frame recompute; `restore` is a bag of run-layer keys (`baseCapStart`, `keyKeepFrac`, `ladderFloorDiv`, `momentumKneeMinusMin`, `momentumFloor`, `ppRefillFrac`) consumed by one hook in the recompile path; `capability` is a string key into a capability-handler registry wired once in `main.js`. Reassigning an improvement to a different chapter, retuning a number, or adding a part for a future chapter is therefore an edit to one data file — the same file that seeds Postgres.
+
 **New files**
-- `js/systems/MachineSystem.js` — part dossier definitions (findings requirements, analysis defs, stage bills, grants) + mutable state (installed parts, stage progress, analysis queue/completions). API: `getDossier(n)`, `fieldFindings(n)` (pure over injected `codex`/`bosses`/`stats` refs), `enqueueAnalysis()`, `deliverStage()`, `install()`, `applyBonuses()`, `serialize()/deserialize()`, `simulateOffline(seconds)`.
+- `js/systems/MachineSystem.js` — consumes the `MACHINE_PARTS` registry + owns mutable state (installed parts, stage progress, analysis queue/completions). API: `getDossier(n)`, `fieldFindings(n)` (pure over injected `codex`/`bosses`/`stats` refs), `enqueueAnalysis()`, `deliverStage()`, `install()`, `applyBonuses()`, `serialize()/deserialize()`, `simulateOffline(seconds)`.
 - `js/scene/zones/LandingSite/machine.js` — single source of truth for plot geometry: per-generation GLB keys, minor-module socket layout (seeded), collision circles per generation, console + socket positions, nav landmark. Mirrored by the Blender build script (canopy.js discipline).
 - `js/scene/zones/MachineInterior/index.js` — Gen 5+ door zone; rooms gated on installed parts; doorway `spawnOverride` returns to the machine's doorstep.
 - `Assets/3D/Machine/` — `Machine.blend` (watched; one collection per stage GLB + module variants), `build_machine.py` bootstrap, Rodin where it fits, baked outline hulls per convention.
@@ -103,6 +106,7 @@ The save blob (cloud snapshots) carries the same state via SaveSystem v15, as fo
 
 - `tests/systems/machineSystem.test.js`:
   - every chapter rung 1..13 (and the minor-part generator) has a dossier; every analysis specimen and bill row is a known inventory material (DROP_TABLES discipline);
+  - **registry validation:** every part's `grants`/`restore` keys belong to the known effect-key sets and every `capability` names a registered handler — a typo'd data edit fails CI naming the bad key;
   - `fieldFindings()` against mocked codex/boss/stats state;
   - serialize → load → `applyBonuses()` idempotence;
   - restore tiers touch only run-layer fields (pin: permanent-layer fields unchanged across a simulated Recompile);
