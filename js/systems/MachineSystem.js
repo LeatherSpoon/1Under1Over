@@ -281,11 +281,16 @@ export class MachineSystem {
     for (const [k, v] of Object.entries(data.analysesDone || {})) this.analysesDone[k] = new Set(v);
     this.analysisJob = data.analysisJob ? { ...data.analysisJob } : null;
     this.analysisQueue = (data.analysisQueue || []).map(q => ({ ...q }));
-    this.minorsBuilt = data.minorsBuilt || 0;
-    // A hand-edited or corrupted blob can carry progress past duration; clamp so
-    // simulateOffline's remaining-time math can never go negative (see Task 3 review).
-    if (this.analysisJob && !(this.analysisJob.progress <= this.analysisJob.duration)) {
-      this.analysisJob.progress = Math.min(this.analysisJob.progress || 0, this.analysisJob.duration);
+    this.minorsBuilt = Number(data.minorsBuilt) || 0;
+    // A hand-edited or corrupted blob can carry a malformed job: no positive
+    // duration → drop it (a NaN job would jam the bay forever, while still
+    // charging materials for every later enqueue); progress past duration →
+    // clamp, so simulateOffline's remaining-time math can never go negative
+    // and inflate the offline budget through the whole queue.
+    if (this.analysisJob && !(this.analysisJob.duration > 0)) {
+      this.analysisJob = null;
+    } else if (this.analysisJob && !(this.analysisJob.progress <= this.analysisJob.duration)) {
+      this.analysisJob.progress = this.analysisJob.duration;
     }
   }
 }

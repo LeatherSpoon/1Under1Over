@@ -331,6 +331,7 @@ test('machine: serialize → deserialize → applyBonuses round-trips exactly', 
   machine.deliverStage('gen1');
   machine.buildMinor();
   machine.enqueueAnalysis('gen2', 'ore_bands');
+  machine.enqueueAnalysis('gen2', 'deep_carbon'); // stays queued behind ore_bands
   machine.update(100);
 
   const blob = JSON.parse(JSON.stringify(machine.serialize()));
@@ -343,8 +344,11 @@ test('machine: serialize → deserialize → applyBonuses round-trips exactly', 
   assert.equal(fresh.minorsBuilt, 1);
   assert.equal(fresh.analysisDone('gen1', 'meadow_flora'), true);
   assert.ok(Math.abs(fresh.analysisJob.progress - 100) < 1e-9, 'in-flight analysis survives');
+  assert.equal(fresh.analysisQueue.length, 1, 'paid-for queued work survives the round trip');
+  assert.equal(fresh.analysisQueued('gen2', 'deep_carbon'), true);
   assert.ok(Math.abs(fresh.ppMult - 1.04) < 1e-9, 'grants recomputed after load');
-  assert.equal(fresh.deserialize(null), undefined, 'null blob (pre-v15 save) is a no-op');
+  fresh.deserialize(null);
+  assert.equal(fresh.minorsBuilt, 1, 'null blob (pre-v15 save) leaves state untouched');
 });
 
 test('SaveSystem carries the machine (v15 wiring)', () => {
@@ -365,8 +369,12 @@ test('machine: deserialize clamps an overshooting analysis progress', () => {
     analysisJob: { partId: 'gen1', analysisId: 'meadow_flora', progress: 9999, duration: 240 },
   });
   assert.equal(machine.analysisJob.progress, 240, 'progress clamped to duration');
-  assert.equal(machine.simulateOffline(1), 1, 'clamped job completes normally, budget math sane');
+  machine.enqueueAnalysis('gen1', 'scrap_alloys'); // queued behind the clamped job
+  assert.equal(machine.simulateOffline(1), 1, 'negative remaining must not inflate the offline budget');
   assert.equal(machine.analysisDone('gen1', 'meadow_flora'), true);
+  machine.deserialize({ installed: ['gen0'], minorsBuilt: 'x', analysisJob: { partId: 'gen1', analysisId: 'scrap_alloys', progress: 5 } });
+  assert.equal(machine.analysisJob, null, 'job with no positive duration is dropped');
+  assert.equal(machine.minorsBuilt, 0, 'non-numeric minorsBuilt coerces to 0');
 });
 
 test('machine: stage delivery refuses on material shortfall and charges nothing', () => {
