@@ -366,6 +366,8 @@ test('SaveSystem carries the machine (v15 wiring)', () => {
   assert.ok(/machine:\s*machine \? machine\.serialize\(\) : null,/.test(src), 'serialize entry missing');
   assert.ok(/machine\.deserialize\(data\.machine \?\? null\)/.test(src), 'apply entry missing');
   assert.ok(/machine\.applyBonuses\(\)/.test(src), 'applyBonuses call missing');
+  assert.ok(src.indexOf('machine.deserialize(') < src.indexOf('crafting.load('),
+    'machine must feed crafting.speedMult before crafting.load recomputes restored durations');
 });
 
 test('machine: deserialize clamps an overshooting analysis progress', () => {
