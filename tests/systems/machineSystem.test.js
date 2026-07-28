@@ -16,6 +16,7 @@ import { CodexSystem } from '../../js/systems/CodexSystem.js';
 import { ChapterSystem } from '../../js/systems/ChapterSystem.js';
 import { MachineSystem, CONSUMED_GRANT_KEYS } from '../../js/systems/MachineSystem.js';
 import { PPSystem } from '../../js/systems/PPSystem.js';
+import { CraftingSystem } from '../../js/systems/CraftingSystem.js';
 
 const MATS = new Set(InventorySystem.MATERIAL_NAMES);
 const BOSS_IDS = new Set(BossSystem.BOSS_DEFS.map(b => b.id));
@@ -388,8 +389,16 @@ test('machine: stage delivery refuses on material shortfall and charges nothing'
   assert.equal(machine.stagesDelivered.gen0 || 0, 0, 'stage did not advance');
 });
 
-test('CraftingSystem exposes the machine speed hook', () => {
-  const src = fs.readFileSync(new URL('../../js/systems/CraftingSystem.js', import.meta.url), 'utf8');
-  assert.ok(src.includes('this.speedMult = 1'), 'speedMult field missing');
-  assert.ok(/\* \(this\.speedMult \|\| 1\)\)/.test(src), 'craft-time divisor must include speedMult');
+test('the machine speed grant divides craft time', () => {
+  const make = () => new CraftingSystem(
+    { hasTool: () => false, hasMaterials: () => true, removeMaterial: () => true },
+    { stats: { crafting: { level: 1 }, craftingSpeed: { level: 0 } } },
+    { recipes: { ration: { label: 'Ration', type: 'consumable', key: 'ration', materials: {}, baseTime: 4, minCraftingLevel: 1 } } },
+  );
+  const c = make();
+  assert.equal(c.getAvailableRecipes()[0].craftTime, 4);
+  c.speedMult = 2;
+  assert.equal(c.getAvailableRecipes()[0].craftTime, 2);
+  c.startCraft('ration');
+  assert.equal(c._craftingDuration, 2, 'the started job uses the boosted duration');
 });

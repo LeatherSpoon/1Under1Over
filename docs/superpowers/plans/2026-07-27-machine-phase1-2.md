@@ -881,27 +881,37 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 - Modify: `js/systems/CraftingSystem.js`
 - Modify: `tests/systems/machineSystem.test.js` (append)
 
-- [ ] **Step 1: Append the failing source-pin test** (source-scrape has house precedent — panelWiring, biomeLayout)
+- [ ] **Step 1: Append the failing behavioral test**
 
 ```js
-test('CraftingSystem exposes the machine speed hook', () => {
-  const src = fs.readFileSync(new URL('../../js/systems/CraftingSystem.js', import.meta.url), 'utf8');
-  assert.ok(src.includes('this.speedMult = 1'), 'speedMult field missing');
-  assert.ok(/\* \(this\.speedMult \|\| 1\)\)/.test(src), 'craft-time divisor must include speedMult');
+test('the machine speed grant divides craft time', () => {
+  const make = () => new CraftingSystem(
+    { hasTool: () => false, hasMaterials: () => true, removeMaterial: () => true },
+    { stats: { crafting: { level: 1 }, craftingSpeed: { level: 0 } } },
+    { recipes: { ration: { label: 'Ration', type: 'consumable', key: 'ration', materials: {}, baseTime: 4, minCraftingLevel: 1 } } },
+  );
+  const c = make();
+  assert.equal(c.getAvailableRecipes()[0].craftTime, 4);
+  c.speedMult = 2;
+  assert.equal(c.getAvailableRecipes()[0].craftTime, 2);
+  c.startCraft('ration');
+  assert.equal(c._craftingDuration, 2, 'the started job uses the boosted duration');
 });
 ```
+
+`import { CraftingSystem } from '../../js/systems/CraftingSystem.js';` goes in the test file's existing top import block, not a new one local to this test.
 
 - [ ] **Step 2: Run tests to verify it fails**
 
 Run: `npm test`
-Expected: FAIL — `speedMult field missing`
+Expected: FAIL — `craftTime` is `NaN` (`this.speedMult` is undefined before Step 3 adds the field).
 
 - [ ] **Step 3: Add the hook**
 
-In `js/systems/CraftingSystem.js`, after the line `this.onCraftProgress = null; // fn(progress, duration)` add:
+In `js/systems/CraftingSystem.js`, after the line `this.maxQueueSize = 5;` add:
 
 ```js
-    this.speedMult = 1; // × crafting speed — machine Fabrication Co-processor (set per-frame in main.js)
+    this.speedMult = 1; // × crafting speed, always ≥1 (machine grant product; set per frame in main.js)
 ```
 
 Then change the craft-time return (currently):
@@ -913,12 +923,14 @@ Then change the craft-time return (currently):
 to:
 
 ```js
-    return (baseTime * masteryMult) / ((1 + this.stats.stats.craftingSpeed.level * 0.2) * (this.speedMult || 1));
+    return (baseTime * masteryMult) / ((1 + this.stats.stats.craftingSpeed.level * 0.2) * this.speedMult);
 ```
 
 - [ ] **Step 4: Run tests + syntax check**
 
 Run: `npm test` → PASS. Run: `node --check js/systems/CraftingSystem.js` → no output.
+
+**Review pass:** guard dropped (producer is total; 0 must mean paused if a gate ever feeds this), source-pin replaced with behavioral coverage; main.js feed gets its own pin in Task 7.
 
 - [ ] **Step 5: Commit**
 

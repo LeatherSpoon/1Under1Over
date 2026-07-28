@@ -203,9 +203,9 @@ export class CraftingSystem {
     this._craftingDuration = 0;
     this._queue = [];           // queued recipe IDs
     this.maxQueueSize = 5;
+    this.speedMult = 1; // × crafting speed, always ≥1 (machine grant product; set per frame in main.js)
     this.onCraftComplete = null; // fn(recipe)
     this.onCraftProgress = null; // fn(progress, duration)
-    this.speedMult = 1; // × crafting speed — machine Fabrication Co-processor (set per-frame in main.js)
     this.onQueueUpdate = null;   // fn(queue)
   }
 
@@ -234,7 +234,7 @@ export class CraftingSystem {
     const masteryMult = (masteryCategory && this.mastery)
       ? this.mastery.getCraftTimeMultiplier(masteryCategory)
       : 1;
-    return (baseTime * masteryMult) / ((1 + this.stats.stats.craftingSpeed.level * 0.2) * (this.speedMult || 1));
+    return (baseTime * masteryMult) / ((1 + this.stats.stats.craftingSpeed.level * 0.2) * this.speedMult);
   }
 
   _createLocalJobId(recipeId) {
