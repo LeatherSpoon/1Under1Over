@@ -164,8 +164,12 @@ export const MACHINE_GRANT_KEYS = [
 
 export const MACHINE_RESTORE_KEYS = [
   // Run-layer rebirth head-starts, consumed by AscensionSystem (phase-4 plan).
-  'baseCapStart', 'keyKeepFrac', 'ladderFloorDiv',
-  'momentumKneeMinusMin', 'momentumFloor', 'ppRefillFrac',
+  'baseCapStart',         // post-Recompile base PP cap
+  'keyKeepFrac',          // fraction of Override Keys kept, 0..1
+  'ladderFloorDiv',       // ladder restarts at floor(peak/this)
+  'momentumKneeMinusMin', // minutes subtracted from the knee requirement
+  'momentumFloor',        // starting momentum multiplier floor
+  'ppRefillFrac',         // fraction of new cap refilled, 0..1
 ];
 
 export const MACHINE_CAPABILITIES = [
@@ -178,7 +182,7 @@ export const MACHINE_PARTS = [
     id: 'gen0', gen: 0, rung: 0, name: 'Field Core', tierName: null,
     capability: 'analysisBay',
     grants: {}, restore: {},
-    findings: { zoneLore: null, boss: null, codexAny: [] },
+    findings: { zoneLore: null, boss: null, codex: [] },
     analyses: [],
     stageBills: [
       { pp: 40, mats: { stone: 6, copper: 4 } },
@@ -192,10 +196,10 @@ export const MACHINE_PARTS = [
     restore: { baseCapStart: 225 },
     findings: {
       zoneLore: 'theLanding', boss: 'boss_landing',
-      codexAny: ['mossback', 'burrfang', 'stiltbeak'],
+      codex: ['mossback', 'burrfang', 'stiltbeak'],
     },
     analyses: [
-      { id: 'meadow_flora', label: 'Meadow flora assay', input: { fiber: 8, seed: 2 }, duration: 240 },
+      { id: 'meadow_flora', label: 'Meadow flora assay', input: { fiber: 8, seed: 2 }, duration: 240 }, // seconds
       { id: 'scrap_alloys', label: 'Scrap alloy census', input: { copper: 8, iron: 6 }, duration: 300 },
     ],
     stageBills: [
@@ -211,10 +215,10 @@ export const MACHINE_PARTS = [
     restore: { keyKeepFrac: 0.25 },
     findings: {
       zoneLore: 'theMine', boss: 'boss_mine',
-      codexAny: ['scalerunner', 'duneplate', 'bramblemaw'],
+      codex: ['scalerunner', 'duneplate', 'bramblemaw'],
     },
     analyses: [
-      { id: 'ore_bands', label: 'Ore band spectrometry', input: { silica: 6, quartz: 4 }, duration: 420 },
+      { id: 'ore_bands', label: 'Ore band spectrometry', input: { silica: 6, quartz: 4 }, duration: 420 }, // seconds
       { id: 'deep_carbon', label: 'Deep carbon dating', input: { carbon: 6, stone: 12 }, duration: 420 },
       { id: 'drill_wear', label: 'Drill wear forensics', input: { iron: 10, ironSpike: 2 }, duration: 480 },
     ],

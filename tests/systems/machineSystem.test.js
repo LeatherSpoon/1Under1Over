@@ -36,18 +36,25 @@ test('machine registry: every effect key, material, boss and codex ref is real',
       assert.ok(a.duration > 0, `${p.id}/${a.id}: duration must be > 0`);
       for (const m of Object.keys(a.input)) {
         assert.ok(MATS.has(m), `${p.id}/${a.id}: unknown material '${m}'`);
+        assert.ok(a.input[m] > 0, `${p.id}/${a.id}: '${m}' qty must be > 0`);
       }
     }
     for (const [i, s] of p.stageBills.entries()) {
       assert.ok(s.pp > 0, `${p.id} stage ${i}: pp must be > 0`);
       for (const m of Object.keys(s.mats)) {
         assert.ok(MATS.has(m), `${p.id} stage ${i}: unknown material '${m}'`);
+        assert.ok(s.mats[m] > 0, `${p.id} stage ${i}: '${m}' qty must be > 0`);
       }
     }
     if (p.findings.boss) assert.ok(BOSS_IDS.has(p.findings.boss), `${p.id}: unknown boss '${p.findings.boss}'`);
     if (p.findings.zoneLore) assert.ok(CODEX_KEYS.has(p.findings.zoneLore), `${p.id}: unknown codex key '${p.findings.zoneLore}'`);
-    for (const c of p.findings.codexAny) {
+    for (const c of p.findings.codex) {
       assert.ok(CODEX_KEYS.has(c), `${p.id}: unknown codex key '${c}'`);
+    }
+    if (p.findings.boss) {
+      const s = ChapterSystem.STORY.find(st => st.boss === p.findings.boss);
+      assert.ok(s, `${p.id}: boss '${p.findings.boss}' is not a story boss`);
+      assert.equal(p.rung, s.rung, `${p.id}: rung ${p.rung} disagrees with ${p.findings.boss} (rung ${s.rung})`);
     }
     if (p.gen > 0) {
       assert.ok(STORY_RUNGS.has(p.rung), `${p.id}: rung ${p.rung} is not a story rung`);
@@ -55,10 +62,12 @@ test('machine registry: every effect key, material, boss and codex ref is real',
       assert.ok(p.stageBills.length >= 2, `${p.id}: needs at least two build stages`);
     }
   }
+  assert.ok(MACHINE_MINOR.billBase.pp > 0, 'minor bill pp must be > 0');
   for (const m of Object.keys(MACHINE_MINOR.billBase.mats)) {
     assert.ok(MATS.has(m), `minor bill: unknown material '${m}'`);
   }
-  assert.ok(MACHINE_MINOR.ppMultPerPart > 0 && MACHINE_MINOR.billGrowth > 1);
+  assert.ok(MACHINE_MINOR.ppMultPerPart > 0, 'ppMultPerPart must be > 0');
+  assert.ok(MACHINE_MINOR.billGrowth > 1, 'billGrowth must be > 1');
 });
 
 test('machine registry: generations contiguous from 0, rungs strictly ascend', () => {
@@ -67,4 +76,13 @@ test('machine registry: generations contiguous from 0, rungs strictly ascend', (
     assert.ok(MACHINE_PARTS[i].rung > MACHINE_PARTS[i - 1].rung, 'rungs must strictly ascend');
   }
   assert.equal(MACHINE_PARTS[0].rung, 0, 'gen0 has no chapter requirement');
+});
+
+test('machine registry: part ids and analysis ids are unique save keys', () => {
+  const ids = MACHINE_PARTS.map(p => p.id);
+  assert.equal(new Set(ids).size, ids.length, 'duplicate part id');
+  for (const p of MACHINE_PARTS) {
+    const aids = p.analyses.map(a => a.id);
+    assert.equal(new Set(aids).size, aids.length, `${p.id}: duplicate analysis id`);
+  }
 });

@@ -82,7 +82,7 @@ test('machine registry: every effect key, material, boss and codex ref is real',
     }
     if (p.findings.boss) assert.ok(BOSS_IDS.has(p.findings.boss), `${p.id}: unknown boss '${p.findings.boss}'`);
     if (p.findings.zoneLore) assert.ok(CODEX_KEYS.has(p.findings.zoneLore), `${p.id}: unknown codex key '${p.findings.zoneLore}'`);
-    for (const c of p.findings.codexAny) {
+    for (const c of p.findings.codex) {
       assert.ok(CODEX_KEYS.has(c), `${p.id}: unknown codex key '${c}'`);
     }
     if (p.gen > 0) {
@@ -156,7 +156,7 @@ export const MACHINE_PARTS = [
     id: 'gen0', gen: 0, rung: 0, name: 'Field Core', tierName: null,
     capability: 'analysisBay',
     grants: {}, restore: {},
-    findings: { zoneLore: null, boss: null, codexAny: [] },
+    findings: { zoneLore: null, boss: null, codex: [] },
     analyses: [],
     stageBills: [
       { pp: 40, mats: { stone: 6, copper: 4 } },
@@ -170,7 +170,7 @@ export const MACHINE_PARTS = [
     restore: { baseCapStart: 225 },
     findings: {
       zoneLore: 'theLanding', boss: 'boss_landing',
-      codexAny: ['mossback', 'burrfang', 'stiltbeak'],
+      codex: ['mossback', 'burrfang', 'stiltbeak'],
     },
     analyses: [
       { id: 'meadow_flora', label: 'Meadow flora assay', input: { fiber: 8, seed: 2 }, duration: 240 },
@@ -189,7 +189,7 @@ export const MACHINE_PARTS = [
     restore: { keyKeepFrac: 0.25 },
     findings: {
       zoneLore: 'theMine', boss: 'boss_mine',
-      codexAny: ['scalerunner', 'duneplate', 'bramblemaw'],
+      codex: ['scalerunner', 'duneplate', 'bramblemaw'],
     },
     analyses: [
       { id: 'ore_bands', label: 'Ore band spectrometry', input: { silica: 6, quartz: 4 }, duration: 420 },
@@ -355,7 +355,7 @@ export class MachineSystem {
     if (p.findings.boss) {
       rows.push({ label: 'Apex threat neutralized', done: !!(this.bosses && this.bosses.isDefeated(p.findings.boss)) });
     }
-    for (const key of p.findings.codexAny) {
+    for (const key of p.findings.codex) {
       rows.push({ label: `Specimen logged: ${key}`, done: !!(this.codex && this.codex.isDiscovered(key)) });
     }
     const done = rows.filter(r => r.done).length;
@@ -568,7 +568,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 function completeInvestigation(machine, partId) {
   const p = machine.getPart(partId);
   if (p.findings.zoneLore) machine.codex.discover(p.findings.zoneLore);
-  for (const c of p.findings.codexAny) machine.codex.discover(c);
+  for (const c of p.findings.codex) machine.codex.discover(c);
   if (p.findings.boss) machine.bosses.recordDefeat(p.findings.boss);
   for (const a of p.analyses) machine.enqueueAnalysis(partId, a.id);
   machine.simulateOffline(1e7);
