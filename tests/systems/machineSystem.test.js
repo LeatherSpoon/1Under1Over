@@ -17,7 +17,11 @@ import { ChapterSystem } from '../../js/systems/ChapterSystem.js';
 import { MachineSystem, CONSUMED_GRANT_KEYS } from '../../js/systems/MachineSystem.js';
 import { PPSystem } from '../../js/systems/PPSystem.js';
 import { CraftingSystem } from '../../js/systems/CraftingSystem.js';
-import { MACHINE_PLOT, MACHINE_CORE, MACHINE_KEEPOUT, machineFootprint } from '../../js/scene/zones/LandingSite/machineLayout.js';
+import {
+  MACHINE_PLOT, MACHINE_CORE, MACHINE_KEEPOUT, GEN_CORE, machineFootprint,
+  consolePos, rackSlot, RACK_DRAW_CAP, drawnRacks, machineCircles,
+} from '../../js/scene/zones/LandingSite/machineLayout.js';
+import { getPlayerBounds } from '../../js/config.js';
 
 const MATS = new Set(InventorySystem.MATERIAL_NAMES);
 const BOSS_IDS = new Set(BossSystem.BOSS_DEFS.map(b => b.id));
@@ -414,19 +418,67 @@ test('machine plot: clear of every Landing Site landmark and inside bounds', () 
   ];
   for (const l of landmarks) {
     const d = Math.hypot(MACHINE_PLOT.x - l.x, MACHINE_PLOT.z - l.z);
-    assert.ok(d >= MACHINE_KEEPOUT.r + l.r - 4, `plot crowds the ${l.name} (d=${d.toFixed(1)})`);
+    assert.ok(d >= MACHINE_KEEPOUT.r + l.r, `plot crowds the ${l.name} (d=${d.toFixed(1)})`);
   }
   assert.ok(MACHINE_PLOT.x + MACHINE_KEEPOUT.r <= 38, 'keep-out inside the 80×80 playable east edge');
   assert.ok(MACHINE_CORE.x < MACHINE_PLOT.x, 'Gen 0 core stands at the plot west edge, nearest the dropship');
 });
 
-test('machine footprint grows monotonically and stays in-bounds through gen2 + 30 racks', () => {
-  let prev = 0;
-  for (let g = 0; g <= 2; g++) {
-    const f = machineFootprint(g, 0);
-    assert.ok(f.coreH > prev, `gen ${g} must be taller than gen ${g - 1}`);
-    prev = f.coreH;
+test('machine circles keep clear of the two nearest authored placements', () => {
+  // Copper node and burrfang post (js/scene/zones/LandingSite/index.js
+  // keepClear list) sit inside the forest keep-out ring, which only rejects
+  // tree/rock SCATTER — it says nothing about the machine's own collision
+  // circles, so those are checked directly against these two instead.
+  const nearby = [
+    { x: 24, z: 6, r: 2, name: 'copper node' },
+    { x: 24, z: -12, r: 3, name: 'burrfang post' },
+  ];
+  const circles = machineCircles(2, 40);
+  for (const l of nearby) {
+    for (const c of circles) {
+      const clearance = Math.hypot(c.x - l.x, c.z - l.z) - c.r - l.r;
+      assert.ok(clearance >= 1.0, `a machine circle crowds the ${l.name} (clearance=${clearance.toFixed(2)})`);
+    }
   }
-  const wide = machineFootprint(2, 30);
-  assert.ok(MACHINE_CORE.x + wide.eastReach <= 38, 'a 30-rack machine still fits the playable field');
+});
+
+test('the console pedestal tracks the collision-blocked approach point at every generation', () => {
+  // The documented interact-radius gotcha (CLAUDE.md): collision holds the
+  // player at r + PLAYER_R (0.35) from a prop's centre, so the console must
+  // stay close to where a west-approaching player actually stops walking,
+  // or the interact prompt never fires.
+  for (let gen = 0; gen < GEN_CORE.length; gen++) {
+    const [coreCircle] = machineCircles(gen, 0);
+    const stopX = MACHINE_CORE.x - (coreCircle.r + 0.35);
+    const diff = Math.abs(stopX - consolePos(gen).x);
+    assert.ok(diff < 2.2, `gen ${gen}: console is ${diff.toFixed(2)} from the blocked approach point`);
+  }
+});
+
+test('the rack field never crosses the playable edge, even absurdly overbuilt', () => {
+  assert.equal(drawnRacks(1000), RACK_DRAW_CAP, 'drawnRacks caps at RACK_DRAW_CAP');
+  const circles = machineCircles(2, 1000); // gen2 (widest core) + a wildly excessive rack count
+  const maxEdge = Math.max(...circles.map(c => c.x + c.r));
+  assert.ok(maxEdge <= getPlayerBounds('landingSite').maxX, `machine geometry crosses the playable edge (${maxEdge.toFixed(2)})`);
+});
+
+test('every drawn rack has a matching collision circle', () => {
+  const minors = 40;
+  const circles = machineCircles(2, minors);
+  for (let i = 0; i < drawnRacks(minors); i++) {
+    const slot = rackSlot(i);
+    const match = circles.some(c => Math.hypot(c.x - slot.x, c.z - slot.z) < 0.01);
+    assert.ok(match, `rack ${i} at (${slot.x.toFixed(2)},${slot.z.toFixed(2)}) has no matching collision circle`);
+  }
+});
+
+test('core silhouette grows monotonically across every generation', () => {
+  let prev = { coreH: 0, coreW: 0, coreD: 0 };
+  for (let g = 0; g < GEN_CORE.length; g++) {
+    const f = machineFootprint(g);
+    assert.ok(f.coreH > prev.coreH, `gen ${g} must be taller than gen ${g - 1}`);
+    assert.ok(f.coreW > prev.coreW, `gen ${g} must be wider than gen ${g - 1}`);
+    assert.ok(f.coreD > prev.coreD, `gen ${g} must be deeper than gen ${g - 1}`);
+    prev = f;
+  }
 });

@@ -1084,7 +1084,11 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 - [ ] **Step 1: Append failing pure-layout tests**
 
 ```js
-import { MACHINE_PLOT, MACHINE_CORE, MACHINE_KEEPOUT, machineFootprint } from '../../js/scene/zones/LandingSite/machineLayout.js';
+import {
+  MACHINE_PLOT, MACHINE_CORE, MACHINE_KEEPOUT, GEN_CORE, machineFootprint,
+  consolePos, rackSlot, RACK_DRAW_CAP, drawnRacks, machineCircles,
+} from '../../js/scene/zones/LandingSite/machineLayout.js';
+import { getPlayerBounds } from '../../js/config.js';
 
 test('machine plot: clear of every Landing Site landmark and inside bounds', () => {
   // Landmark coords from js/scene/zones/LandingSite/index.js (keepClear list).
@@ -1096,21 +1100,69 @@ test('machine plot: clear of every Landing Site landmark and inside bounds', () 
   ];
   for (const l of landmarks) {
     const d = Math.hypot(MACHINE_PLOT.x - l.x, MACHINE_PLOT.z - l.z);
-    assert.ok(d >= MACHINE_KEEPOUT.r + l.r - 4, `plot crowds the ${l.name} (d=${d.toFixed(1)})`);
+    assert.ok(d >= MACHINE_KEEPOUT.r + l.r, `plot crowds the ${l.name} (d=${d.toFixed(1)})`);
   }
   assert.ok(MACHINE_PLOT.x + MACHINE_KEEPOUT.r <= 38, 'keep-out inside the 80×80 playable east edge');
   assert.ok(MACHINE_CORE.x < MACHINE_PLOT.x, 'Gen 0 core stands at the plot west edge, nearest the dropship');
 });
 
-test('machine footprint grows monotonically and stays in-bounds through gen2 + 30 racks', () => {
-  let prev = 0;
-  for (let g = 0; g <= 2; g++) {
-    const f = machineFootprint(g, 0);
-    assert.ok(f.coreH > prev, `gen ${g} must be taller than gen ${g - 1}`);
-    prev = f.coreH;
+test('machine circles keep clear of the two nearest authored placements', () => {
+  // Copper node and burrfang post (js/scene/zones/LandingSite/index.js
+  // keepClear list) sit inside the forest keep-out ring, which only rejects
+  // tree/rock SCATTER — it says nothing about the machine's own collision
+  // circles, so those are checked directly against these two instead.
+  const nearby = [
+    { x: 24, z: 6, r: 2, name: 'copper node' },
+    { x: 24, z: -12, r: 3, name: 'burrfang post' },
+  ];
+  const circles = machineCircles(2, 40);
+  for (const l of nearby) {
+    for (const c of circles) {
+      const clearance = Math.hypot(c.x - l.x, c.z - l.z) - c.r - l.r;
+      assert.ok(clearance >= 1.0, `a machine circle crowds the ${l.name} (clearance=${clearance.toFixed(2)})`);
+    }
   }
-  const wide = machineFootprint(2, 30);
-  assert.ok(MACHINE_CORE.x + wide.eastReach <= 38, 'a 30-rack machine still fits the playable field');
+});
+
+test('the console pedestal tracks the collision-blocked approach point at every generation', () => {
+  // The documented interact-radius gotcha (CLAUDE.md): collision holds the
+  // player at r + PLAYER_R (0.35) from a prop's centre, so the console must
+  // stay close to where a west-approaching player actually stops walking,
+  // or the interact prompt never fires.
+  for (let gen = 0; gen < GEN_CORE.length; gen++) {
+    const [coreCircle] = machineCircles(gen, 0);
+    const stopX = MACHINE_CORE.x - (coreCircle.r + 0.35);
+    const diff = Math.abs(stopX - consolePos(gen).x);
+    assert.ok(diff < 2.2, `gen ${gen}: console is ${diff.toFixed(2)} from the blocked approach point`);
+  }
+});
+
+test('the rack field never crosses the playable edge, even absurdly overbuilt', () => {
+  assert.equal(drawnRacks(1000), RACK_DRAW_CAP, 'drawnRacks caps at RACK_DRAW_CAP');
+  const circles = machineCircles(2, 1000); // gen2 (widest core) + a wildly excessive rack count
+  const maxEdge = Math.max(...circles.map(c => c.x + c.r));
+  assert.ok(maxEdge <= getPlayerBounds('landingSite').maxX, `machine geometry crosses the playable edge (${maxEdge.toFixed(2)})`);
+});
+
+test('every drawn rack has a matching collision circle', () => {
+  const minors = 40;
+  const circles = machineCircles(2, minors);
+  for (let i = 0; i < drawnRacks(minors); i++) {
+    const slot = rackSlot(i);
+    const match = circles.some(c => Math.hypot(c.x - slot.x, c.z - slot.z) < 0.01);
+    assert.ok(match, `rack ${i} at (${slot.x.toFixed(2)},${slot.z.toFixed(2)}) has no matching collision circle`);
+  }
+});
+
+test('core silhouette grows monotonically across every generation', () => {
+  let prev = { coreH: 0, coreW: 0, coreD: 0 };
+  for (let g = 0; g < GEN_CORE.length; g++) {
+    const f = machineFootprint(g);
+    assert.ok(f.coreH > prev.coreH, `gen ${g} must be taller than gen ${g - 1}`);
+    assert.ok(f.coreW > prev.coreW, `gen ${g} must be wider than gen ${g - 1}`);
+    assert.ok(f.coreD > prev.coreD, `gen ${g} must be deeper than gen ${g - 1}`);
+    prev = f;
+  }
 });
 ```
 
@@ -1127,6 +1179,11 @@ Expected: FAIL — `Cannot find module ... machine.js`
 // builder lives in ./machine.js; the Blender kit must mirror these footprints
 // when it ships in the asset-pass plan.
 // Spec: docs/superpowers/specs/2026-07-27-physical-computer-design.md §3.
+//
+// Review pass 2: collision moved to pure machineCircles() (per-rack circles
+// replaced the over-blocking disc), console trigger tracks the pedestal per
+// gen, rack draw cap keeps the field in-bounds, length-keyed cache
+// invalidated on rebuild.
 
 export const MACHINE_PLOT = { x: 26, z: 0 };   // plot centre — growth extends east
 export const MACHINE_CORE = { x: 20, z: 0 };   // Gen 0 core / console anchor (west edge)
@@ -1140,12 +1197,90 @@ export const GEN_CORE = [
   { h: 4.0, w: 3.0, d: 2.2 },   // gen2 Fabrication Co-processor — first tower
 ];
 
-export function machineFootprint(gen, minors) {
-  const core = GEN_CORE[Math.max(0, Math.min(gen, GEN_CORE.length - 1))];
-  // Racks march east of the core in seeded rows; ~0.55 units of reach per
-  // rack, capped so even absurd rack counts stay inside the playable field.
-  const eastReach = core.w / 2 + Math.min(11, 2 + minors * 0.55);
-  return { coreH: core.h, coreW: core.w, coreD: core.d, eastReach };
+function clampedCore(gen) {
+  return GEN_CORE[Math.max(0, Math.min(gen, GEN_CORE.length - 1))];
+}
+
+// Core silhouette only. `minors` used to also drive an `eastReach` field for
+// a single blocking disc over the whole rack field, but that disc was the
+// invisible-wall defect this pass fixes (machineCircles() below replaced it
+// with per-rack circles); nothing else read eastReach, so it — and the
+// now-unused second parameter — are gone.
+export function machineFootprint(gen) {
+  const core = clampedCore(gen);
+  return { coreH: core.h, coreW: core.w, coreD: core.d };
+}
+
+// Console pedestal / interact-trigger position (CLAUDE.md's interact-radius
+// gotcha: the console must sit close to where collision actually stops the
+// player, or the prompt never fires). gen<0 (pre-build) keeps the salvage
+// heap's prompt exactly where it sits today, MACHINE_CORE.x - 1.6 — which
+// happens to equal the gen>=0 formula evaluated at GEN_CORE[0] (w=1.6:
+// 1.6/2 + 0.8 = 1.6), but the two are conceptually independent (the heap's
+// boxes are positioned by their own fixed offsets, unrelated to GEN_CORE[0].w)
+// so the pre-build case is spelled out rather than leaned on as a coincidence.
+export function consolePos(gen) {
+  if (gen < 0) return { x: MACHINE_CORE.x - 1.6, z: MACHINE_CORE.z };
+  const core = clampedCore(gen);
+  return { x: MACHINE_CORE.x - core.w / 2 - 0.8, z: MACHINE_CORE.z };
+}
+
+// Expansion racks march east of the core in seeded 3-row columns. Anchored to
+// the WIDEST core (gen2, the last GEN_CORE row) rather than whichever gen is
+// current, so a rack placed while the core is still small (gen0/gen1) can
+// never end up swallowed once a later upgrade grows the core body — the
+// anchor is fixed at the largest size the core will ever reach.
+const RACK_ANCHOR_W = GEN_CORE[GEN_CORE.length - 1].w;
+const RACK_COL_PITCH = 0.9;
+const RACK_ROW_PITCH = 1.4;
+
+export function rackSlot(i) {
+  const col = Math.floor(i / 3);
+  const row = i % 3;
+  return {
+    x: MACHINE_CORE.x + RACK_ANCHOR_W / 2 + 1.2 + col * RACK_COL_PITCH,
+    z: MACHINE_CORE.z - 1.4 + row * RACK_ROW_PITCH,
+  };
+}
+
+// Highest rack index still drawn as an individual mesh + collision circle.
+// Derivation: a rack is a 0.5-wide box (half-width 0.25); allow a further
+// 0.25 for its +-0.075 visual jitter (rounded up generously). At the widest
+// core (gen2, w=3.0) the rack column anchor is MACHINE_CORE.x + 3.0/2 + 1.2
+// = MACHINE_CORE.x + 2.7, so column c's east edge sits at
+// MACHINE_CORE.x + 2.7 + 0.9c + 0.5. Requiring that stay <= 34 (5 units of
+// margin inside the true 39-unit playable edge, so the rack field never
+// brushes the world boundary) gives:
+//   MACHINE_CORE.x(20) + 2.7 + 0.9c + 0.5 <= 34  =>  0.9c <= 10.8  =>  c <= 12
+// Column 12 is last reached by rack index 38 (floor(38/3) = 12), so the cap
+// is 39 racks (indices 0..38). Excess racks beyond the cap densify rather
+// than sprawl further east — the kit pass owns that visual.
+export const RACK_DRAW_CAP = 39;
+
+export function drawnRacks(minors) {
+  return Math.min(minors, RACK_DRAW_CAP);
+}
+
+// Full machine-tagged collision set for the current build state — the single
+// source of truth for both the builder's pushCircles() and these tests.
+// Replaces the old single "shallow circle over the whole rack field" disc,
+// which blocked long before any geometry did (the invisible-wall defect),
+// with one small circle per DRAWN rack instead.
+export function machineCircles(gen, minors) {
+  if (gen < 0) {
+    return [{ x: MACHINE_CORE.x, z: MACHINE_CORE.z, r: 1.0, machine: true }];
+  }
+  const core = clampedCore(gen);
+  const circles = [{
+    x: MACHINE_CORE.x, z: MACHINE_CORE.z,
+    r: Math.hypot(core.w, core.d) / 2 + 0.1, machine: true,
+  }];
+  const n = drawnRacks(minors);
+  for (let i = 0; i < n; i++) {
+    const slot = rackSlot(i);
+    circles.push({ x: slot.x, z: slot.z, r: 0.45, machine: true });
+  }
+  return circles;
 }
 ```
 
@@ -1154,10 +1289,12 @@ export function machineFootprint(gen, minors) {
 ```js
 import * as THREE from 'three';
 import { createToonMaterial, addOutline } from '../../ToonMaterials.js';
-import { MACHINE_CORE, machineFootprint } from './machineLayout.js';
+import {
+  MACHINE_CORE, machineFootprint, consolePos, rackSlot, drawnRacks, machineCircles,
+} from './machineLayout.js';
 
 // The Machine — primitive-stage bodies (DELIBERATE pre-kit fallbacks, station
-// convention). Geometry truth lives in ./machineLayout.js.
+// convention). Geometry + collision truth lives in ./machineLayout.js.
 
 const TEAL = 0x36e0b8;
 const HULL = 0x3c4652;
@@ -1207,7 +1344,7 @@ export function buildMachinePlot(env) {
       ring.position.set(MACHINE_CORE.x, 0.02, MACHINE_CORE.z);
       g.add(ring);
     } else {
-      const f = machineFootprint(gen, minors);
+      const f = machineFootprint(gen);
       const bodyMat = createToonMaterial(HULL);
       const core = new THREE.Mesh(new THREE.BoxGeometry(f.coreW, f.coreH, f.coreD), bodyMat);
       core.position.set(MACHINE_CORE.x, f.coreH / 2, MACHINE_CORE.z);
@@ -1224,16 +1361,18 @@ export function buildMachinePlot(env) {
       const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.1, 6), bodyMat);
       mast.position.set(MACHINE_CORE.x + f.coreW * 0.3, f.coreH + 0.55, MACHINE_CORE.z);
       g.add(mast);
-      // Expansion racks — seeded rows marching east; same seed → same layout.
+      // Expansion racks — seeded jitter on top of the pure rackSlot() centers
+      // (visual only, so collision stays jitter-independent). Excess racks
+      // past the draw cap densify rather than sprawl — kit pass owns the visual.
       const rng = seededRandom(90260);
-      for (let i = 0; i < minors; i++) {
-        const col = Math.floor(i / 3);
-        const row = i % 3;
+      const racksToDraw = drawnRacks(minors);
+      for (let i = 0; i < racksToDraw; i++) {
+        const slot = rackSlot(i);
         const rack = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.9 + rng() * 0.3, 0.7), bodyMat);
         rack.position.set(
-          MACHINE_CORE.x + f.coreW / 2 + 1.2 + col * 0.9 + (rng() - 0.5) * 0.15,
+          slot.x + (rng() - 0.5) * 0.15,
           rack.geometry.parameters.height / 2,
-          MACHINE_CORE.z - 1.4 + row * 1.4 + (rng() - 0.5) * 0.2
+          slot.z + (rng() - 0.5) * 0.2
         );
         addOutline(rack, 0.05);
         g.add(rack);
@@ -1242,8 +1381,9 @@ export function buildMachinePlot(env) {
         g.add(lamp);
       }
       // Console pedestal on the west face (dropship side)
+      const cPos = consolePos(gen);
       const ped = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.9, 0.4), createToonMaterial(DARK));
-      ped.position.set(MACHINE_CORE.x - f.coreW / 2 - 0.8, 0.45, MACHINE_CORE.z);
+      ped.position.set(cPos.x, 0.45, cPos.z);
       addOutline(ped, 0.05);
       g.add(ped);
       const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.1, 0), new THREE.MeshBasicMaterial({ color: TEAL }));
@@ -1256,25 +1396,7 @@ export function buildMachinePlot(env) {
 
   function pushCircles() {
     const { gen, minors } = state();
-    if (gen < 0) {
-      env._collisionCircles.push({ x: MACHINE_CORE.x, z: MACHINE_CORE.z, r: 1.0, machine: true });
-      return;
-    }
-    const f = machineFootprint(gen, minors);
-    // Core body: one circle sized to the box half-diagonal (small enough here
-    // that the face gap is negligible — swap to circle chains with the kit).
-    env._collisionCircles.push({
-      x: MACHINE_CORE.x, z: MACHINE_CORE.z,
-      r: Math.hypot(f.coreW, f.coreD) / 2 + 0.1, machine: true,
-    });
-    // One shallow circle over the rack field keeps walkers out of the clutter.
-    if (minors > 0) {
-      const reach = machineFootprint(gen, minors).eastReach;
-      env._collisionCircles.push({
-        x: MACHINE_CORE.x + reach / 2 + 0.6, z: MACHINE_CORE.z,
-        r: reach / 2, machine: true,
-      });
-    }
+    env._collisionCircles.push(...machineCircles(gen, minors));
   }
 
   function rebuild() {
@@ -1283,14 +1405,18 @@ export function buildMachinePlot(env) {
     group = render();
     env.group.add(group);
     pushCircles();
-    // Installs are rare (≤ ~20 per playthrough); old primitives are left for
-    // GC without a dispose pass — the kit swap in the asset plan replaces this
-    // whole path with _registerStationModel.
+    // A same-length rebuild (e.g. gen advances but minors doesn't) can't be
+    // told apart from "nothing changed" by the sector cache's length-keyed
+    // staleness check — force it to recompute once SectorView zones exist.
+    env._collisionCacheStatic = -1;
+    // Re-track the pedestal on every install, not just the first build.
+    env._machineConsolePos = consolePos(state().gen);
+    // Rebuilds scale with rack count; accepted leak (~70 geometries at the
+    // draw cap) until the kit swap replaces this whole path.
   }
 
   rebuild();
   env._machineRefresh = rebuild;
-  env._machineConsolePos = { x: MACHINE_CORE.x - 1.6, z: MACHINE_CORE.z };
   env._addNavLandmark(MACHINE_CORE.x, 2.0, MACHINE_CORE.z, 'The Machine');
 }
 ```
@@ -1345,6 +1471,15 @@ Run: `npm test` → PASS (the layout test imports only the pure `machineLayout.j
 ```bash
 git add js/scene/zones/LandingSite/machineLayout.js js/scene/zones/LandingSite/machine.js js/scene/zones/LandingSite/index.js js/scene/Environment.js tests/systems/machineSystem.test.js
 git commit -m "feat(machine): Landing Site plot — primitive stage bodies, collision, nav chip
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
+```
+
+**Review pass 2:** collision moved to pure `machineCircles()` (per-rack circles replaced the over-blocking disc), console trigger tracks the pedestal per gen, rack draw cap keeps the field in-bounds, length-keyed cache invalidated on rebuild.
+
+```bash
+git add js/scene/zones/LandingSite/machineLayout.js js/scene/zones/LandingSite/machine.js tests/systems/machineSystem.test.js docs/superpowers/plans/2026-07-27-machine-phase1-2.md
+git commit -m "fix(machine): per-rack collision via pure machineCircles, console tracks pedestal
 
 Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
