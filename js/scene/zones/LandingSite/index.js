@@ -3,6 +3,8 @@ import { createToonMaterial, addOutline, addOutlineToGroup } from '../../ToonMat
 import { addPathRibbon } from '../../PathRibbon.js';
 import { CONFIG } from '../../../config.js';
 import { KNOLL_SURFACES, KNOLL_CIRCLES } from './knoll.js';
+import { buildMachinePlot } from './machine.js';
+import { MACHINE_KEEPOUT } from './machineLayout.js';
 
 // The zone's ground albedo — path edges blend to EXACTLY this so the ribbon is
 // opaque with no seam (see PathRibbon.js).
@@ -67,6 +69,10 @@ export function build(env) {
   // each other; rotY = atan2(dx, dz) turns the model's default +z facing.
   env._addNpc('npcMara',  11.0, 9.4, { rotY: Math.atan2(-1.4, -1.0) });
   env._addNpc('npcFinch',  8.2, 7.4, { rotY: Math.atan2(1.4, 1.0) });
+
+  // The Machine — player-built processing station east of the landing pad
+  // (see ./machine.js / ./machineLayout.js for geometry + primitive bodies).
+  buildMachinePlot(env);
 }
 
 // ── Landing pad ──────────────────────────────────────────────────────────────
@@ -189,6 +195,7 @@ function _addOuterWoods(env) {
     { x: 21, z: -14, r: 2 },
     { x: 24, z: 6, r: 2 },
     { x: 14, z: -24, r: 6.5 },   // lookout knoll + its shelf ramp
+    { x: MACHINE_KEEPOUT.x, z: MACHINE_KEEPOUT.z, r: MACHINE_KEEPOUT.r },  // the machine plot
   ];
 
   for (let i = 0; i < 120; i++) {

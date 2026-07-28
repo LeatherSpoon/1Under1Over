@@ -317,6 +317,8 @@ export class Environment {
     this._assemblyMatrixStationPos = null;
     this._trainingChamber = null;
     this._trainingConsolePos = null;
+    this._machineConsolePos = null;
+    this._machineRefresh = null;
     this.currentZone = zoneName;
     this.bounds = getZoneBounds(zoneName);
 
@@ -1803,6 +1805,8 @@ export class Environment {
 
   getTrainingChamber() { return this._trainingChamber || null; }
   getTrainingConsolePos() { return this._trainingConsolePos || null; }
+  getMachineConsolePos() { return this._machineConsolePos || null; }
+  refreshMachine() { if (this._machineRefresh) this._machineRefresh(); }
 
   _addFabricator(x, z) {
     const g = new THREE.Group();

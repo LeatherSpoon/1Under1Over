@@ -17,6 +17,7 @@ import { ChapterSystem } from '../../js/systems/ChapterSystem.js';
 import { MachineSystem, CONSUMED_GRANT_KEYS } from '../../js/systems/MachineSystem.js';
 import { PPSystem } from '../../js/systems/PPSystem.js';
 import { CraftingSystem } from '../../js/systems/CraftingSystem.js';
+import { MACHINE_PLOT, MACHINE_CORE, MACHINE_KEEPOUT, machineFootprint } from '../../js/scene/zones/LandingSite/machineLayout.js';
 
 const MATS = new Set(InventorySystem.MATERIAL_NAMES);
 const BOSS_IDS = new Set(BossSystem.BOSS_DEFS.map(b => b.id));
@@ -401,4 +402,31 @@ test('the machine speed grant divides craft time', () => {
   assert.equal(c.getAvailableRecipes()[0].craftTime, 2);
   c.startCraft('ration');
   assert.equal(c._craftingDuration, 2, 'the started job uses the boosted duration');
+});
+
+test('machine plot: clear of every Landing Site landmark and inside bounds', () => {
+  // Landmark coords from js/scene/zones/LandingSite/index.js (keepClear list).
+  const landmarks = [
+    { x: 9.4, z: 8.6, r: 5, name: 'survivor camp' },
+    { x: 14, z: -24, r: 6.5, name: 'lookout knoll' },
+    { x: -18, z: -18, r: 12, name: 'mountain' },
+    { x: 18, z: 18, r: 7, name: 'arena' },
+  ];
+  for (const l of landmarks) {
+    const d = Math.hypot(MACHINE_PLOT.x - l.x, MACHINE_PLOT.z - l.z);
+    assert.ok(d >= MACHINE_KEEPOUT.r + l.r - 4, `plot crowds the ${l.name} (d=${d.toFixed(1)})`);
+  }
+  assert.ok(MACHINE_PLOT.x + MACHINE_KEEPOUT.r <= 38, 'keep-out inside the 80×80 playable east edge');
+  assert.ok(MACHINE_CORE.x < MACHINE_PLOT.x, 'Gen 0 core stands at the plot west edge, nearest the dropship');
+});
+
+test('machine footprint grows monotonically and stays in-bounds through gen2 + 30 racks', () => {
+  let prev = 0;
+  for (let g = 0; g <= 2; g++) {
+    const f = machineFootprint(g, 0);
+    assert.ok(f.coreH > prev, `gen ${g} must be taller than gen ${g - 1}`);
+    prev = f.coreH;
+  }
+  const wide = machineFootprint(2, 30);
+  assert.ok(MACHINE_CORE.x + wide.eastReach <= 38, 'a 30-rack machine still fits the playable field');
 });
