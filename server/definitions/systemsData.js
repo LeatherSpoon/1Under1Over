@@ -143,3 +143,92 @@ export const STAT_DEFINITIONS = [
   { id: 'speed',        label: 'Speed',       displayOrder: 11 },
   { id: 'energyCap',    label: 'Max Energy',  displayOrder: 12 },
 ];
+
+// ── The Machine — part registry ──────────────────────────────────────────────
+// Spec: docs/superpowers/specs/2026-07-27-physical-computer-design.md
+// One entry per story generation. Effects are KEYED DATA consumed by generic
+// appliers in js/systems/MachineSystem.js — reassigning an improvement to a
+// different chapter is an edit to THIS file only. Grant/restore/capability
+// keys are validated against the lists below by tests/systems/machineSystem.test.js.
+// Client imports this directly (ProgressionDefinitions precedent); seed.js
+// will upsert it to Postgres in the phase-3 plan.
+
+export const MACHINE_GRANT_KEYS = [
+  'gatherMult',       // × gather speed (main.js gather-duration sites)
+  'craftSpeedMult',   // × crafting speed (CraftingSystem.speedMult)
+  'ppMult',           // folds into ppSystem.globalMultiplier
+  // Declared for later generations (consumers wired in the phase-4 plan):
+  'processSpeedMult', 'damageMult', 'droneMult', 'trainingMult',
+  'computeUnits', 'offlineBufferH',
+];
+
+export const MACHINE_RESTORE_KEYS = [
+  // Run-layer rebirth head-starts, consumed by AscensionSystem (phase-4 plan).
+  'baseCapStart', 'keyKeepFrac', 'ladderFloorDiv',
+  'momentumKneeMinusMin', 'momentumFloor', 'ppRefillFrac',
+];
+
+export const MACHINE_CAPABILITIES = [
+  'analysisBay', 'fieldBeacon', 'schematicPrinter', 'gateRecall',
+  'trainingSlot', 'interiorDoor', 'loadoutSnapshots', 'continuityRestore',
+];
+
+export const MACHINE_PARTS = [
+  {
+    id: 'gen0', gen: 0, rung: 0, name: 'Field Core', tierName: null,
+    capability: 'analysisBay',
+    grants: {}, restore: {},
+    findings: { zoneLore: null, boss: null, codexAny: [] },
+    analyses: [],
+    stageBills: [
+      { pp: 40, mats: { stone: 6, copper: 4 } },
+      { pp: 80, mats: { iron: 4, fiber: 6 } },
+    ],
+  },
+  {
+    id: 'gen1', gen: 1, rung: 1, name: 'Calibration Bank', tierName: 'Motor calibration',
+    capability: 'fieldBeacon',
+    grants: { gatherMult: 1.15 },
+    restore: { baseCapStart: 225 },
+    findings: {
+      zoneLore: 'theLanding', boss: 'boss_landing',
+      codexAny: ['mossback', 'burrfang', 'stiltbeak'],
+    },
+    analyses: [
+      { id: 'meadow_flora', label: 'Meadow flora assay', input: { fiber: 8, seed: 2 }, duration: 240 },
+      { id: 'scrap_alloys', label: 'Scrap alloy census', input: { copper: 8, iron: 6 }, duration: 300 },
+    ],
+    stageBills: [
+      { pp: 150, mats: { timber: 10, stone: 10 } },
+      { pp: 250, mats: { iron: 8, copper: 8, circuitWire: 2 } },
+      { pp: 400, mats: { fiber: 10, resin: 4 } },
+    ],
+  },
+  {
+    id: 'gen2', gen: 2, rung: 3, name: 'Fabrication Co-processor', tierName: 'Built infrastructure',
+    capability: 'schematicPrinter',
+    grants: { craftSpeedMult: 1.2 },
+    restore: { keyKeepFrac: 0.25 },
+    findings: {
+      zoneLore: 'theMine', boss: 'boss_mine',
+      codexAny: ['scalerunner', 'duneplate', 'bramblemaw'],
+    },
+    analyses: [
+      { id: 'ore_bands', label: 'Ore band spectrometry', input: { silica: 6, quartz: 4 }, duration: 420 },
+      { id: 'deep_carbon', label: 'Deep carbon dating', input: { carbon: 6, stone: 12 }, duration: 420 },
+      { id: 'drill_wear', label: 'Drill wear forensics', input: { iron: 10, ironSpike: 2 }, duration: 480 },
+    ],
+    stageBills: [
+      { pp: 600, mats: { stone: 20, iron: 12 } },
+      { pp: 900, mats: { alloy_bar: 2, silica: 8 } },
+      { pp: 1400, mats: { steel_ingot: 2, logicChip: 2, quartz: 6 } },
+    ],
+  },
+];
+
+export const MACHINE_MINOR = {
+  name: 'Expansion Rack',
+  ppMultPerPart: 0.04,   // +4% each, additive: ppMult factor = 1 + n × this
+  billBase: { pp: 400, mats: { iron: 10, copper: 10, stone: 10 } },
+  billGrowth: 1.6,       // whole bill (pp and every mat) scales ×1.6^built
+};

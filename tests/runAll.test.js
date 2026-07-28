@@ -33,6 +33,7 @@ import './systems/combatMechanics.test.js';
 import './systems/phaseAWiring.test.js';
 import './systems/chapterSystem.test.js';
 import './systems/computeSystem.test.js';
+import './systems/machineSystem.test.js';
 import './systems/factoryHoppers.test.js';
 import './systems/zoneWiring.test.js';
 import './systems/worldBounds.test.js';
