@@ -5,7 +5,7 @@ import { CONFIG } from '../../../config.js';
 import {
   mineCellToWorld, mineWorldToCell, isMineFloorCell, mineRegionForRow,
   MINE_ZONE_PORTALS, MINE_DRILL_POS,
-  getMineableWallBlocks, getMineableBlockAt, getMineWallRuns, getMineWallCells,
+  getMineableWallBlocks, getMineableBlockAt, getMineWallRuns, getMineWallCells, getMineFillCells,
   setActiveMineMap, getActiveMineMap, setMineMapCell,
 } from './layout.js';
 import { floorColorAt } from './floorColor.js';
@@ -56,6 +56,7 @@ const GRID_COLLISION_INSET = 0;
  *   verdantMaw   →  Breach west gate   CONFIG.ENV_UNLOCK.verdantMaw
  *   frozenTundra →  Breach east gate   CONFIG.ENV_UNLOCK.frozenTundra
  *   lagoonCoast  →  Breach far gate    CONFIG.ENV_UNLOCK.lagoonCoast
+ *   atlantis     →  Breach drowned gate CONFIG.ENV_UNLOCK.atlantis
  */
 export function build(env) {
   // Re-roll (or restore) the cave for this delve before reading any map data.
@@ -106,6 +107,7 @@ export function build(env) {
   env._addPortal(mp.verdantMaw.x,   mp.verdantMaw.z,   'verdantMaw',   CONFIG.ENV_UNLOCK.verdantMaw,   'Verdant Maw');
   env._addPortal(mp.frozenTundra.x, mp.frozenTundra.z, 'frozenTundra', CONFIG.ENV_UNLOCK.frozenTundra, 'Frozen Tundra');
   env._addPortal(mp.lagoonCoast.x,  mp.lagoonCoast.z,  'lagoonCoast',  CONFIG.ENV_UNLOCK.lagoonCoast,  'Lagoon Coast');
+  env._addPortal(mp.atlantis.x,     mp.atlantis.z,     'atlantis',     CONFIG.ENV_UNLOCK.atlantis,     'Atlantis');
 }
 
 // ── Floors ───────────────────────────────────────────────────────────────────
@@ -178,6 +180,9 @@ function _chunkFor(view, c, r) {
       key, active: false,
       minX: a.x - 1.6, maxX: b.x + 1.6, minZ: a.z - 1.6, maxZ: b.z + 1.6,
       wallCells: [], rocks: [], dressCells: [], objects: [],
+      // Interior rock-mass visuals (getMineFillCells) — tracked by cell key so
+      // digging can swap one for a real mineable block.
+      fillCells: [], fillObjects: new Map(),
     };
     view.chunks.set(key, ch);
   }
@@ -202,6 +207,10 @@ function _activateChunk(env, view, ch) {
     const p = _materializeWallCell(env, view, cell);
     if (p) ch.objects.push(p);
   }
+  for (const cell of ch.fillCells) {
+    const p = _materializeWallCell(env, view, cell);
+    if (p) ch.fillObjects.set(`${cell.c},${cell.r}`, p);
+  }
   for (const rock of ch.rocks) {
     if (rock.alive) _materializeRock(env, view, rock);
   }
@@ -215,7 +224,25 @@ function _deactivateChunk(env, view, ch) {
   ch.active = false;
   for (const o of ch.objects) env.group.remove(o);
   ch.objects.length = 0;
+  for (const o of ch.fillObjects.values()) env.group.remove(o);
+  ch.fillObjects.clear();
   for (const rock of ch.rocks) _dematerializeRock(env, rock);
+}
+
+/**
+ * A dig exposed this cell: drop its interior filler so the real mineable block
+ * can take its place. For plain rock the two meshes are identical (same cellRng
+ * roll, same piece, rotation and scale), so nothing visibly changes — the block
+ * was always standing there, it just became diggable. Ore reveals a seam, and
+ * the rock that was in front hides that swap at the camera's pitch.
+ */
+function _promoteFill(env, view, c, r) {
+  const ch = _chunkFor(view, c, r);
+  const key = `${c},${r}`;
+  const obj = ch.fillObjects.get(key);
+  if (obj) { env.group.remove(obj); ch.fillObjects.delete(key); }
+  const i = ch.fillCells.findIndex((cl) => cl.c === c && cl.r === r);
+  if (i !== -1) ch.fillCells.splice(i, 1);
 }
 
 // ── Solid cave walls (non-mineable) ─────────────────────────────────────────
@@ -237,6 +264,10 @@ function _buildWalls(env, rng, kitMats, view) {
 
   for (const cell of getMineWallCells()) {
     _chunkFor(view, cell.c, cell.r).wallCells.push(cell);
+  }
+  // The rock mass behind the exposed face. Visual only — see getMineFillCells.
+  for (const cell of getMineFillCells()) {
+    _chunkFor(view, cell.c, cell.r).fillCells.push(cell);
   }
 }
 
@@ -297,7 +328,9 @@ function _buildMineableBlocks(env, rng, kitMats, view) {
           const nc = rock.cellC + dc, nr = rock.cellR + dr;
           if (ctx.live.has(`${nc},${nr}`)) continue;
           const nb = getMineableBlockAt(nc, nr);
-          if (nb) _spawnMineableBlock(env, ctx, nb);
+          if (!nb) continue;
+          if (ctx.view) _promoteFill(env, ctx.view, nc, nr);
+          _spawnMineableBlock(env, ctx, nb);
         }
       }
     },
@@ -804,10 +837,12 @@ function _buildBreach(env, rng) {
     env.group.add(rune);
   }
 
-  // World gates — stone arches facing the Great Ring
+  // World gates — stone arches facing the Great Ring. All five stand on the one
+  // row-21 gallery, so the two end gates face inward like their neighbours.
+  _buildWorldGate(env, MINE_ZONE_PORTALS.atlantis,     Math.PI / 2);  // west end faces +x
   _buildWorldGate(env, MINE_ZONE_PORTALS.verdantMaw,   Math.PI / 2);  // west gate faces +x
   _buildWorldGate(env, MINE_ZONE_PORTALS.frozenTundra, -Math.PI / 2); // east gate faces -x
-  _buildWorldGate(env, MINE_ZONE_PORTALS.lagoonCoast,  0);            // far gate faces -z
+  _buildWorldGate(env, MINE_ZONE_PORTALS.lagoonCoast,  -Math.PI / 2); // east end faces -x
 }
 
 // A rough-hewn arch around a world portal. rotY orients the opening.

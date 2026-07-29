@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { createToonMaterial, addOutline, addOutlineToGroup } from './ToonMaterials.js';
-import { CONFIG } from '../config.js';
+import { createToonMaterial, createRevealToonMaterial, addOutline, addOutlineToGroup } from './ToonMaterials.js';
+import { CONFIG, getZoneBounds } from '../config.js';
 import { ZONE_ASSETS } from './ZoneAssets.js';
 import {
   buildLandingSite, buildMine,         buildDepths,    buildVerdantMaw,
   buildLagoonCoast, buildFrozenTundra, buildSpaceship, buildWorkspace,
-  buildGlacialHollow,
+  buildGlacialHollow, buildMeltwaterRift, buildAtlantis,
   buildHomeSylva, buildHomeBram, buildHomeSprig,
 } from './zones/index.js';
 import { mineWorldToCell, mineCellToWorld, isMineFloorCell } from './zones/Mine/layout.js';
@@ -72,9 +72,24 @@ export class Environment {
     this.group = new THREE.Group();
     scene.add(this.group);
     this.currentZone = 'landingSite';
+    // Ground extent of the current zone — read by _addGround and any system
+    // that needs the world's edges (sectors, layout validation).
+    this.bounds = getZoneBounds('landingSite');
+    // Spatial streaming for large zones — a builder assigns a SectorView here;
+    // main.js ticks it with the player position. Null in small zones.
+    this._sectors = null;
+    this._collisionCache = null;
+    this._collisionCacheVersion = -1;
+    this._collisionCacheStatic = -1;
     this._zonePortals = []; // { position, targetZone, ppRequired, mesh }
     this._stationAttaches = []; // { group, modelKey, opts, hasModel } — GLB station bodies
-    this._collisionCircles = []; // { x, z, r }
+    this._collisionCircles = []; // { x, z, r, y? } — y'd circles only bite near that height
+    // Walkable surfaces for multi-level zones (see js/scene/walkableSurfaces.js).
+    // Empty in flat zones — main.js skips height resolution entirely then.
+    this._surfaces = [];
+    // Zone landmarks for the off-screen nav aid ({ x, y, z, label }) — things
+    // worth pointing at that aren't portals or bosses (e.g. the canopy ascent).
+    this._navLandmarks = [];
     this._trackGroup = new THREE.Group(); // track markers live here, separate from env
     scene.add(this._trackGroup);
 
@@ -193,8 +208,59 @@ export class Environment {
       loadModel('./models/Furn_SprigBench.glb').catch(() => null),
       loadModel('./models/Furn_SprigHammock.glb').catch(() => null),
       loadModel('./models/Furn_SprigPots.glb').catch(() => null),
-    ]).then(([treeH, treeI, treeJ, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal, ship, mossyBoulder, treeD, treeH2, shipShell, stFabricator, stOffload, stCharging, stDroneMonitor, stAscension, stMastery, stCombatRig, stTrainingConsole, stHoloPylon, shipPlant, crateStack, pipeManifold, snowPine, snowPineSquat, tundraDeadTree, iceCrystal, snowBoulder, frozenShrine, hollowCaveMouth, hollowStalagmites, hollowIceCrystal, hollowFrostShroom, hollowIceRubble, hollowMammothSkull, hollowBoneArch, mawCanopyTree, mawBanyanTree, mawFernCluster, mawPlant, mawMossIdol, mawMossBoulder, mawGlowShroom, homeSylva, homeBram, homeSprig, npcSylva, npcBram, npcSprig, furnSylvaCot, furnSylvaRack, furnSylvaTable, furnBramBench, furnBramBed, furnBramRack, furnSprigBench, furnSprigHammock, furnSprigPots]) => {
-      this._glb = { treeH, treeI, treeJ, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal, ship, mossyBoulder, treeD, treeH2, shipShell, stFabricator, stOffload, stCharging, stDroneMonitor, stAscension, stMastery, stCombatRig, stTrainingConsole, stHoloPylon, shipPlant, crateStack, pipeManifold, snowPine, snowPineSquat, tundraDeadTree, iceCrystal, snowBoulder, frozenShrine, hollowCaveMouth, hollowStalagmites, hollowIceCrystal, hollowFrostShroom, hollowIceRubble, hollowMammothSkull, hollowBoneArch, mawCanopyTree, mawBanyanTree, mawFernCluster, mawPlant, mawMossIdol, mawMossBoulder, mawGlowShroom, homeSylva, homeBram, homeSprig, npcSylva, npcBram, npcSprig, furnSylvaCot, furnSylvaRack, furnSylvaTable, furnBramBench, furnBramBed, furnBramRack, furnSprigBench, furnSprigHammock, furnSprigPots };
+      loadModel('./models/Landing_GrassTuft.glb').catch(() => null),
+      loadModel('./models/Landing_Wildflowers.glb').catch(() => null),
+      loadModel('./models/Landing_Bush.glb').catch(() => null),
+      loadModel('./models/Landing_FallenLog.glb').catch(() => null),
+      loadModel('./models/Landing_MineAdit.glb').catch(() => null),
+      loadModel('./models/Landing_RockOutcrop.glb').catch(() => null),
+      loadModel('./models/Landing_Tent.glb').catch(() => null),
+      loadModel('./models/Landing_Campfire.glb').catch(() => null),
+      loadModel('./models/Npc_Mara.glb').catch(() => null),
+      loadModel('./models/Npc_Finch.glb').catch(() => null),
+      loadModel('./models/Atlantis_GuardianHead.glb').catch(() => null),
+      loadModel('./models/Atlantis_TempleDome.glb').catch(() => null),
+      loadModel('./models/Atlantis_ColumnIntact.glb').catch(() => null),
+      loadModel('./models/Atlantis_ColumnBroken.glb').catch(() => null),
+      loadModel('./models/Atlantis_Archway.glb').catch(() => null),
+      loadModel('./models/Atlantis_CrystalHeart.glb').catch(() => null),
+      loadModel('./models/Atlantis_KelpTuft.glb').catch(() => null),
+      loadModel('./models/Atlantis_CoralCluster.glb').catch(() => null),
+      loadModel('./models/Atlantis_Shipwreck.glb').catch(() => null),
+      loadModel('./models/Atlantis_GlyphStele.glb').catch(() => null),
+      loadModel('./models/Atlantis_Brazier.glb').catch(() => null),
+      loadModel('./models/Atlantis_AmphoraCluster.glb').catch(() => null),
+      loadModel('./models/Atlantis_StoneFish.glb').catch(() => null),
+      loadModel('./models/Atlantis_RuinWall.glb').catch(() => null),
+      loadModel('./models/Pandora_Hometree.glb').catch(() => null),
+      loadModel('./models/Pandora_CanopyPad.glb').catch(() => null),
+      loadModel('./models/Pandora_BranchBridge.glb').catch(() => null),
+      loadModel('./models/Pandora_SpiritTree.glb').catch(() => null),
+      loadModel('./models/Pandora_Helicoradian.glb').catch(() => null),
+      loadModel('./models/Pandora_PuffballTree.glb').catch(() => null),
+      loadModel('./models/Pandora_BranchBridgeLong.glb').catch(() => null),
+      loadModel('./models/Pandora_CanopyPad2.glb').catch(() => null),
+      loadModel('./models/Jungle_CanopyMass.glb').catch(() => null),
+      loadModel('./models/Pandora_VineCurtain.glb').catch(() => null),
+      loadModel('./models/Landing_LookoutKnoll.glb').catch(() => null),
+      loadModel('./models/Canopy_RootGate.glb').catch(() => null),
+      loadModel('./models/Pandora_GreatTree.glb').catch(() => null),
+      loadModel('./models/Pandora_RootSpire.glb').catch(() => null),
+      loadModel('./models/Ember_LanternTree.glb').catch(() => null),
+      loadModel('./models/Ember_GladeArch.glb').catch(() => null),
+      loadModel('./models/Pandora_SkyIsle.glb').catch(() => null),
+      loadModel('./models/Jungle_BambooGrove.glb').catch(() => null),
+      loadModel('./models/Jungle_GoldTree.glb').catch(() => null),
+      // Frozen Tundra glacier round (Assets/3D/FrozenTundra/build_glacierkit.py
+      // + build_icearch.py)
+      loadModel('./models/Tundra_Sastrugi.glb').catch(() => null),
+      loadModel('./models/Tundra_SastrugiLong.glb').catch(() => null),
+      loadModel('./models/Tundra_ShelfWall.glb').catch(() => null),
+      loadModel('./models/Tundra_RiftWall.glb').catch(() => null),
+      loadModel('./models/Tundra_IceBridge.glb').catch(() => null),
+      loadModel('./models/Tundra_IceArch.glb').catch(() => null),
+    ]).then(([treeH, treeI, treeJ, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal, ship, mossyBoulder, treeD, treeH2, shipShell, stFabricator, stOffload, stCharging, stDroneMonitor, stAscension, stMastery, stCombatRig, stTrainingConsole, stHoloPylon, shipPlant, crateStack, pipeManifold, snowPine, snowPineSquat, tundraDeadTree, iceCrystal, snowBoulder, frozenShrine, hollowCaveMouth, hollowStalagmites, hollowIceCrystal, hollowFrostShroom, hollowIceRubble, hollowMammothSkull, hollowBoneArch, mawCanopyTree, mawBanyanTree, mawFernCluster, mawPlant, mawMossIdol, mawMossBoulder, mawGlowShroom, homeSylva, homeBram, homeSprig, npcSylva, npcBram, npcSprig, furnSylvaCot, furnSylvaRack, furnSylvaTable, furnBramBench, furnBramBed, furnBramRack, furnSprigBench, furnSprigHammock, furnSprigPots, landGrass, landFlowers, landBush, landLog, landAdit, landOutcrop, landTent, landCampfire, npcMara, npcFinch, atlGuardianHead, atlTempleDome, atlColumn, atlColumnBroken, atlArchway, atlCrystalHeart, atlKelp, atlCoral, atlShipwreck, atlStele, atlBrazier, atlAmphora, atlStoneFish, atlRuinWall, pandoraHometree, pandoraCanopyPad, pandoraBranchBridge, pandoraSpiritTree, pandoraHelicoradian, pandoraPuffball, pandoraBranchBridgeLong, pandoraCanopyPad2, jungleCanopyMass, pandoraVineCurtain, landKnoll, pandoraRootGate, pandoraGreatTree, pandoraRootSpire, emberLanternTree, emberGladeArch, pandoraSkyIsle, jungleBambooGrove, jungleGoldTree, tundraSastrugi, tundraSastrugiLong, tundraShelfWall, tundraRiftWall, tundraIceBridge, tundraIceArch]) => {
+      this._glb = { treeH, treeI, treeJ, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal, ship, mossyBoulder, treeD, treeH2, shipShell, stFabricator, stOffload, stCharging, stDroneMonitor, stAscension, stMastery, stCombatRig, stTrainingConsole, stHoloPylon, shipPlant, crateStack, pipeManifold, snowPine, snowPineSquat, tundraDeadTree, iceCrystal, snowBoulder, frozenShrine, hollowCaveMouth, hollowStalagmites, hollowIceCrystal, hollowFrostShroom, hollowIceRubble, hollowMammothSkull, hollowBoneArch, mawCanopyTree, mawBanyanTree, mawFernCluster, mawPlant, mawMossIdol, mawMossBoulder, mawGlowShroom, homeSylva, homeBram, homeSprig, npcSylva, npcBram, npcSprig, furnSylvaCot, furnSylvaRack, furnSylvaTable, furnBramBench, furnBramBed, furnBramRack, furnSprigBench, furnSprigHammock, furnSprigPots, landGrass, landFlowers, landBush, landLog, landAdit, landOutcrop, landTent, landCampfire, npcMara, npcFinch, atlGuardianHead, atlTempleDome, atlColumn, atlColumnBroken, atlArchway, atlCrystalHeart, atlKelp, atlCoral, atlShipwreck, atlStele, atlBrazier, atlAmphora, atlStoneFish, atlRuinWall, pandoraHometree, pandoraCanopyPad, pandoraBranchBridge, pandoraSpiritTree, pandoraHelicoradian, pandoraPuffball, pandoraBranchBridgeLong, pandoraCanopyPad2, jungleCanopyMass, pandoraVineCurtain, landKnoll, pandoraRootGate, pandoraGreatTree, pandoraRootSpire, emberLanternTree, emberGladeArch, pandoraSkyIsle, jungleBambooGrove, jungleGoldTree, tundraSastrugi, tundraSastrugiLong, tundraShelfWall, tundraRiftWall, tundraIceBridge, tundraIceArch };
       // Place GLB props for the initial zone (already built procedurally)
       this._placeGLBProps(this.currentZone);
       // Trees built before the GLBs resolved (fresh-load race) get re-skinned
@@ -220,9 +286,16 @@ export class Environment {
     this._stationAttaches = [];
     this._collisionCircles = [];
     this._collisionBoxes = [];
+    this._surfaces = [];
+    this._navLandmarks = [];
     this._trees = [];
     this._rocks = [];
     this._mineChunks = null; // Mine-only chunked view — stale after a switch
+    if (this._sectors) this._sectors.clear();
+    this._sectors = null;    // SectorView for large zones — rebuilt by the builder
+    this._collisionCache = null;
+    this._collisionCacheVersion = -1;
+    this._collisionCacheStatic = -1;
     this._mineDig = null;
     this._growingTrees = [];
     this._treePlacedPositions = [];
@@ -245,6 +318,7 @@ export class Environment {
     this._trainingChamber = null;
     this._trainingConsolePos = null;
     this.currentZone = zoneName;
+    this.bounds = getZoneBounds(zoneName);
 
     switch (zoneName) {
       case 'landingSite':  buildLandingSite(this);  break;
@@ -254,6 +328,8 @@ export class Environment {
       case 'lagoonCoast':  buildLagoonCoast(this);  break;
       case 'frozenTundra': buildFrozenTundra(this); break;
       case 'glacialHollow': buildGlacialHollow(this); break;
+      case 'meltwaterRift': buildMeltwaterRift(this); break;
+      case 'atlantis': buildAtlantis(this); break;
       case 'spaceship':    buildSpaceship(this);    break;
       case 'workspace':    buildWorkspace(this);    break;
       case 'homeSylva':    buildHomeSylva(this);    break;
@@ -271,7 +347,11 @@ export class Environment {
   // ── Per-frame environment update (growing trees, harvest cooldowns) ────────
   update(delta) {
     for (const s of this._spinners) {
-      s.mesh.rotation[s.axis] += s.speed * delta;
+      // A spinner is normally { mesh, axis, speed } — a constant rotation.
+      // An entry may instead carry its own `update(delta)` for motion that
+      // isn't a spin (the tundra's wind-driven spindrift translates and wraps).
+      if (s.update) s.update(delta);
+      else s.mesh.rotation[s.axis] += s.speed * delta;
     }
     for (const n of this._npcs) {
       if (n.mixer) n.mixer.update(delta);
@@ -413,41 +493,114 @@ export class Environment {
     const entries = ZONE_ASSETS[zoneName];
     if (!entries) return;
 
-    for (const { model, x, z, scale, rotY = 0, r, tint } of entries) {
-      const src = g[model];
-      if (!src) continue; // model file not loaded yet (graceful skip)
-      const m = cloneModel(src, scale);
-      if (tint !== undefined) {
-        // Per-placement recolor (e.g. bright surface rocks darkened for the
-        // mine). Clones share materials, so clone before tinting. Baked-shade
-        // GLBs (Rodin-style) carry their art in the emissive channel with a
-        // black base color, so the tint must multiply both.
-        const t = new THREE.Color(tint);
-        m.traverse((n) => {
-          if (!n.isMesh || n.material?.side === THREE.BackSide) return;
-          const apply = (mat) => {
-            const c = mat.clone();
-            c.color.multiply(t);
-            if (c.emissive) c.emissive.multiply(t);
-            return c;
-          };
-          n.material = Array.isArray(n.material) ? n.material.map(apply) : apply(n.material);
-        });
+    for (const { model, x, z, y = 0, scale, rotY = 0, r, tint, noOutline, reveal, aim, scaleXYZ } of entries) {
+      // Reveal-shaded props must not get the plain black auto-hull — the
+      // reveal hole would expose the hull interior as a solid black blob.
+      const m = this.buildPropMesh({ model, x: x ?? 0, z: z ?? 0, scale, rotY, tint, scaleXYZ,
+        noOutline: noOutline || !!reveal });
+      if (!m) continue; // model file not loaded yet (graceful skip)
+      if (y) m.position.y = y;
+      // `aim` places a prop along a 3D segment (canopy branch bridges): the
+      // GLB's local +x axis is yawed/pitched onto start→end and its x-scale
+      // stretched from the authored nativeLen to the segment length.
+      if (aim) {
+        const dx = aim.x1 - aim.x0, dy = aim.y1 - aim.y0, dz = aim.z1 - aim.z0;
+        const hLen = Math.hypot(dx, dz);
+        m.position.set((aim.x0 + aim.x1) / 2, (aim.y0 + aim.y1) / 2, (aim.z0 + aim.z1) / 2);
+        // Yaw about Y, then pitch about the yawed local z — roll-free.
+        m.rotation.set(0, Math.atan2(-dz, dx), Math.atan2(dy, hLen), 'YZX');
+        if (aim.nativeLen) m.scale.x *= Math.hypot(dx, dy, dz) / aim.nativeLen;
       }
-      m.position.set(x, 0, z);
-      m.rotation.y = rotY;
-      // Cartoon ink line on placed props. GLBs that bake their own shell (the
-      // trees' flipped-normal `*_OutlineHull` meshes) must not get another.
-      let hasBakedHull = false;
-      m.traverse(n => {
-        if (n.isMesh && (n.material?.side === THREE.BackSide || /outline|hull/i.test(n.name))) hasBakedHull = true;
-      });
-      if (!hasBakedHull) addOutlineToGroup(m, 0.03);
+      // Canopy platforms/trunks re-shade to reveal materials so the cutout
+      // opens around a player walking beneath them (mine-wall convention).
+      if (reveal) this._applyRevealShading(m);
       this.group.add(m);
       if (r !== undefined) {
-        this._collisionCircles.push({ x, z, r });
+        this._collisionCircles.push(y ? { x, z, r, y } : { x, z, r });
       }
     }
+  }
+
+  /**
+   * Re-shade a placed prop's materials with the player-position reveal cut
+   * (registers them in _revealMaterials, which main.js feeds each frame).
+   * Glow-named materials (emissive accents baked in Blender) and BackSide
+   * hulls keep their originals.
+   */
+  _applyRevealShading(obj, revealR = 3.0) {
+    const conv = (mat) => {
+      if (!mat || mat.side === THREE.BackSide || /glow|spirit|energy|vein/i.test(mat.name || '')) return mat;
+      // Carry the diffuse map through — a textured prop (Rodin branch
+      // bridges) must not collapse to a flat color when it goes reveal.
+      const rm = createRevealToonMaterial(mat.color ? mat.color.getHex() : 0x6a8a6a, {
+        revealR,
+        ...(mat.map ? { map: mat.map } : {}),
+        ...(mat.vertexColors ? { vertexColors: true } : {}),
+      });
+      this._revealMaterials.push(rm);
+      return rm;
+    };
+    obj.traverse(n => {
+      if (!n.isMesh) return;
+      n.material = Array.isArray(n.material) ? n.material.map(conv) : conv(n.material);
+    });
+  }
+
+  /**
+   * Build one placed GLB prop — clone, tint, position, ink outline. Returns
+   * null when the model has not loaded yet, which every caller treats as a
+   * graceful skip. Shared by ZoneAssets placement and generated layouts
+   * (LayoutBuilder), so both get identical art treatment.
+   *
+   * The caller adds it to a group and registers collision; a sector-streamed
+   * prop is built and discarded many times, so this must stay side-effect free.
+   */
+  buildPropMesh({ model, x, z, scale, rotY = 0, tint, noOutline = false, scaleXYZ }) {
+    const g = this._glb;
+    if (!g) return null;
+    const src = g[model];
+    if (!src) return null;
+    const m = cloneModel(src, scale);
+    // Non-uniform stretch, applied on top of the uniform `scale`. Terrain
+    // sections need it: a riser is authored 8 wide × 3 tall, and a 2.5-tall
+    // shelf must keep its width and its detail scale rather than shrinking to
+    // 6.67 wide. Ordinary props should keep using `scale` alone.
+    if (scaleXYZ) m.scale.multiply(new THREE.Vector3(...scaleXYZ));
+    if (tint !== undefined) {
+      // Per-placement recolor (e.g. bright surface rocks darkened for the
+      // mine). Clones share materials, so clone before tinting. Baked-shade
+      // GLBs (Rodin-style) carry their art in the emissive channel with a
+      // black base color, so the tint must multiply both.
+      const t = new THREE.Color(tint);
+      m.traverse((n) => {
+        if (!n.isMesh || n.material?.side === THREE.BackSide) return;
+        const apply = (mat) => {
+          const c = mat.clone();
+          c.color.multiply(t);
+          if (c.emissive) c.emissive.multiply(t);
+          return c;
+        };
+        n.material = Array.isArray(n.material) ? n.material.map(apply) : apply(n.material);
+      });
+    }
+    m.position.set(x, 0, z);
+    m.rotation.y = rotY;
+    // Cartoon ink line on placed props. GLBs that bake their own shell (the
+    // trees' flipped-normal `*_OutlineHull` meshes) must not get another.
+    //
+    // `noOutline` opts a placement out entirely. The scale-based inverted hull
+    // assumes a solid body: it inflates the mesh and draws its backfaces, which
+    // for a closed volume leaves a rim at the silhouette. On a THIN OPEN SHELL
+    // — a tent's canvas, a banner, anything one surface thick — the inflated
+    // shell's backfaces land *in front of* the real surface and paint the whole
+    // prop flat black. That is what the survivor camp's tent did until it was
+    // flagged here.
+    let hasBakedHull = false;
+    m.traverse(n => {
+      if (n.isMesh && (n.material?.side === THREE.BackSide || /outline|hull/i.test(n.name))) hasBakedHull = true;
+    });
+    if (!hasBakedHull && !noOutline) addOutlineToGroup(m, 0.03);
+    return m;
   }
 
   getPortals() { return this._zonePortals; }
@@ -492,7 +645,33 @@ export class Environment {
     }
   }
 
-  getCollisionCircles() { return this._collisionCircles; }
+  /**
+   * Static (authored) blockers plus any live sector-streamed ones. The merged
+   * array is cached and only rebuilt when a sector activates/deactivates, so
+   * the per-frame collision sweep in main.js stays allocation-free.
+   */
+  getCollisionCircles() {
+    const sv = this._sectors;
+    if (!sv || sv.collisionCircles.length === 0) return this._collisionCircles;
+    if (this._collisionCacheVersion !== sv.version
+        || this._collisionCacheStatic !== this._collisionCircles.length) {
+      this._collisionCache = this._collisionCircles.concat(sv.collisionCircles);
+      this._collisionCacheVersion = sv.version;
+      this._collisionCacheStatic = this._collisionCircles.length;
+    }
+    return this._collisionCache;
+  }
+
+  /** Register a walkable surface (disc/rect/ramp/helix — see walkableSurfaces.js). */
+  addWalkableSurface(s) { this._surfaces.push(s); }
+
+  /** All walkable surfaces in the current zone (empty in flat zones). */
+  getWalkableSurfaces() { return this._surfaces; }
+
+  /** Register a nav-aid landmark for this zone (cleared on zone switch). */
+  _addNavLandmark(x, y, z, label) { this._navLandmarks.push({ x, y, z, label }); }
+
+  getNavLandmarks() { return this._navLandmarks; }
 
   /** Show or hide all floor grid helpers (called when construction panel opens/closes). */
   setGridVisible(v) {
@@ -545,6 +724,8 @@ export class Environment {
       lagoonCoast: 'Lagoon Coast',
       frozenTundra: 'Frozen Tundra',
       glacialHollow: 'Glacial Hollow',
+      meltwaterRift: 'Meltwater Rift',
+      atlantis: 'Atlantis',
       spaceship: 'Spaceship Interior',
       workspace: 'Workspace',
       depths: 'The Depths',
@@ -570,6 +751,13 @@ export class Environment {
         { x: 3, z: 8, type: 'fiber' },
         { x: -3, z: 10, type: 'fiber' },
         { x: 14, z: -4, type: 'fiber' },  // was (9,-6) — moved away from spaceship portal
+        // Outer meadow — gives the newly dressed ring past the treeline a
+        // reason to walk out to it rather than just something to look at.
+        { x: -19, z: 9, type: 'timber' },
+        { x: 21, z: -14, type: 'stone' },
+        { x: 24, z: 6, type: 'copper' },
+        // On the lookout knoll's summit ledge — the climb's payoff.
+        { x: 14, z: -24, type: 'copper', y: 3.0, richness: 2 },
       ];
       case 'mine': return [];
       case 'verdantMaw': return [
@@ -582,6 +770,21 @@ export class Environment {
         { x: 9, z: 6, type: 'quartz',  requiredTool: 'harvestBlade' },
         { x: -10, z: -6, type: 'carbon_biomass', requiredTool: 'harvestBlade' },
         { x: 11, z: -4, type: 'carbon_biomass',  requiredTool: 'harvestBlade' },
+        // Canopy layer — richer than their floor cousins: the climb should pay.
+        // Gathering Bough (6.6), then one node per few pads along the grand loop.
+        { x: 2.8, z: -15.9, type: 'resin', requiredTool: 'harvestBlade', y: 6.6, richness: 2 },
+        { x: 0.4, z: -18.4, type: 'fiber', y: 6.6, richness: 2 },
+        { x: -13.8, z: -13.2, type: 'timber', y: 7.4, richness: 2 },                              // West Bough
+        { x: -17.3, z: -1.2, type: 'carbon_biomass', requiredTool: 'harvestBlade', y: 6.8, richness: 2 }, // Hamlet Overlook
+        { x: 6.8, z: 4.1, type: 'silica', requiredTool: 'harvestBlade', y: 6.9, richness: 2 },    // Idol Watch
+        { x: -5.1, z: -31.5, type: 'resin', requiredTool: 'harvestBlade', y: 6.8, richness: 2 },  // North Reach apex
+        // River Expanse — one node per band, two on Riversend Crown (the
+        // expanse's reward; a bloomfang stands guard)
+        { x: 6.6, z: -47.4, type: 'fiber', y: 6.7, richness: 2 },                                 // band 1
+        { x: 0.4, z: -64.6, type: 'timber', y: 6.8, richness: 2 },                                // band 2
+        { x: -11.6, z: -79.9, type: 'carbon_biomass', requiredTool: 'harvestBlade', y: 6.9, richness: 2 }, // band 3
+        { x: -0.9, z: -96.4, type: 'quartz', requiredTool: 'harvestBlade', y: 7.5, richness: 2 }, // Riversend
+        { x: 1.1, z: -97.6, type: 'resin', requiredTool: 'harvestBlade', y: 7.5, richness: 2 },   // Riversend
       ];
       case 'lagoonCoast': return [
         { x: 5, z: 5, type: 'silica', requiredTool: 'diveTool' },
@@ -617,6 +820,28 @@ export class Environment {
         { x: 14, z: -2, type: 'quartz' },
         { x: -14, z: 12, type: 'quartz' },
       ];
+      // Rift-native gatherables: obsidian in the cooled melt seams (the
+      // Cryo-Pick's thermal edge is what cuts volcanic glass), embermoss by
+      // the vents, one silver seam tying it to the hollow economy above.
+      case 'meltwaterRift': return [
+        { x: 6.5, z: 11, type: 'obsidian', requiredTool: 'cryoPick' },
+        { x: -12, z: 2.5, type: 'obsidian', requiredTool: 'cryoPick' },
+        { x: 2.5, z: 7.5, type: 'embermoss' },
+        { x: -10.5, z: 14.5, type: 'embermoss' },
+        { x: 0, z: 5, type: 'silver' },
+      ];
+      // Drowned-city economy: dive-gated glass sands and quartz in the pools,
+      // silver from the old treasuries. Same gatherables the Lagoon taught, one
+      // world deeper — no new material types, the depth is in the surroundings.
+      case 'atlantis': return [
+        { x: 10, z: 6.5, type: 'silica', requiredTool: 'diveTool' },
+        { x: -10, z: -5, type: 'silica', requiredTool: 'diveTool' },
+        { x: 14, z: -9, type: 'silica_sand' },
+        { x: -16.5, z: 10.5, type: 'silica_sand' },
+        { x: 5, z: 15.5, type: 'quartz', requiredTool: 'diveTool' },
+        { x: -5.5, z: 17, type: 'silver' },
+        { x: 17.5, z: 4.5, type: 'silver' },
+      ];
       case 'spaceship': return []; // no gatherables inside the ship
       case 'workspace': return []; // no gatherables in the workspace
       case 'depths': return [];   // pure mining zone — no resource nodes
@@ -651,9 +876,16 @@ export class Environment {
     // bosses before spawning, and EntityManager excludes them from timed respawn.
     switch (this.currentZone) {
       // T1 — Serpendrills only (safe starter zone) + the Scrap Tyrant in the far corner
+      // T1 — native Landing Site pack. Grazers close in where a new player
+      // first wanders, the quicker Burrfangs sit further out, and the Scrap
+      // Tyrant holds the trampled arena in the far east corner.
       case 'landingSite': return [
-        { x: 14, z: 10,  archetype: 'serpendrill' },
-        { x: -12, z: 16, archetype: 'serpendrill' },
+        { x: 14, z: 10,  archetype: 'mossback' },
+        { x: -12, z: 16, archetype: 'mossback' },
+        { x: 24, z: -12, archetype: 'burrfang' },
+        { x: -22, z: 6,  archetype: 'burrfang' },
+        { x: 8,  z: 24,  archetype: 'stiltbeak' },
+        { x: -26, z: -6, archetype: 'stiltbeak' },
         { x: 18, z: 18,  archetype: 'boss_landing', boss: true },
       ];
       // T2 — native Mine pack, graded by depth: Serpendrill/Scalerunner skirmishers
@@ -681,6 +913,19 @@ export class Environment {
         { x: 6,   z: -9, archetype: 'vineclaw' },
         { x: -12, z: -4, archetype: 'bloomfang' },
         { x: 3,   z: 12, archetype: 'bloomfang' },
+        // Canopy level — short leashes so nothing patrols off a pad rim
+        // (enemies don't height-resolve). Duskdarts prowl the gathering pads,
+        // the Bloomfang guards the Sky Altar, a Vineclaw hunts the East Rise.
+        { x: 3.2, z: -14.2, archetype: 'duskdart', y: 6.6, patrolR: 0.8 },
+        { x: -5.4, z: 1.6, archetype: 'duskdart', y: 6.2, patrolR: 1.0 },   // Mid-Jungle Bough
+        { x: 13.6, z: 0.8, archetype: 'vineclaw', y: 7.6, patrolR: 1.0 },   // East Rise
+        { x: -6.1, z: -20.5, archetype: 'bloomfang', y: 7.8, patrolR: 0.8 },
+        { x: 4.3, z: -28.1, archetype: 'duskdart', y: 7.4, patrolR: 0.8 },  // Kapok Rise
+        // River Expanse — a duskdart per crossing pad, the Riversend guard
+        { x: -0.6, z: -42.6, archetype: 'duskdart', y: 7.2, patrolR: 0.8 },
+        { x: 9.9, z: -59.1, archetype: 'duskdart', y: 7.3, patrolR: 0.8 },
+        { x: -2.6, z: -75.6, archetype: 'duskdart', y: 7.4, patrolR: 0.8 },
+        { x: 0.8, z: -96.2, archetype: 'bloomfang', y: 7.5, patrolR: 0.9 },
         { x: 0,   z: -12, archetype: 'boss_verdant', boss: true },
       ];
       // T4 — Reptlar/Dunkraza pressure, shore-digging Spoonvarks + the Tide Oracle
@@ -726,6 +971,26 @@ export class Environment {
         // hid the boss (and its aggro ring) behind the arch legs.
         { x: -2, z: 14,  archetype: 'boss_hollow', boss: true },
       ];
+      // Sparse hollow fauna drifts down the rift — salamanders to the warmth,
+      // a bat over the chasm updraft. Deliberately no boss: the rift is a
+      // junction zone; its two sealed thresholds are the destinations.
+      case 'meltwaterRift': return [
+        { x: 8, z: -3,    archetype: 'cryolisk' },
+        { x: -7, z: 1,    archetype: 'cryolisk' },
+        { x: 8.5, z: 13.8, archetype: 'chillwing' },
+      ];
+      // What the sea left behind: armored crabs deep in the ruin quarters,
+      // shore-diggers on the wreck sand, blubberfins hauled out by the pools.
+      // Deliberately no boss yet — the Unmaker's clearance is the price of
+      // entry, and the city itself is the destination this round.
+      case 'atlantis': return [
+        { x: 11, z: 11,     archetype: 'cavecrab' },
+        { x: -12, z: -9,    archetype: 'cavecrab' },
+        { x: 14, z: -13.5,  archetype: 'spoonvark' },
+        { x: -15, z: 13,    archetype: 'spoonvark' },
+        { x: 6, z: 18,      archetype: 'blubberfin' },
+        { x: -6.5, z: -13.5, archetype: 'blubberfin' },
+      ];
       case 'spaceship': return []; // no enemies in the ship
       case 'workspace': return []; // no enemies in the workspace
       // T6 — Hard Lizzy + Cave Crab escalation + The Unmaker at the heart of the grid
@@ -744,16 +1009,43 @@ export class Environment {
 
   // ── Landing Site ─────────────── see js/scene/zones/LandingSite.js ──────────
 
-  _addGround(color) {
-    const geo = new THREE.PlaneGeometry(CONFIG.GROUND_SIZE, CONFIG.GROUND_SIZE);
-    const mat = createToonMaterial(color);
+  _addGround(color, opts = {}) {
+    // Ground covers the zone's declared bounds (CONFIG.ZONE_BOUNDS), which for
+    // an undeclared zone is the GROUND_SIZE square it always was.
+    // opts.colorAt(x, z) → [r,g,b] linear: build a subdivided vertex-colored
+    // plane instead of a flat one (zone-wide palette gradients — the Maw's
+    // teal→warm-green north; same convention as the Mine's merged floor).
+    const b = this.bounds;
+    const w = b.maxX - b.minX, d = b.maxZ - b.minZ;
+    const cx = (b.minX + b.maxX) / 2, cz = (b.minZ + b.maxZ) / 2;
+    let geo, mat;
+    if (opts.colorAt) {
+      geo = new THREE.PlaneGeometry(w, d, Math.max(1, Math.round(w / 2)), Math.max(1, Math.round(d / 2)));
+      const pos = geo.getAttribute('position');
+      const cols = new Float32Array(pos.count * 3);
+      for (let i = 0; i < pos.count; i++) {
+        // plane-local (x, y) → world (x + cx, cz − y) after the −π/2 X-rotation
+        const [r, g, bl] = opts.colorAt(pos.getX(i) + cx, cz - pos.getY(i));
+        cols[i * 3] = r; cols[i * 3 + 1] = g; cols[i * 3 + 2] = bl;
+      }
+      geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+      mat = createToonMaterial(0xffffff, { vertexColors: true });
+    } else {
+      geo = new THREE.PlaneGeometry(w, d);
+      mat = createToonMaterial(color);
+    }
     const ground = new THREE.Mesh(geo, mat);
     ground.rotation.x = -Math.PI / 2;
+    ground.position.set(cx, 0, cz);
     ground.receiveShadow = true;
     this.group.add(ground);
 
-    // Subtle grid overlay so players can read distances and plan movement
-    const grid = new THREE.GridHelper(CONFIG.GROUND_SIZE, CONFIG.GROUND_SIZE / 2, 0x000000, 0x000000);
+    // Subtle grid overlay so players can read distances and plan movement.
+    // Kept square and centred on the world origin whatever the zone footprint,
+    // so grid lines stay at odd world coords for any bounds.
+    const reach = Math.max(Math.abs(b.minX), Math.abs(b.maxX), Math.abs(b.minZ), Math.abs(b.maxZ));
+    const gridSize = Math.ceil(reach) * 2; // always even → 2 units per cell
+    const grid = new THREE.GridHelper(gridSize, gridSize / 2, 0x000000, 0x000000);
     // Offset grid by 1 unit so grid lines sit at odd coords (±1, ±3, …)
     // and 2×2 track tiles centred on even coords fill cells exactly.
     grid.position.set(1, 0.01, 1);
@@ -884,6 +1176,9 @@ export class Environment {
       mesh: group,
       energyMat: null,   // baked "PortalEnergy" material, tinted by refreshPortalAccess()
       hasModel: false,
+      // Kept in sync by refreshPortalAccess() so UI (the nav-aid chips) can show
+      // a gate's locked state without re-deriving the unlock rules.
+      accessible: ppRequired === 0,
     };
     // Attaches the Ancient World Gate GLB. On the very first zone the models are
     // still loading, so this no-ops here and _attachPortalModel runs again once
@@ -947,6 +1242,32 @@ export class Environment {
   }
 
   /**
+   * A sealed future-zone threshold. Same record shape as _addCaveEntrance so
+   * the main.js proximity loop picks it up, but flagged `sealed`: walking up
+   * shows the hint text instead of an enter action, and switchZone can never
+   * fire (no target zone exists yet). The builder supplies all visuals and
+   * collision. When the zone behind it ships, replace the builder's
+   * _addSealedGate call with _addCaveEntrance/_addPortal at the same spot.
+   */
+  _addSealedGate(x, z, label, hint) {
+    const group = new THREE.Group();
+    group.position.set(x, 0, z);
+    this.group.add(group);
+    this._zonePortals.push({
+      position: new THREE.Vector3(x, 0, z),
+      targetZone: null,
+      ppRequired: 0,
+      label,
+      hint,
+      mesh: group,
+      energyMat: null,
+      hasModel: true,   // nothing to late-attach
+      noGate: true,
+      sealed: true,
+    });
+  }
+
+  /**
    * A home-door zone transition: same portal record as _addCaveEntrance (the
    * proximity prompt, getPortals() and switchZone all work unchanged), plus a
    * soft glowing door-mat so the hotspot reads, and an optional [x, z] spawn
@@ -1004,6 +1325,7 @@ export class Environment {
   refreshPortalAccess(isAccessibleFn) {
     for (const portal of this._zonePortals) {
       const accessible = portal.ppRequired === 0 || isAccessibleFn(portal);
+      portal.accessible = accessible;
       const col = accessible ? 0x00ffcc : 0xff7a1a;
       const mat = portal.energyMat;
       if (mat) {

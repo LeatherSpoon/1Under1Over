@@ -111,6 +111,7 @@ test('every mine gate is reachable on foot from the spawn', () => {
 
 test('mine portal hub keeps all realm gates inside the background floor', () => {
   assert.deepEqual(Object.keys(MINE_ZONE_PORTALS).sort(), [
+    'atlantis',
     'depths',
     'frozenTundra',
     'lagoonCoast',

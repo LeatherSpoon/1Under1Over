@@ -1,4 +1,5 @@
 import { MINE_SPAWN_POS } from './scene/zones/Mine/layout.js';
+import { getPlayerBounds } from './config.js';
 
 export const ZONE_TERRAIN = {
   landingSite: 'grass',
@@ -7,6 +8,8 @@ export const ZONE_TERRAIN = {
   lagoonCoast: 'grass',
   frozenTundra: 'rock',
   glacialHollow: 'rock',
+  meltwaterRift: 'rock',
+  atlantis: 'rock',
   spaceship: 'rock',
   workspace: 'rock',
   depths: 'rock',
@@ -23,6 +26,8 @@ export const ZONE_SPAWN_POS = {
   lagoonCoast:  [15, 0],
   frozenTundra: [0, -15],
   glacialHollow: [0, -13],
+  meltwaterRift: [0, -13],
+  atlantis:     [0, -13],
   spaceship:    [0, -3],
   workspace:    [0, 7],
   depths:       [0, -4],
@@ -58,6 +63,7 @@ export function createSwitchZone({
     const spawnPos = spawnOverride || ZONE_SPAWN_POS[zoneName] || [0, 0];
     player.teleportTo(spawnPos[0], spawnPos[1]);
     player.currentTerrain = ZONE_TERRAIN[zoneName] || 'grass';
+    player.bounds = getPlayerBounds(zoneName);
 
     entityManager.spawnForZone(env.getEnemySpawns(), env.getResourceNodeSpawns());
     hud.setZoneLabel(env.getZoneLabel());

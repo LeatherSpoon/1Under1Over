@@ -33,8 +33,9 @@ export function cloneSkinned(source) {
 // GLB replacement for specific boss archetypes — preloaded once, cloned per spawn.
 // Falls back to the procedural boxes/cones body below if not loaded yet.
 const _bossModelPaths = {
-  // Five zone bosses share the Pirate Lizard model; the Cryo Monarch has its own.
-  boss_landing: './models/Pirate_Lizard.glb',
+  // Four zone bosses still share the Pirate Lizard model; the Cryo Monarch, the
+  // Rimefather and the Scrap Tyrant have their own.
+  boss_landing: './models/Boss_ScrapTyrant.glb',
   boss_mine:    './models/Pirate_Lizard.glb',
   boss_verdant: './models/Pirate_Lizard.glb',
   boss_lagoon:  './models/Pirate_Lizard.glb',
@@ -61,10 +62,16 @@ const _bossModelPaths = {
   vineclaw:    './models/Vineclaw.glb',
   sporeback:   './models/Sporeback.glb',
   bloomfang:   './models/Bloomfang.glb',
+  duskdart:    './models/Duskdart.glb',
   // Mine pack — rigged GLBs with Idle/Walk clips.
   bramblemaw:  './models/Bramblemaw.glb',
   scalerunner: './models/Scalerunner.glb',
   duneplate:   './models/Duneplate.glb',
+  // Landing Site pack — rigged GLBs with Idle/Walk clips. The starting zone
+  // used to borrow the Mine's serpendrill for its only fauna.
+  mossback:    './models/Mossback.glb',
+  burrfang:    './models/Burrfang.glb',
+  stiltbeak:   './models/Stiltbeak.glb',
 };
 const _bossModels = {};
 const _bossAnimations = {};
@@ -231,6 +238,18 @@ const ARCHETYPE_CONFIG = {
     visual: 'crest',
   },
 
+  // Canopy-native tree gecko of the Maw's Hometree pads — quick, hard to pin
+  // (it blinks out of a strike like a chameleon shifting), fragile once caught.
+  duskdart: {
+    name: 'DUSKDART',
+    hp: 110, damage: 12, attackInterval: 1300, ppReward: 70,
+    bodyColor: 0x7fd8c8, headColor: 0xa8e8d8, visorColor: 0xb88fe8, threatColor: 0xa8f0e0,
+    scale: 0.95, speed: 1.4,
+    dodgeChance: 0.22,
+    attackPattern: 'melee',
+    visual: 'crest',
+  },
+
   // Shaggy pack-hunter of the Frozen Tundra — fast, dodgy, frostbiting striker.
   frostfang: {
     name: 'FROSTFANG',
@@ -359,11 +378,56 @@ const ARCHETYPE_CONFIG = {
     visual: 'spikes',
   },
 
+  // ── Landing Site pack (T1) ───────────────────────────────────────────────
+  // The starting zone's own fauna. Deliberately the gentlest roster in the
+  // game — this is where a player has 1 HP of gear and learns what combat is,
+  // so the grazer is nearly harmless, the predator is fast but frail, and only
+  // the wader has a trick (a reach jab that opens the fight).
+
+  // Plated meadow grazer — slow, tanky, barely fights back. The safe first kill.
+  mossback: {
+    name: 'MOSSBACK',
+    hp: 85, damage: 5, attackInterval: 1800, ppReward: 40,
+    bodyColor: 0x6f7a4a, headColor: 0x8a9358, visorColor: 0xc8e08a, threatColor: 0xa8c070,
+    scale: 1.0, speed: 0.6,
+    armor: 4,
+    attackPattern: 'melee',
+    visual: 'spikes',
+  },
+
+  // Bristly pack hunter — quick and evasive but folds fast.
+  burrfang: {
+    name: 'BURRFANG',
+    hp: 55, damage: 8, attackInterval: 850, ppReward: 44,
+    bodyColor: 0x8a5a34, headColor: 0xa87246, visorColor: 0xffd27a, threatColor: 0xffaa55,
+    scale: 1.0, speed: 2.0,
+    dodgeChance: 0.22,
+    attackPattern: 'melee',
+    visual: 'crest',
+  },
+
+  // Long-legged wader — opens at range with a beak jab, then closes.
+  stiltbeak: {
+    name: 'STILTBEAK',
+    hp: 70, damage: 7, attackInterval: 1250, ppReward: 48,
+    bodyColor: 0x9aa8b4, headColor: 0xc2ccd6, visorColor: 0xffe08a, threatColor: 0xdde8f0,
+    scale: 1.0, speed: 1.3,
+    dodgeChance: 0.12,
+    attackPattern: 'burst',
+    burstCount: 2,
+    visual: 'crest',
+  },
+
   // ── Zone bosses — unique, no timed respawn, permanent bonus on defeat ─────
   boss_landing: {
     name: 'SCRAP TYRANT',
     hp: 250, damage: 8, attackInterval: 1400, ppReward: 150,
     bodyColor: 0xc45a1a, headColor: 0xff7733, visorColor: 0xff2222, threatColor: 0xff2222,
+    // Boss_ScrapTyrant.glb is authored at 0.799 units native — within a
+    // millimetre of the Pirate_Lizard.glb it replaces (0.79) — so the existing
+    // 1.8 keeps its on-screen size identical: 0.8 × 1.4 (model) × 1.8 (group)
+    // ≈ 2.0 against the player's 1.78. Smaller than the later bosses at 2.0–2.2,
+    // which is the point: this is the one you are meant to beat first.
     scale: 1.8, speed: 0.5,
     statusEffect: null,
     attackPattern: 'melee',
@@ -468,11 +532,16 @@ export function threatColorFor(enemy, stats) {
 }
 
 export class Enemy {
-  constructor(scene, x = 6, z = 4, archetype = 'serpendrill') {
+  constructor(scene, x = 6, z = 4, archetype = 'serpendrill', opts = {}) {
     this.id = ++enemyIdCounter;
     this.scene = scene;
-    this.position = new THREE.Vector3(x, 0, z);
-    this.spawnPos = new THREE.Vector3(x, 0, z);
+    // opts.y lifts the spawn onto a canopy platform; patrol keeps that height
+    // (enemies never use the walkable-surface resolver — a canopy guard's
+    // patrolR leash keeps it well inside its pad instead).
+    const y = opts.y || 0;
+    this.position = new THREE.Vector3(x, y, z);
+    this.spawnPos = new THREE.Vector3(x, y, z);
+    this.patrolR = opts.patrolR; // undefined → CONFIG.SCRAPPER_PATROL_RADIUS
     this.archetype = archetype;
 
     const cfg = ARCHETYPE_CONFIG[archetype] || ARCHETYPE_CONFIG.serpendrill;
@@ -860,7 +929,7 @@ export class Enemy {
   }
 
   _pickPatrolTarget(collisionCircles) {
-    const r = CONFIG.SCRAPPER_PATROL_RADIUS;
+    const r = this.patrolR ?? CONFIG.SCRAPPER_PATROL_RADIUS;
     // Try up to 8 random positions, pick the first that doesn't overlap a wall
     for (let attempt = 0; attempt < 8; attempt++) {
       const angle = Math.random() * Math.PI * 2;
@@ -875,7 +944,9 @@ export class Enemy {
         if (blocked) continue;
       }
 
-      this._patrolTarget.set(tx, 0, tz);
+      // Patrol at spawn height — a canopy enemy must not sink toward y 0
+      // as the 3D toTarget step below closes on the target.
+      this._patrolTarget.set(tx, this.spawnPos.y, tz);
       return;
     }
     // Fallback: stay near spawn

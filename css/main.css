@@ -116,6 +116,64 @@ body {
   font-size: 0.78rem;
 }
 
+/* ── Off-screen landmark indicators (nav aid) ────────────────────── */
+#nav-aid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.nav-chip {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--chip-bg);
+  border: 1px solid var(--em-dim);
+  border-radius: 6px;
+  padding: 3px 8px 3px 6px;
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  color: var(--text);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.nav-chip-arrow {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 8px solid var(--em-full);
+  flex: none;
+}
+
+.nav-chip-boss {
+  border-color: rgba(255, 204, 0, 0.35);
+  color: var(--signal-amber);
+}
+.nav-chip-boss .nav-chip-arrow {
+  border-left-color: var(--signal-amber);
+}
+
+/* A gate you can see but can't yet walk through. Reads as inert rather than as
+   a warning — amber stays reserved for signals (bosses), so "locked" is dim. */
+.nav-chip-locked {
+  border-color: var(--em-faint);
+  color: var(--text-dim);
+  opacity: 0.72;
+}
+.nav-chip-locked .nav-chip-arrow {
+  border-left-color: var(--em-dim);
+}
+
+.nav-chip-dist {
+  color: var(--text-dim);
+  font-size: 0.66rem;
+}
+
 /* ── Number-go-up feedback ───────────────────────────────────────── */
 /* Session PP counter under the currency stack */
 #session-stats {

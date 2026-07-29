@@ -1,6 +1,7 @@
 import { formatBig, formatRate, formatDuration } from '../util/NumberFormat.js';
 import { CONFIG } from '../config.js';
 import { AL_MODULES } from '../systems/ComputeSystem.js';
+import { computeOffscreenIndicators } from './NavAid.js';
 
 // Compact number formatting for big idle-RPG values (PP, Steps, etc.)
 function abbrevNum(n) {
@@ -41,6 +42,8 @@ const INV_ICONS = {
   gold:      { bg:'#502e00', border:'#ddaa00', label:'Au', r:'50%' },
   titanium:  { bg:'#0a1e38', border:'#3366aa', label:'Ti', r:'2px' },
   tungsten:  { bg:'#1a2028', border:'#445566', label:'W',  r:'2px' },
+  obsidian:  { bg:'#120a1c', border:'#7a55aa', label:'Ob', r:'50%' },
+  embermoss: { bg:'#301008', border:'#e07030', label:'Em', r:'8px' },
   resin:     { bg:'#3a1a00', border:'#aa6622', label:'Rn', r:'50% 50% 0 50%' },
   seed:      { bg:'#0a2808', border:'#44aa22', label:'Sd', r:'50%' },
   epoxy:     { bg:'#1a2230', border:'#445577', label:'Ep', r:'2px' },
@@ -170,6 +173,8 @@ export class HUD {
     this.interactHint = document.getElementById('interact-hint');
     this.zoneLabel = document.getElementById('zone-label');
     this.drillPanel = document.getElementById('drill-panel');
+    this.navAidEl = document.getElementById('nav-aid');
+    this._navChips = []; // pooled <div class="nav-chip"> elements, reused across frames
 
     this._lastUpdate = 0;
     this._throttleMs = 100;
@@ -2888,6 +2893,101 @@ export class HUD {
       this.ppDisplay.classList.toggle('pp-capped', pp >= cap);
     }
     this._lastPPDecile = decile;
+  }
+
+  // Off-screen landmark indicators (portals, bosses) — called every frame,
+  // unthrottled, separate from update()'s 100ms throttle so the arrows stay
+  // smooth as the player moves. `targets` is built fresh each frame in
+  // main.js's game loop from live env/entityManager state.
+  updateNavAid(camera, viewportW, viewportH, targets) {
+    if (!this.navAidEl) return;
+    const items = computeOffscreenIndicators(camera, viewportW, viewportH, targets);
+
+    while (this._navChips.length < items.length) {
+      const el = document.createElement('div');
+      el.className = 'nav-chip';
+      const arrow = document.createElement('span'); arrow.className = 'nav-chip-arrow';
+      const label = document.createElement('span'); label.className = 'nav-chip-label';
+      const dist = document.createElement('span'); dist.className = 'nav-chip-dist';
+      el.append(arrow, label, dist);
+      el._arrow = arrow; el._label = label; el._dist = dist;
+      this.navAidEl.appendChild(el);
+      this._navChips.push(el);
+    }
+
+    const placed = [];
+    for (let i = 0; i < this._navChips.length; i++) {
+      const el = this._navChips[i];
+      const item = items[i];
+      if (!item) { el.style.display = 'none'; continue; }
+      el.style.display = '';
+      placed.push({ el, item });
+      let cls = 'nav-chip';
+      if (item.kind === 'boss') cls += ' nav-chip-boss';
+      if (item.locked) cls += ' nav-chip-locked';
+      el.className = cls;
+      el._arrow.style.transform = `rotate(${item.angleDeg}deg)`;
+      // A locked gate is still worth pointing at — the player needs to know it
+      // exists and where it is. The padlock says "walk there and the prompt will
+      // tell you the unlock condition" (see the portal hint in main.js).
+      el._label.textContent = item.locked ? `🔒 ${item.label}` : item.label;
+      el._dist.textContent = `${Math.round(item.distance)}m`;
+    }
+    this._layoutNavChips(placed, viewportW, viewportH);
+  }
+
+  /**
+   * Final pixel placement for the nav chips. NavAid works in NDC and cannot know
+   * how wide a chip renders, so this does the two things that need real measured
+   * boxes:
+   *
+   *  1. Clamp each chip fully inside the viewport (a long label on the right edge
+   *     otherwise hangs off — "SCRAP TYRANT" did).
+   *  2. De-overlap. Chips pinned to the same edge crowd into each other: standing
+   *     at the Mine's adit puts all five Breach gates plus a boss on the bottom
+   *     edge inside ~200px. The position *along* the edge is the axis carrying the
+   *     bearing, so it stays exact and anything that would overlap steps one row
+   *     inward. Chips arrive nearest-first, so the closest keeps the outer row.
+   */
+  _layoutNavChips(placed, viewportW, viewportH) {
+    const GAP = 4, PAD = 6;
+    const lanes = new Map(); // `${side}:${row}` → occupied [min,max] spans
+    for (const { el, item } of placed) {
+      // Measuring forces a synchronous layout and this runs every frame, so only
+      // re-measure when the text (hence the box) actually changes.
+      const sizeKey = el._label.textContent + el._dist.textContent;
+      if (el._sizeKey !== sizeKey) {
+        el._sizeKey = sizeKey;
+        el._w = el.offsetWidth;
+        el._h = el.offsetHeight;
+      }
+      const hw = el._w / 2, hh = el._h / 2;
+      let cx = Math.min(Math.max(item.x, hw + PAD), viewportW - hw - PAD);
+      let cy = Math.min(Math.max(item.y, hh + PAD), viewportH - hh - PAD);
+
+      const horiz = item.edge === 'y'; // pinned top/bottom → free along x
+      const side = horiz
+        ? (cy < viewportH / 2 ? 'top' : 'bottom')
+        : (cx < viewportW / 2 ? 'left' : 'right');
+      const span = horiz ? el._w : el._h;
+      const step = (horiz ? el._h : el._w) + GAP;
+      const centre = horiz ? cx : cy;
+      const min = centre - span / 2 - GAP, max = centre + span / 2 + GAP;
+
+      let row = 0;
+      for (; ; row++) {
+        const key = `${side}:${row}`;
+        let lane = lanes.get(key);
+        if (!lane) { lane = []; lanes.set(key, lane); }
+        if (!lane.some(([a, b]) => min < b && max > a)) { lane.push([min, max]); break; }
+      }
+      if (row > 0) {
+        const offset = (side === 'top' || side === 'left' ? 1 : -1) * row * step;
+        if (horiz) cy += offset; else cx += offset;
+      }
+      el.style.left = `${cx}px`;
+      el.style.top = `${cy}px`;
+    }
   }
 
   update(now) {
