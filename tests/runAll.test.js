@@ -41,5 +41,6 @@ import './systems/biomeLayout.test.js';
 import './systems/pathRibbon.test.js';
 import './systems/walkableSurfaces.test.js';
 import './systems/glacierSurfaces.test.js';
+import './systems/portalPass.test.js';
 import './ui/panelWiring.test.js';
 import './ui/navAidLayout.test.js';

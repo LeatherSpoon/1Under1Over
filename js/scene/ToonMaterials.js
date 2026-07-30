@@ -37,6 +37,60 @@ export function createToonMaterial(color, options = {}) {
   });
 }
 
+/**
+ * Animated energy membrane for the vertical Ancient World Gates. Applied at
+ * runtime to the GLB's PortalMembrane disc (whose local XY plane is the gate
+ * plane, origin at the disc centre — the shader swirls in polar coords around
+ * it). Per-portal instance: refreshPortalAccess() tints `uniforms.uColor`
+ * (teal reachable / orange locked) and _attachPortalModel registers a spinner
+ * that advances `uniforms.uTime` each frame.
+ */
+export function createPortalEnergyMaterial(radius = 1.5) {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      uTime: { value: 0 },
+      uColor: { value: new THREE.Color(0x00ffcc) },
+      uRadius: { value: radius },
+    },
+    vertexShader: /* glsl */`
+      varying vec2 vP;
+      void main() {
+        vP = position.xy;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }`,
+    fragmentShader: /* glsl */`
+      uniform float uTime;
+      uniform float uRadius;
+      uniform vec3 uColor;
+      varying vec2 vP;
+      float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      void main() {
+        float r = length(vP) / uRadius;
+        if (r > 1.0) discard;
+        float a = atan(vP.y, vP.x);
+        // drain-swirl: angular flow accelerates toward the centre
+        float swirl = a + uTime * 0.9 + 2.2 / (r + 0.25);
+        float bands = 0.5 + 0.5 * sin(swirl * 3.0 + r * 14.0 - uTime * 2.4);
+        bands *= bands;
+        // dimmer well at the centre, luminous mid-field — floored so the disc
+        // always glows (a black core over a dark backdrop read as a hole)
+        float well = 0.35 + 0.65 * smoothstep(0.0, 0.45, r);
+        // bright event-horizon rim just inside the stone edge
+        float rim = smoothstep(0.78, 0.97, r) * (1.0 - smoothstep(0.97, 1.0, r));
+        // sparse shimmer sparkles
+        float sp = step(0.985, hash(floor(vP * 9.0) + floor(uTime * 3.0)));
+        vec3 col = uColor * (0.35 + 0.85 * bands) * well
+                 + uColor * rim * 1.6
+                 + vec3(1.0) * sp * 0.6;
+        float alpha = 0.45 + 0.4 * bands * well + rim * 0.6;
+        gl_FragColor = vec4(col, alpha);
+      }`,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+}
+
 // Floor for the inverted-hull width in world units. The scale trick makes the
 // hull thickness proportional to mesh size, so sub-unit props (resource-node
 // stumps, small rocks) used to get sub-pixel — invisible — outlines while

@@ -56,6 +56,5 @@ export function build(env) {
   env._addRefineryStation(0, -6);       // Extractors + processing-node chain
 
   // ── Connections ───────────────────────────────────────────────────────────
-  env._addPortal(0, 9, 'spaceship', 0, 'Exit Workspace');
-  env._addReturnBeacon(0, 9);
+  env._addPortal(0, 9, 'spaceship', 0, 'Exit Workspace', 0.8); // indoor gate — shrunk to fit the bay
 }

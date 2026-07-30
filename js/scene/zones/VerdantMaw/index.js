@@ -31,7 +31,6 @@ export function build(env) {
 
   // ── Connections ───────────────────────────────────────────────────────────
   env._addPortal(0, 17, 'mine', 0, 'Mine Hub');
-  env._addReturnBeacon(0, 17);
 
   // ── Worn trail: portal → the Hometree's ramp foot ─────────────────────────
   // The climb's entrance was unfindable in the dark (owner note) — the route

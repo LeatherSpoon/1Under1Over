@@ -43,6 +43,8 @@ export class CombatUI {
   }
 
   show(enemy) {
+    const banner = document.getElementById('combat-result');
+    if (banner) banner.hidden = true; // stale outcome from a fight begun inside the linger window
     this.enemyNameEl.textContent = enemy.name;
     this._setEnemyPortrait(enemy);
     this._clearLog();
@@ -230,14 +232,25 @@ export class CombatUI {
     this.logEl.innerHTML = '';
   }
 
+  // The outcome banner pops the same frame the fight resolves — the old flat
+  // 1200 ms of silent overlay read as "the game hasn't noticed the kill yet".
+  // Victory/escape linger just long enough to read; defeat keeps a longer beat
+  // because the rescue teleport needs the extra moment to land.
   _onCombatEnd(won, fled) {
+    const banner = document.getElementById('combat-result');
+    if (banner) {
+      banner.textContent = won ? 'VICTORY' : fled ? 'ESCAPED' : 'RESCUE DRONE DEPLOYED';
+      banner.className = won ? 'result-win' : fled ? 'result-fled' : 'result-loss';
+      banner.hidden = false;
+    }
     setTimeout(() => {
+      if (banner) banner.hidden = true;
       this.hide();
       this.player.isInCombat = false;
       this.entityManager.combatEnded();
       if (!won && !fled) {
         this.player.teleportTo(0, 0);
       }
-    }, 1200);
+    }, won ? 650 : fled ? 450 : 1200);
   }
 }

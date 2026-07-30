@@ -74,5 +74,4 @@ export function build(env) {
 
   // ── Connections ───────────────────────────────────────────────────────────
   env._addPortal(0, -6, 'mine', 0, 'Return to Mine');
-  env._addReturnBeacon(0, -6);
 }

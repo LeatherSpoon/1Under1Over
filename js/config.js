@@ -118,9 +118,7 @@ export const CONFIG = {
   PEDOMETER_TRACK_SPEED_BONUS: 0.3,   // speed added per track (stackable)
   PEDOMETER_STAT_BASE_COST: 200,      // steps cost for first stat level purchase
   PEDOMETER_ENV_UNLOCK: {             // step cost to unlock zones (alternative to PP gate)
-    verdantMaw: 2000,
     lagoonCoast: 15000,
-    frozenTundra: 8000,
     atlantis: 20000,
   },
 
@@ -148,9 +146,9 @@ export const CONFIG = {
   ENV_UNLOCK: {
     landingSite: 0,
     mine: 0,
-    verdantMaw: 1000,
+    verdantMaw: 0,    // ungated (owner call, 2026-07-28) — free to enter
     lagoonCoast: 9000,
-    frozenTundra: 25000,
+    frozenTundra: 0,  // ungated (owner call, 2026-07-28) — free to enter
     depths: 2000,
     glacialHollow: 0, // sub-area of the tundra — free once you can reach the mouth
     meltwaterRift: 0, // sub-area below the hollow — free once you can reach the rift

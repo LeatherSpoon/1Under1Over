@@ -54,7 +54,7 @@ export function build(env) {
   env._addMasteryTerminal(6, -6);
 
   // ── Connections ───────────────────────────────────────────────────────────
-  env._addPortal(0, -9, 'workspace',   0, 'Workspace');
+  env._addPortal(0, -9, 'workspace',   0, 'Workspace', 0.8); // indoor gate — shrunk to fit the cabin
   // Leaving is the reverse of boarding: out the aft door and down the cargo
   // ramp. A doorway (not a gate) with a spawnOverride onto the ramp foot the
   // player walked up, so stepping off the ship and stepping back onto it are
@@ -62,5 +62,4 @@ export function build(env) {
   // spawn out on the landing pad, which reads as a teleport.
   env._addDoorway(0, 6, 'landingSite', 'Exit Ship',
     [SHIP_RAMP_FOOT.x, SHIP_RAMP_FOOT.z]);
-  env._addReturnBeacon(0, 6);
 }

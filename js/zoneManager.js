@@ -65,6 +65,10 @@ export function createSwitchZone({
     player.currentTerrain = ZONE_TERRAIN[zoneName] || 'grass';
     player.bounds = getPlayerBounds(zoneName);
 
+    // Snap the camera onto the spawn — the follow lerp would otherwise glide
+    // visibly from the old zone's camera position across the new zone.
+    sceneManager.snapToPlayer(player.position);
+
     entityManager.spawnForZone(env.getEnemySpawns(), env.getResourceNodeSpawns());
     hud.setZoneLabel(env.getZoneLabel());
     env.refreshTrackMarkers(pedometer);
@@ -75,6 +79,20 @@ export function createSwitchZone({
     );
 
     player.isGathering = false;
+
+    // Warm-up render: zoom far out so every object in the new zone passes the
+    // frustum once — shader programs compile and textures upload NOW, on this
+    // covered frame, instead of hitching one by one as they scroll into view.
+    const cam = sceneManager.camera;
+    if (cam && sceneManager.renderer) {
+      const prevZoom = cam.zoom;
+      cam.zoom = 0.02;
+      cam.updateProjectionMatrix();
+      sceneManager.renderer.render(sceneManager.scene, cam);
+      cam.zoom = prevZoom;
+      cam.updateProjectionMatrix();
+    }
+
     if (onAfterSwitch) onAfterSwitch();
   };
 }

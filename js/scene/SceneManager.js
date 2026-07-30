@@ -260,6 +260,18 @@ export class SceneManager {
   }
 
   /**
+   * Snap the camera (and player lamp) directly onto the player — used on zone
+   * switches, where the follow lerp would otherwise glide visibly across the
+   * new zone from wherever the camera sat in the old one.
+   */
+  snapToPlayer(playerPos) {
+    const { x, y, z } = CONFIG.CAMERA_OFFSET;
+    this.camera.position.set(playerPos.x + x, playerPos.y + y, playerPos.z + z);
+    this.camera.lookAt(playerPos.x, playerPos.y, playerPos.z);
+    this._playerLight.position.set(playerPos.x, playerPos.y + PLAYER_LIGHT_Y, playerPos.z);
+  }
+
+  /**
    * Smoothly translate camera to follow player position.
    */
   update(playerPos) {

@@ -157,7 +157,6 @@ export function build(env) {
 
   // ── Connections ───────────────────────────────────────────────────────────
   env._addPortal(0, -16, 'frozenTundra', 0, 'Frozen Tundra');
-  env._addReturnBeacon(0, -16);
 
   // The Meltwater Rift — down through the wall-ring gap the Rimefather
   // guards. No mouth GLB: the gap IS the opening; the crystal/rubble frame in
