@@ -122,11 +122,6 @@
     INITIALIZING&nbsp;SYSTEMS…
   </div>
 
-  <!-- Zone-transition cover — the game loop drives its opacity so the whole
-       scene teardown/rebuild (and its first-render shader-compile hitch)
-       happens behind an opaque cover instead of a visible freeze. -->
-  <div id="zone-fade" style="position:fixed;inset:0;z-index:90;background:#060a12;pointer-events:none;opacity:0;display:none;"></div>
-
   <!-- HUD overlay -->
   <div id="hud">
     <div id="hud-topleft">
@@ -154,6 +149,8 @@
         <span class="crystal-icon">◈</span>
         <span id="crystal-amount">0</span>
       </div>
+      <!-- Combat Sim — live STR/DEF progress while the sparring rig trains -->
+      <div id="combat-sim-indicator" hidden></div>
       <div id="pp-rate-tooltip" hidden>
         <div class="rate-row"><span>per sec</span><span id="rate-sec">0</span></div>
         <div class="rate-row"><span>per min</span><span id="rate-min">0</span></div>
@@ -175,9 +172,6 @@
       <!-- Existing activity timers slot, repurposed -->
       <div id="activity-timers"></div>
     </div>
-
-    <!-- Off-screen landmark indicators (portals, bosses) — populated by HUD.updateNavAid() -->
-    <div id="nav-aid"></div>
 
     <!-- Drone mission completion toast -->
     <div id="drone-toast" hidden>
@@ -656,7 +650,6 @@
 
   <!-- Combat overlay -->
   <div id="combat-overlay" hidden>
-    <div id="combat-result" hidden></div>
     <div id="combat-scene">
       <div id="enemy-panel">
         <div id="enemy-name">SCRAPPER</div>

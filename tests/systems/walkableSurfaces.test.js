@@ -4,7 +4,7 @@ import { STEP_UP, surfaceHeightsAt, resolveHeight } from '../../js/scene/walkabl
 import {
   HELIX, JUNCTION, BRIDGE_A, PAD_BOUGH, BRIDGE_B, PAD_ALTAR, SURFACES,
   LOOP_BRIDGES, EXPANSE_BRIDGES, SPIRE_BRIDGES, SPIRE_HELIXES, SPIRE,
-  EXPANSE_BANDS, RIVERS, riverPoints, riverZAt, TERMINUS, GROUND_CIRCLES,
+  RIVERS, riverZAt, RIVER_CHAIN, RIVER_XJ, TERMINUS, GROUND_CIRCLES,
   EMBER_TREE, GLADE_ARCHES, ARCH_FEET, GROTTO_TRAIL, SKY_ISLES,
 } from '../../js/scene/zones/VerdantMaw/canopy.js';
 import { getZoneBounds } from '../../js/config.js';
@@ -226,25 +226,79 @@ test('every Root Spire climbs seam-free from its foot to its crown', () => {
   }
 });
 
-test('rivers are not navigable — barrier chains leave no player-sized gap', () => {
-  // The block is collision (GROUND_CIRCLES), not surfaces: assert the chain
-  // geometry directly. r 2.6 at spacing ≤ 2.55 keeps the barrier ≥ 2.27 half-
-  // width everywhere; the chain must span past the playable x bounds.
+test('the snake river is not navigable — gap-free chain, every pocket stays bridge-only', () => {
+  // 1. ONE continuous barrier chain rides the serpentine: r 2.6 circles at
+  // spacing ≤ 2.55 (the barrier is never narrower than ~2.27 from the
+  // centerline), widening to 3.3 through the flank bends so the on-plane
+  // apexes (river refine 2026-07-30 — tails and bends now end ON the ground
+  // plane instead of floating over the void) still seal the ±39 clamp strip.
+  assert.ok(RIVER_CHAIN.length >= 130, `chain has only ${RIVER_CHAIN.length} circles`);
+  for (const c of RIVER_CHAIN) {
+    assert.ok(c.r >= 2.6 - 1e-9 && c.r <= 3.3 + 1e-9, `chain r ${c.r} out of range`);
+    if (Math.abs(c.x) >= 36) assert.ok(c.r >= 3.29, `bend circle at x ${c.x.toFixed(1)} too small to seal`);
+  }
+  for (let i = 1; i < RIVER_CHAIN.length; i++) {
+    const a = RIVER_CHAIN[i - 1], b = RIVER_CHAIN[i];
+    assert.ok(Math.hypot(a.x - b.x, a.z - b.z) <= 2.55,
+      `gap in the chain near (${a.x.toFixed(1)}, ${a.z.toFixed(1)})`);
+  }
+  // Tails end at the plane edge (x 40); the chain's last circle sits within
+  // one step of the tip, and its widened radius covers the clamp-side strip.
+  assert.ok(RIVER_CHAIN[0].x >= 39.4 && RIVER_CHAIN[RIVER_CHAIN.length - 1].x >= 39.4,
+    'both tail chains must reach the plane edge');
+
+  // 2. The four corridor crossings still lie exactly on their authored sine
+  // courses — pads, bridges and bank keep-outs were all built against them.
   for (const river of RIVERS) {
-    const chain = GROUND_CIRCLES.filter(c => c.r === 2.6 &&
-      Math.abs(c.z - riverZAt(river, c.x)) < 0.01 &&
-      Math.abs(riverZAt(river, c.x) - c.z) < 0.01 &&
-      Math.abs(c.z - river.z) <= river.amp + 0.01);
-    assert.ok(chain.length >= 30, `river at ${river.z} has only ${chain.length} barrier circles`);
-    const xs = chain.map(c => c.x).sort((a, b) => a - b);
-    assert.ok(xs[0] <= -39 && xs[xs.length - 1] >= 39, 'barrier must outreach the playable width');
-    for (let i = 1; i < xs.length; i++) {
-      const a = chain.find(c => c.x === xs[i - 1]), b = chain.find(c => c.x === xs[i]);
-      assert.ok(Math.hypot(a.x - b.x, a.z - b.z) <= 2.55, `gap in river ${river.z} chain at x ${a.x}`);
+    for (let x = -RIVER_XJ; x <= RIVER_XJ; x += 2) {
+      const z = riverZAt(river, x);
+      const d = Math.min(...RIVER_CHAIN.map(c => Math.hypot(c.x - x, c.z - z)));
+      assert.ok(d <= 1.3, `crossing at band ${river.z} drifts off the course at x ${x}`);
     }
   }
-  // And every main-chain crossing clears its river from the canopy: the
-  // bridge over each river sits at 6.7+ the whole way.
+
+  // 3. Topology — the real guarantee, independent of the river's shape: BFS
+  // the playable ground grid with the river chain as the only obstacle. The
+  // south (portal side) must not reach any band pocket, the Riversend bank,
+  // or the Emberglade approach — the hairpin bends must seal the flanks
+  // exactly as the old full-width rivers did. Ground routes into the pockets
+  // exist only via canopy bridges + spires (the seam/stride tests walk those).
+  const minX = -39, maxX = 39, minZ = -105, maxZ = 39;
+  const W = maxX - minX + 1, H = maxZ - minZ + 1;
+  const idx = (x, z) => (x - minX) * H + (z - minZ);
+  const open = new Uint8Array(W * H).fill(1);
+  for (const c of RIVER_CHAIN) {
+    const rr = c.r + 0.35; // barrier + player radius
+    for (let x = Math.max(minX, Math.ceil(c.x - rr)); x <= Math.min(maxX, Math.floor(c.x + rr)); x++) {
+      for (let z = Math.max(minZ, Math.ceil(c.z - rr)); z <= Math.min(maxZ, Math.floor(c.z + rr)); z++) {
+        if (Math.hypot(x - c.x, z - c.z) <= rr) open[idx(x, z)] = 0;
+      }
+    }
+  }
+  const seen = new Uint8Array(W * H);
+  const queue = [[0, 14]]; // the zone spawn
+  seen[idx(0, 14)] = 1;
+  while (queue.length) {
+    const [x, z] = queue.pop();
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, nz = z + dz;
+      if (nx < minX || nx > maxX || nz < minZ || nz > maxZ) continue;
+      const k = idx(nx, nz);
+      if (!open[k] || seen[k]) continue;
+      seen[k] = 1;
+      queue.push([nx, nz]);
+    }
+  }
+  assert.ok(seen[idx(0, -30)], 'south bank of crossing 1 belongs to the main zone');
+  for (const [px, pz, what] of [
+    [0, -46, 'band 1 pocket'], [0, -62, 'band 2 pocket'], [0, -79, 'band 3 pocket'],
+    [-14, -92, 'the Riversend bank'], [0, -101, 'the Emberglade approach'],
+  ]) {
+    assert.ok(!seen[idx(px, pz)], `${what} is reachable by ground — the river leaks`);
+  }
+
+  // And every main-chain crossing clears the water from the canopy: the
+  // bridge over each crossing sits at 6.7+ the whole way.
   for (const br of EXPANSE_BRIDGES) {
     assert.ok(Math.min(br.y0, br.y1) > 5, 'expanse bridges stay canopy-high over the water');
   }

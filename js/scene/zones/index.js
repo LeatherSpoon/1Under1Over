@@ -18,6 +18,8 @@ export { build as buildFrozenTundra } from './FrozenTundra/index.js';
 export { build as buildGlacialHollow } from './GlacialHollow/index.js';
 export { build as buildMeltwaterRift } from './MeltwaterRift/index.js';
 export { build as buildAtlantis      } from './Atlantis/index.js';
+export { build as buildLabyrinth     } from './Labyrinth/index.js';
+export { build as buildCinderforge   } from './Cinderforge/index.js';
 export { build as buildSpaceship    } from './Spaceship/index.js';
 export { build as buildWorkspace    } from './Workspace/index.js';
 export { buildHomeSylva, buildHomeBram, buildHomeSprig } from './HomeInteriors/index.js';

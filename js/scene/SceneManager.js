@@ -109,6 +109,27 @@ const ZONE_AMBIENCE = {
     fill: { color: 0x2a7a88, intensity: 0.25 },
     playerLight: { color: 0x9fe8ff, intensity: 6.5, distance: 15 },
   },
+  // The Labyrinth: buried stone night. The dark leans warm (torch country);
+  // braziers and the shrine carry legibility, the lamp does the near work.
+  labyrinth: {
+    clear: 0x0a0806,
+    fog: { color: 0x100c08, near: 15, far: 44 },
+    ambient: { color: 0xe0cbb0, intensity: 0.4 },
+    sun: { color: 0xffe0b8, intensity: 0.42 },
+    fill: { color: 0x8a5a38, intensity: 0.22 },
+    playerLight: { color: 0xffd9a8, intensity: 7, distance: 15 },
+  },
+  // The Cinderforge: volcanic night. Hotter and redder than its Labyrinth
+  // sibling — lava pools, braziers and the anvil carry legibility, the fog
+  // holds a faint ember cast so the dark never reads cold.
+  cinderforge: {
+    clear: 0x0c0504,
+    fog: { color: 0x160806, near: 15, far: 44 },
+    ambient: { color: 0xf0c0a0, intensity: 0.38 },
+    sun: { color: 0xffc890, intensity: 0.4 },
+    fill: { color: 0x9c3f22, intensity: 0.26 },
+    playerLight: { color: 0xffc890, intensity: 7, distance: 15 },
+  },
   // Ship cabin: warm lamplight over the wood-and-brass interior, deep space
   // beyond the hull. Fog pushed far out — the room is only 22 units across.
   spaceship: {
@@ -326,5 +347,61 @@ export class SceneManager {
 
   render() {
     this.renderer.render(this.scene, this.camera);
+  }
+
+  /**
+   * Queue every texture reachable from the given GLB cache for background
+   * GPU upload (main.js calls this once when the models finish parsing).
+   * Uploads happen in tickTexturePreload — a budgeted count per frame from
+   * the game loop — so a zone's first visit never pays a burst of
+   * texture-upload stalls on its warm-up render.
+   */
+  queueTexturePreload(glbMap) {
+    this._texQueue = this._texQueue || [];
+    const seen = this._texSeen = this._texSeen || new Set();
+    for (const key of Object.keys(glbMap || {})) {
+      const g = glbMap[key];
+      if (!g || !g.traverse) continue;
+      g.traverse(o => {
+        const mats = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+        for (const m of mats) {
+          for (const slot of ['map', 'emissiveMap']) {
+            const tex = m && m[slot];
+            if (tex && !seen.has(tex.uuid)) {
+              seen.add(tex.uuid);
+              this._texQueue.push(tex);
+            }
+          }
+        }
+      });
+    }
+  }
+
+  /** Upload up to n queued textures this frame (no-op once drained). */
+  tickTexturePreload(n = 1) {
+    if (!this._texQueue || !this._texQueue.length) return;
+    for (let i = 0; i < n && this._texQueue.length; i++) {
+      try { this.renderer.initTexture(this._texQueue.pop()); } catch { /* disposed */ }
+    }
+  }
+
+  /**
+   * Pad the scene's point-light count up to the next bucket with dead lights
+   * (parented into the zone group, so they clear on zone switch). THREE
+   * bakes the exact count into every shader program — bucketing the count
+   * lets zones share compiled program sets instead of each first visit
+   * compiling its own (the zone-switch delay fix; buckets mirror
+   * shaderWarm.js, which pre-compiles against these counts at boot).
+   */
+  padZonePointLights(zoneGroup) {
+    const LIGHT_BUCKETS = [6, 12, 24];
+    let pt = 0;
+    this.scene.traverse(o => { if (o.isPointLight) pt++; });
+    const bucket = LIGHT_BUCKETS.find(b => b >= pt) || pt;
+    for (let i = pt; i < bucket; i++) {
+      const pad = new THREE.PointLight(0x000000, 0, 0.001);
+      pad.position.set(0, -50, 0);
+      zoneGroup.add(pad);
+    }
   }
 }

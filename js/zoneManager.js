@@ -9,6 +9,8 @@ export const ZONE_TERRAIN = {
   frozenTundra: 'rock',
   glacialHollow: 'rock',
   meltwaterRift: 'rock',
+  labyrinth: 'rock',
+  cinderforge: 'rock',
   atlantis: 'rock',
   spaceship: 'rock',
   workspace: 'rock',
@@ -28,6 +30,8 @@ export const ZONE_SPAWN_POS = {
   glacialHollow: [0, -13],
   meltwaterRift: [0, -13],
   atlantis:     [0, -13],
+  labyrinth:    [0, 22],
+  cinderforge:  [0, 22],
   spaceship:    [0, -3],
   workspace:    [0, 7],
   depths:       [0, -4],
@@ -80,19 +84,38 @@ export function createSwitchZone({
 
     player.isGathering = false;
 
-    // Warm-up render: zoom far out so every object in the new zone passes the
-    // frustum once — shader programs compile and textures upload NOW, on this
-    // covered frame, instead of hitching one by one as they scroll into view.
-    const cam = sceneManager.camera;
-    if (cam && sceneManager.renderer) {
-      const prevZoom = cam.zoom;
-      cam.zoom = 0.02;
-      cam.updateProjectionMatrix();
-      sceneManager.renderer.render(sceneManager.scene, cam);
-      cam.zoom = prevZoom;
-      cam.updateProjectionMatrix();
-    }
+    // Program-cache bucketing: THREE bakes the scene's point-light COUNT into
+    // every shader program, so each distinct count compiles a whole fresh
+    // program set on first sight (~2-3 s of shader compiles — the bulk of the
+    // first-visit switch cost). Padding every zone's count up to a small set
+    // of buckets with dead lights makes zones SHARE compiled programs: once
+    // one zone of a bucket has been visited, every other zone in that bucket
+    // switches warm. Counted after spawns so nothing shifts the total later.
+    // (Lives in SceneManager — this module stays three-import-free for tests.)
+    sceneManager.padZonePointLights(env.group);
 
     if (onAfterSwitch) onAfterSwitch();
+
+    // Warm-up, two tiers (the zone-switch delay fix, 2026-07-29):
+    //   1. Render the ARRIVAL view once, synchronously, on this covered
+    //      frame — the programs and buffers the player is about to see
+    //      compile/upload now. Cheap, because the boot pass pre-compiled the
+    //      common program matrix (shaderWarm.js), pre-uploaded every GLB
+    //      buffer + texture, and padZonePointLights above keeps this zone on
+    //      a shared program bucket.
+    //   2. Everything else in the zone compiles ASYNCHRONOUSLY on the
+    //      driver's parallel threads — no main-thread freeze, no held-black
+    //      cover. Offscreen zone-merged meshes upload as they scroll in
+    //      (small, now that their programs are ready).
+    // The old zoomed-out sync warm render drew the WHOLE zone here instead:
+    // 0.5–2.5 s of frozen main thread on every first visit (owner: "time
+    // between changing scenes").
+    const cam = sceneManager.camera;
+    if (cam && sceneManager.renderer) {
+      sceneManager.renderer.render(sceneManager.scene, cam);
+      if (sceneManager.renderer.compileAsync) {
+        sceneManager.renderer.compileAsync(sceneManager.scene, cam).catch(() => {});
+      }
+    }
   };
 }

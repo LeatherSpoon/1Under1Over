@@ -22,11 +22,15 @@ const GROUND_HEX = 0x5a8c3c;
 const ADIT = { x: -11.42, z: -11.42 };
 const ADIT_ENTRY = { x: -10.63, z: -10.63 };
 
-// The lifter, parked tail-toward the landing pad. Its GLB is authored nose
-// toward +z with the cargo ramp running back to local z -9, so with this
-// rotation the ramp foot lands just off the pad's north-east edge — roughly
-// where the old Spaceship gate stood, so the ship is found where players
-// already look for it. Placement is mirrored in ZoneAssets.landingSite.
+// The Starwing v2 (owner concept + correction, 2026-07-30: "a VTOL C130
+// mixed with a bullet train... park it on its belly") — a LONG delta:
+// 26 nose-to-tail, 16 span, belly on the grass. The GLB is authored nose
+// toward +z at true world scale (source build_starwing.py; proportions are
+// ENFORCED against the concept, not trusted from Rodin). The cargo bay is a
+// C-130-style rear tunnel cut up the CENTER of the upswept aft (local
+// x ±1.7, z −3 back past the tail), so with this rotation its mouth opens
+// toward the pad and the player walks straight in off the grass — the long
+// axis crosses the screen diagonally for the fixed 46° camera.
 const SHIP = { x: 9.0, z: -10.5, rotY: 2.45 };
 
 /** Model-local (x, z) → world, using the ship's placement rotation. */
@@ -35,10 +39,10 @@ function shipPoint(lx, lz) {
   return { x: SHIP.x + lx * c + lz * s, z: SHIP.z - lx * s + lz * c };
 }
 
-// Foot of the cargo ramp — the boarding threshold, and where leaving the ship
-// puts you back down (Spaceship/index.js passes it as its exit spawnOverride,
-// so stepping off the ramp and stepping back on are the same spot).
-export const SHIP_RAMP_FOOT = shipPoint(0, -8.2);
+// Just outside the bay mouth, behind the tail — where leaving the ship puts
+// you back down (Spaceship/index.js passes it as its exit spawnOverride, so
+// stepping out of the bay and stepping back in are the same doorway).
+export const SHIP_RAMP_FOOT = shipPoint(0, -14.8);
 
 function seededRandom(seed) {
   let s = seed | 0;
@@ -140,29 +144,57 @@ function _addPathToMountain(env) {
 }
 
 // ── The ship: hull footprint + the boarding threshold ─────────────────────────
-// Boarding is a walk-in up the rear cargo ramp, not a gate standing on the
-// grass (owner call). `_addCaveEntrance` is the right helper despite the name —
-// it registers the portal record main.js's proximity prompt needs while
-// setting `noGate: true`, so no Ancient World Gate, fallback ring or energy
-// material is spawned and the ship itself is the door.
+// Boarding is a walk-in through the open rear cargo bay, not a gate standing
+// on the grass (owner call). `_addCaveEntrance` is the right helper despite
+// the name — it registers the portal record main.js's proximity prompt needs
+// while setting `noGate: true`, so the ship itself is the door. The trigger
+// sits INSIDE the bay tunnel, so the prompt fires as the player walks in.
 //
 // Collision is laid here rather than via the ZoneAssets `r` field because a
-// single circle cannot describe this shape: it would have to be big enough to
-// cover a 15-unit wingspan, which would also wall off the ramp the player is
-// meant to walk up. Instead the fuselage gets a chain of circles that stops
-// short of the ramp hinge, leaving the boarding corridor deliberately open.
+// single circle cannot describe this shape: a 26-unit dart with one open
+// corridor up the center of its tail. The chains mirror the measured
+// planform (build_starwing.py WIDTH probes): needle nose, hull widening to
+// the wing band, swept wings, twin tail booms, and the bay's two side
+// walls, leaving the center tunnel deliberately open.
 function _addShip(env) {
-  for (let lz = 5.4; lz >= -4.4; lz -= 1.6) {
+  // Fuselage: nose (+z 13) back to the bay bulkhead, radii tracking the
+  // measured widths (±0.7 at the tip → ±3.3 at the wing root).
+  for (const [lz, r] of [
+    [12.4, 0.6], [11.2, 0.9], [9.7, 1.2], [8.1, 1.5], [6.5, 1.7],
+    [4.9, 2.0], [3.3, 2.0], [1.7, 2.0], [0.1, 2.0], [-1.5, 2.0],
+  ]) {
     const p = shipPoint(0, lz);
-    env._collisionCircles.push({ x: p.x, z: p.z, r: 1.7 });
+    env._collisionCircles.push({ x: p.x, z: p.z, r });
   }
-  // The four engine pods hang low enough to walk into.
-  for (const lx of [-5.95, -3.6, 3.6, 5.95]) {
-    const p = shipPoint(lx, -0.5);
-    env._collisionCircles.push({ x: p.x, z: p.z, r: 1.0 });
+  // Wings (widest ±8 at lz −2.6) and their trailing sweep to the booms
+  for (const [lx, lz, r] of [
+    [-3.6, 0, 1.5], [-5.5, -1.4, 1.5], [-7.3, -2.6, 1.2],
+    [3.6, 0, 1.5], [5.5, -1.4, 1.5], [7.3, -2.6, 1.2],
+    [-4.5, -6, 1.4], [-6.5, -4.5, 1.3],
+    [4.5, -6, 1.4], [6.5, -4.5, 1.3],
+    [-3.0, -10.5, 0.9], [-3.1, -12, 0.8],
+    [3.0, -10.5, 0.9], [3.1, -12, 0.8],
+  ]) {
+    const p = shipPoint(lx, lz);
+    env._collisionCircles.push({ x: p.x, z: p.z, r });
   }
-  env._addCaveEntrance(SHIP_RAMP_FOOT.x, SHIP_RAMP_FOOT.z, 'spaceship', 'Board Ship');
-  env._addNavLandmark(SHIP.x, 3.2, SHIP.z, 'Ship');
+  // Bay tunnel side walls (local x ±1.8) — hold the player on the lit deck
+  for (const sx of [-1.85, 1.85]) {
+    for (let lz = -12.5; lz <= -3.2; lz += 1.0) {
+      const p = shipPoint(sx, lz);
+      env._collisionCircles.push({ x: p.x, z: p.z, r: 0.5 });
+    }
+  }
+  // Inner bulkhead behind the boarding door pad
+  const bh = shipPoint(0, -2.7);
+  env._collisionCircles.push({ x: bh.x, z: bh.z, r: 1.4 });
+  // Boarding is walk-activated (owner call): crossing into triggerR of the
+  // door point fires the switch itself — no [E]. The radius is tuned so the
+  // switch lands about where the hull has swallowed half the walking player
+  // at the fixed camera (verified against rig screenshots up the bay axis).
+  const door = shipPoint(0, -4.2);
+  env._addCaveEntrance(door.x, door.z, 'spaceship', 'the Starwing', { walkIn: true, triggerR: 4.0 });
+  env._addNavLandmark(SHIP.x, 4.2, SHIP.z, 'Ship');
 }
 
 // ── Procedural forest ring ────────────────────────────────────────────────────
@@ -175,14 +207,17 @@ function _addForest(env) {
   const gapHalfWidth = Math.PI * 0.12;
 
   // Keep trees away from portals and large landmarks
-  // The ship is 15 units nose-to-ramp, so it needs a run of keep-outs along its
-  // axis rather than the single point the old 4-unit scout ship used.
+  // The Starwing is a 26-unit dart: the keep-outs run the full spine, the
+  // wing band, the tail booms, and the bay's approach corridor behind the
+  // tail, rather than the single short run the old lifter used.
   const portalPositions = [
     { x: -10, z: -10 },   // Mine
     { x:   0, z:  20 },   // Verdant Maw
     { x:  20, z:   0 },   // Lagoon Coast
     { x:   0, z: -20 },   // Frozen Tundra
-    ...[-8.2, -4, 0, 4, 6.2].map(lz => shipPoint(0, lz)),
+    ...[-13, -10, -7, -4, -1, 2, 5, 8, 11, 13].map(lz => shipPoint(0, lz)),
+    ...[[-4, -1], [4, -1], [-7, -2.5], [7, -2.5], [-3, -11], [3, -11],
+        [0, -15], [0, -17.5]].map(([lx, lz]) => shipPoint(lx, lz)),
   ];
   const _tooCloseToPortal = (tx, tz) =>
     portalPositions.some(p => Math.hypot(tx - p.x, tz - p.z) < 3.5);
@@ -234,7 +269,7 @@ function _addOuterWoods(env) {
     { x: 24, z: -12, r: 3 },
     { x: -22, z: 6, r: 3 },
     { x: 9.4, z: 8.6, r: 5 },    // survivor camp
-    { x: SHIP.x, z: SHIP.z, r: 10 },  // the lifter — hull, wings and ramp run
+    { x: SHIP.x, z: SHIP.z, r: 15 },  // the Starwing — 26-unit dart planform
     { x: -19, z: 9, r: 2 },      // outer resource nodes
     { x: 21, z: -14, r: 2 },
     { x: 24, z: 6, r: 2 },

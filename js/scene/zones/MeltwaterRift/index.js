@@ -35,8 +35,8 @@ const MELT_GLOW = 0x6fe0d8;
  *
  *   - The Sunken Door (west)  — replace its _addSealedGate call with
  *     _addCaveEntrance/_addPortal at (-15, 6.5) when that zone ships
- *   - The Ember Chasm (east)  — same, at (13, 10.5); the winch platform is
- *     the intended way down
+ *   - The Ember Chasm (east)  — OPEN since 2026-07-30: the winch at (13, 10.5)
+ *     descends into the Cinderforge (walk-in entrance at the apron)
  *
  * Wall ring uses reveal materials (Mine/Hollow trick): fragments open around
  * the player so the fixed 46-degree ortho camera can see into the cavern.
@@ -48,7 +48,8 @@ const MELT_GLOW = 0x6fe0d8;
  * ── Connections ───────────────────────────────────────────────────────────────
  *   glacialHollow  →  (0, -16)  always unlocked (return; lands at the rift
  *                     mouth inside the Hollow via spawnOverride)
- *   sealed         →  The Sunken Door (west), The Ember Chasm (east)
+ *   cinderforge    →  (10.9, 8.8)  always unlocked (the Ember Chasm winch)
+ *   sealed         →  The Sunken Door (west)
  */
 export function build(env) {
   const rng = seededRandom(72447);
@@ -397,8 +398,10 @@ export function build(env) {
 
     env._collisionCircles.push({ x: 13, z: 10.5, r: 2.1 });
     env._collisionCircles.push({ x: 11.1, z: 12.6, r: 0.5 });
-    env._addSealedGate(10.9, 8.8, 'The Ember Chasm',
-      'Sealed: The Ember Chasm — warm air rises from far below, but the descent is not yet rigged');
+    // The descent is rigged at last — the winch lowers into the Cinderforge.
+    // Walk-in record only (the pit + winch above supply all the visuals);
+    // the Cinderforge's return gate lands back on this apron via spawnOverride.
+    env._addCaveEntrance(10.9, 8.8, 'cinderforge', 'The Ember Chasm');
   }
 
   // ── Worn stone path ────────────────────────────────────────────────────────

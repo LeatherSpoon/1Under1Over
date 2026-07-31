@@ -13,7 +13,7 @@ export class GameStatistics {
   }
 
   // One per zone in Environment.getZoneLabel() — enforced by zoneWiring.test.js
-  static get TOTAL_WORLDS() { return 14; }
+  static get TOTAL_WORLDS() { return 16; }
 
   recordEnemyDefeated(zone) {
     this.enemiesDefeated++;

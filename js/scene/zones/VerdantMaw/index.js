@@ -19,7 +19,7 @@
 import * as THREE from 'three';
 import { addPathRibbon } from '../../PathRibbon.js';
 import { SURFACES, GROUND_CIRCLES, CANOPY_CIRCLES, CANOPY_LIGHTS, WAYMARKS, ROOT_GATE,
-         RIVERS, riverPoints, TERMINUS,
+         RIVER_PATH, riverWaterHexAt, TERMINUS,
          EMBER_TREE, GROTTO_RINGS, GROTTO_TRAIL,
          mawGroundColorAt, mawGroundHex } from './canopy.js';
 
@@ -59,26 +59,33 @@ export function build(env) {
   env._addNavLandmark(TERMINUS.x, TERMINUS.y + 0.5, TERMINUS.z, 'Riversend');
   env._addNavLandmark(EMBER_TREE.x, 4, EMBER_TREE.z, 'The Emberglade');
 
-  // ── The four rivers — glowing water, never walkable ───────────────────────
-  // One opaque PathRibbon each (no decal-strobe risk); the collision chain
-  // lives in canopy.js GROUND_CIRCLES. Bioluminescent sparks drift the water.
+  // ── The snake river — one serpentine course, never walkable ───────────────
+  // (owner: "Instead of multiple rivers, make it a snakey river.") ONE opaque
+  // PathRibbon follows RIVER_PATH end to end — in from the eastern jungle,
+  // four corridor crossings, three flank hairpins, out east again — and its
+  // water grades teal → jade → gold-green along the way (colorAt samples
+  // body/core/ground at each row's own z, so the transitional phase flows
+  // down the river instead of stepping per band). The collision chain
+  // (RIVER_CHAIN, canopy.js) rides the same centerline. Bright, because this
+  // is bioluminescent water and it must read as a BARRIER at a glance.
   {
-    // Bright: this is bioluminescent water and it must read as a BARRIER at
-    // a glance (0x11485e shipped first and vanished into the night ground).
-    // v2 (owner: "the river is low quality"): a deep body with a luminous
-    // meandering CORE band (pathStrip coreColor — 7-column ribbon) instead of
-    // one flat stripe; banks get boulder/fern dressing via scatterRiverBanks.
-    // The water rides the transitional phase too — teal in the south, jade
-    // then gold-green by river 4 (Kumandra water) — and each river's edges
-    // blend into ITS local ground color, not the southern teal.
-    const RIVER_BODY = [0x1f7a99, 0x217b8a, 0x25795f, 0x2e7a4f];
-    const RIVER_CORE = [0x7fe8f0, 0x7fe8f0, 0x9fe8c8, 0xc8e8a0];
-    for (const [i, r] of RIVERS.entries()) {
-      addPathRibbon(env, riverPoints(r, -42, 42, 3), {
-        width: 5.6, color: RIVER_BODY[i], coreColor: RIVER_CORE[i], strength: 1.15,
-        groundColor: mawGroundHex(r.z), seed: 9100 + i * 7,
-      });
-    }
+    // Control points every ~2.6 units (the dense path is ~0.65); one merged
+    // mesh, so the whole river is a single draw call. taperFrac is tiny —
+    // on a ~460-unit course the tails (which now END at the plane edge, x
+    // ±40) dim over just the last ~5 units, sliding into the world's dark.
+    // bankShade cuts the fog-soft feather into a dark wet-bank rim (river
+    // refine, 2026-07-30): full-bodied water, toon-outlined by its banks.
+    const ctrl = RIVER_PATH.filter((_, i) => i % 4 === 0);
+    const lastP = RIVER_PATH[RIVER_PATH.length - 1];
+    if (ctrl[ctrl.length - 1] !== lastP) ctrl.push(lastP);
+    addPathRibbon(env, ctrl, {
+      width: 5.6, strength: 1.15, seed: 9107, taperFrac: 0.012, bankShade: 0.42,
+      color: 0x1f7a99, groundColor: 0x1d4636, coreColor: 0x7fe8f0,
+      colorAt: (x, z) => {
+        const w = riverWaterHexAt(z);
+        return { color: w.body, coreColor: w.core, groundColor: mawGroundHex(z) };
+      },
+    });
     let s = 20260727 | 0;
     const rng = () => {
       s = (s + 0x6D2B79F5) | 0;
@@ -92,13 +99,18 @@ export function build(env) {
       [0x5fd8e8, 0x8ff0f0, 0x4fb8d8], [0x5fd8e8, 0x8ff0f0, 0x4fb8d8],
       [0x8fe8c8, 0xb8f0d8, 0x6fd8a8], [0xd8e8a0, 0xe8f0c0, 0xb8d880],
     ].map(set => set.map(c => new THREE.MeshBasicMaterial({ color: c })));
-    for (const [ri, r] of RIVERS.entries()) {
-      for (let i = 0; i < 11; i++) {
-        const x = -38 + rng() * 76;
-        const m = new THREE.Mesh(sparkGeo, SPARK_SETS[ri][i % 3]);
-        m.position.set(x, 0.07, r.z + r.amp * Math.sin(x * r.wave + r.phase) + (rng() - 0.5) * 2.4);
-        env.group.add(m);
-      }
+    const setFor = z => z >= -46 ? 0 : z >= -62 ? 1 : z >= -79 ? 2 : 3;
+    for (let i = 0; i < 62; i++) {
+      const t = rng() * (RIVER_PATH.length - 1);
+      const i0 = Math.floor(t), f = t - i0;
+      const [ax, az] = RIVER_PATH[i0];
+      const [bx, bz] = RIVER_PATH[Math.min(i0 + 1, RIVER_PATH.length - 1)];
+      const x = ax + (bx - ax) * f + (rng() - 0.5) * 1.8;
+      const z = az + (bz - az) * f + (rng() - 0.5) * 1.8;
+      if (Math.abs(x) > 39) continue; // keep sparks on the ground plane
+      const m = new THREE.Mesh(sparkGeo, SPARK_SETS[setFor(z)][i % 3]);
+      m.position.set(x, 0.07, z);
+      env.group.add(m);
     }
   }
 

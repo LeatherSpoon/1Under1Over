@@ -1,0 +1,12 @@
+{
+  "Lab_NpcWarden": {
+    "uuid": "0a26ca6a-6d8b-403a-9cfa-4a664f505ecf",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiZTYzYjRjNTMtMjZjNS00M2JkLTgwOTktY2E1YWRlOWI4ZDQ1IiwiNjhmYmQ3MjQtN2MyOC00OTU3LWIxMWEtZmIyY2IzYjZlMmIyIiwiNzc3MWQ4MjgtNDZjMy00MDg3LWIyZmYtODE4YzhlZDc5NjVhIiwiNGYyNjdiZTEtOTQ0NC00YmZhLTk3MzAtMTE3YzA5N2ViOGIxIiwiZTViZDdmODItYTE1My00ZWZkLTgwZTAtOTAwZjI3ODFjZGFjIiwiZjhkNGI2ZGItZTBjZi00YmU3LWFhMWItMTE0NTJmNDk5OGFlIl0sImlhdCI6MTc4NTM3MzEyMH0.5h3WKIV60aKyZjANoVJv6QiMag_v59jKsJsbPHmZCjc",
+    "prompt": "elderly tortoise-folk sage character, hooded moss-green robe with carved stone trim, weathered shell on his back, standing fully upright on two legs, symmetrical pose, arms relaxed at sides, no held objects, calm simple friendly face, large gentle eyes, ghibli style cartoon character, full body"
+  },
+  "Lab_NpcDelver": {
+    "uuid": "b7cc0aa7-9494-498c-9af1-a072761235f5",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiZWUxZTc3NDgtZmQzMy00MjQyLTkxZTQtZjBmMDgxOTEwMzU3IiwiZDQ1MWQ3MjYtYzBhOC00ZjYxLTlmYTAtNWZkNjE4OWU0M2UxIiwiN2RlNjBkODYtZjIyNS00Y2QxLTg5MTEtOTc0NmM0NzU2NTc4IiwiNzBmNTgzNGMtNzRiYi00ZDhjLWI3ZDYtNzk2Mzc0MTA0YTAxIiwiNzBmNWVjMTMtYWFiNi00YzdjLTg4MGQtYzVkMDg0OWYyOTA5IiwiZGVhZDUyNzEtOThlYy00YmNhLWFjNjItZTNlYzExYzlhNTU4Il0sImlhdCI6MTc4NTM3MzEyMn0.bJXKfoMVkTeDOrDuTk4Zts7AJ6gENDYt78SeZ283Uqk",
+    "prompt": "small mouse-folk explorer character, worn leather harness and a rolled bedroll backpack, standing fully upright on two legs, symmetrical pose, arms relaxed at sides, no held objects, curious simple friendly face, large round ears, large dark eyes, ghibli style cartoon character, full body"
+  }
+}

@@ -435,6 +435,12 @@ export class HUD {
       info.appendChild(labelEl);
       info.appendChild(lvlEl);
 
+      // What upgrading this stat actually does (per-level effect)
+      const descEl = document.createElement('span');
+      descEl.className = 'stat-desc';
+      descEl.textContent = this.stats.statDescs[name] || '';
+      info.appendChild(descEl);
+
       const btn = document.createElement('button');
       btn.className = 'stat-up-btn';
       btn.textContent = `+${this.stats.upgradeCost(name)}`;
@@ -2308,6 +2314,18 @@ export class HUD {
     this._refreshCraftingWithQueue();
   }
 
+  // Queued crafts (materials already consumed) — shown under the recipe list.
+  _refreshCraftingWithQueue() {
+    const el = document.getElementById('crafting-contents');
+    if (!el) return;
+    const queue = this.crafting.queue;
+    if (!queue || queue.length === 0) return;
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-top:6px;font-size:0.7rem;color:#00ffcc;opacity:0.8;';
+    wrap.textContent = `Queued (${queue.length}/${this.crafting.maxQueueSize}): ${queue.map(q => q.label).join(' → ')}`;
+    el.appendChild(wrap);
+  }
+
   // Live-update the craft progress bar without full re-render
   _updateCraftProgressBar(prog, dur) {
     const fill = document.getElementById('craft-progress-fill');
@@ -3107,6 +3125,21 @@ export class HUD {
     // Update auto-combat indicator
     const acInd = document.getElementById('auto-combat-indicator');
     if (acInd) acInd.hidden = !this.autoCombat.enabled;
+
+    // Combat Sim indicator — live progress toward the next STR/DEF level while
+    // the sparring rig trains (combatSim is set on the hud after construction).
+    const simInd = document.getElementById('combat-sim-indicator');
+    if (simInd && this.combatSim) {
+      simInd.hidden = !this.combatSim.enabled;
+      if (this.combatSim.enabled) {
+        const pct = (stat) =>
+          Math.min(99, Math.floor((this.combatSim.xp[stat] / this.stats.upgradeCost(stat)) * 100));
+        const str = this.stats.stats.strength.level;
+        const def = this.stats.stats.defense.level;
+        simInd.textContent =
+          `COMBAT SIM ▸ STR Lv${str} ${pct('strength')}% · DEF Lv${def} ${pct('defense')}%`;
+      }
+    }
 
     // Update minigame cooldown text
     const mgBtn = document.getElementById('btn-toggle-minigame');

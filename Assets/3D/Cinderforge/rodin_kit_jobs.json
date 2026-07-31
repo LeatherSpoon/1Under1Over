@@ -1,0 +1,126 @@
+{
+  "Forge_WallStraight": {
+    "uuid": "375fcc02-9b84-4b3b-8461-f251f5bba310",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiNzJiMjQwZTctZTBhZi00MTU0LTk4MWUtNjFjODUyYjNjNjBhIiwiY2RiMDUxZWItNzNkNS00MWI1LWJjNzYtZWVjYzk4ZjY3ODliIiwiODk3MmNlNTMtZjdiOS00MGIzLTk3ZTgtODIxZThkN2VkYWFkIiwiYTVhOWQ0N2QtOTQ5Yi00YzQwLWIyMjYtYTViMzI3NDQ1NmQxIiwiMmY2NzU5MzYtMTI3NS00ZDMyLWIwYzQtMGM0NmFhMjU3MmIyIiwiZmJhMjNlODUtZGQ5NC00YmViLWE5YWItNjc3NTRjYWVhZDBjIl0sImlhdCI6MTc4NTQ2NzM3NX0.4rCdLE2M04LERuvX0LXRQRJf8Lq1h35F2KiFrYmi0AY",
+    "prompt": "ancient volcanic dungeon wall segment, one straight modular slab of dark basalt blocks, carved angular rune grooves, thin glowing orange lava cracks between blocks, weathered obsidian trim along the top, stylized ghibli game asset, clean silhouette",
+    "bbox_condition": [
+      6,
+      1,
+      4
+    ]
+  },
+  "Forge_Column": {
+    "uuid": "75d54912-43a7-4427-895f-8849cbd82207",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiNmU4NzZjYzctMWZhYS00OGRlLTk0N2ItYmM3YTc4MzkwZjk4IiwiZjNmOWFjYjQtOTg1ZS00YzMyLWIzMzgtODcwNGI3MzA4MzA5IiwiYzJlNWUzMzQtY2YzMy00YjY3LWE0NWUtNTU0MDRjNTA4ZmNkIiwiMmVkMmRlYWMtN2NlNy00YjQ0LWE1YzMtODE4ODY3MTg1Y2Y1IiwiYmE5MGUxMDUtYTA5Zi00ZGY0LWI1NDQtMjQyZWE0Zjc3OTFmIiwiODhhMzhiM2QtMjg4MS00OGE2LTkwZmItMzA2ZmI4NWRmMDE5Il0sImlhdCI6MTc4NTQ2NzM4MH0.VDrDGL6mX7wpy-72rVkZ2mfXD0dzFXr7I7YRUS3Ktuk",
+    "prompt": "tall hexagonal basalt column pillar, dark volcanic stone, faint glowing orange seams, carved ancient rune band near the top, stylized ghibli game asset, clean silhouette",
+    "bbox_condition": [
+      1,
+      1,
+      3
+    ]
+  },
+  "Forge_ArchGate": {
+    "uuid": "ed04dff3-7696-4056-87ce-78facfea1d5a",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiZmU4YmQzYzgtZDExYy00MTgxLWFiMDYtMDJkZjcxMmM1NGU0IiwiMWE4MWI0MGUtYjU3Yy00YzUwLWE5ZjMtMDg3Yjc5Yjg5ZGQ2IiwiNDc1NDZiMDktNTE4Zi00ODczLWIzZWMtYzUyMzc0ZDJkOTc4IiwiMjg2ZjhkZmEtNjk3MS00ZGEyLTlkZTktYzc5MDE4MTlkYTVkIiwiNDBhNWM3MTItYWZmMS00ZDdhLWEzNTMtMzk2YWIxMzcwNDAzIiwiY2ExOWIxOTEtYzA0MS00ZmYwLTk4ZDEtMjA2YWZiZTdiMmFlIl0sImlhdCI6MTc4NTQ2NzM4NH0.3-7TG-YFu6Rj4YVCiRri_6d2cK_zZVyJz_JHiBbM8UE",
+    "prompt": "ancient volcanic stone archway gate frame, dark basalt blocks, angular carved trim, faint glowing orange runes over the arch, open empty doorway, stylized ghibli game asset, clean silhouette",
+    "bbox_condition": [
+      4,
+      1,
+      4
+    ]
+  },
+  "Forge_Golem": {
+    "uuid": "68575c2f-93ec-45b6-85b4-c02ed1f6c4fe",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiNGJkZmFlZGEtNzA1Mi00NDQxLTlkNzktODQwYjk4YjIzODIwIiwiMTZkNjczZTgtMTM3Ny00ZGQ1LWJhOTEtYjcxODZmNDc2ZmE5IiwiYWI0NDBjNDAtMTYwYi00Zjk2LTgxNDUtZGQ1ZGFhNjU2YjQ2IiwiZjA2OTJmNzEtN2Q5OS00Zjc0LTgzYzYtMGY3MDkwMWI4YWVjIiwiYzI1NmZmYWItMmUwMC00MjQ5LTk1ZjQtZDQwNGZlMzc5NjY2IiwiNWI4NDRiMGUtODNlOC00MTAyLWJjMTEtZTJmMWRiNTU3NTcyIl0sImlhdCI6MTc4NTQ2NzM4OH0.6c8lze_Z7eIqTzMVE9eB16mmoaxDifuXlpKNs76r2MI",
+    "prompt": "colossal ancient forge golem statue carved from black basalt, standing fully upright on two legs, symmetrical pose, arms relaxed at sides, no held objects, calm simple face, glowing orange ember cracks across chest and shoulders, ghibli style stone guardian, full body",
+    "bbox_condition": null
+  },
+  "Forge_Anvil": {
+    "uuid": "27a330f8-fc9e-47ca-9d08-1e61b1e19d44",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMmVhNWFlNTktOTA3OS00NTVhLWJiMGItZmI2NTMwYTRmYzJlIiwiN2JiNGQwY2YtNjBkNi00YWIxLWIxYWMtZDE2Mjc1ZmMyN2FlIiwiNjk5NTY1ODQtYTVhNi00ZDNhLTljZjgtODE3OGI5MGZhNzFmIiwiNDYwNWFjYjQtNWRiMC00NDFhLWI0YjEtYWYxNGNjM2NmYWU5IiwiNTI1NmI2YzQtYWYyOC00ZmUzLTgyNmYtNDY2NTI0OTYzZmY2IiwiZTQ5OTgzODgtZWQ1MS00MWVjLTkzNGYtZWNiMzZmZGJmNmY1Il0sImlhdCI6MTc4NTQ2NzM5Mn0.5LDncXW-qIFVLuYcwk-su-Z8CX6DoTmmkmnNKyHvTM8",
+    "prompt": "great ceremonial anvil monument on an ancient carved stone dais, massive dark iron anvil, basalt base with glowing orange runes, stylized ghibli game asset, clean silhouette",
+    "bbox_condition": null
+  },
+  "Forge_Crucible": {
+    "uuid": "0a8d4ee4-d350-4703-88a7-ba2f9a575d5b",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMzQ5MTIwMmQtNTk2Ni00Nzg2LTljZWItMDQ2YzVjNzE1NDliIiwiMTBmNGFiN2ItZmI3ZS00YzQ0LWFiMGMtZjRhY2QxZDY5NWNkIiwiYmM4YTYxYjctMGZjZS00Y2MzLTgzM2MtNjgzNDU0YTU0ZmQxIiwiZDJhNDY0ZmEtYmQ5Ni00ZjFjLTkxN2ItYTdiOWJiZWFlMmM0IiwiMTIxMmI1ZjUtNTYzMS00YjI2LWE2MGQtODNlZDQwY2VkODY1IiwiZjYyMDU2YmEtOTM1Yy00MDkzLWIyNzItNGQxZTc3M2JlZDNlIl0sImlhdCI6MTc4NTQ2NzM5Nn0.hLBauck0-h1Os-6XGesWl48GMbJ-9pgVd5u2WSZQuKA",
+    "prompt": "huge ancient stone crucible cauldron on a carved basalt base, glowing molten orange metal pooled inside, stylized ghibli game asset, clean silhouette",
+    "bbox_condition": null
+  },
+  "Forge_Vent": {
+    "uuid": "e87c415e-f530-469a-90f9-a64ea0bf4cda",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiYzA5ZjI2ZDktNGRlOS00OTRiLTk1YWYtZDI1NzQ5ZWMyMThmIiwiNDhhMDNiNmEtMDJhNy00YjI3LTlmODEtNTc0NGI5ZTJkMDdhIiwiM2ExZTYyOTAtZWMzMi00NWEyLWJlZDYtOTI4NzBiNWYzOWJmIiwiOTQyNmQ1NWYtYWVhZC00YWRjLWFiZTAtMzUxZmI5ZDhlOTM1IiwiODRjODExYWQtMWEwOS00NjQ3LWEzZGItOWQ3ZDg5ODgxMDkwIiwiZTU3NGQ2M2EtZDliYy00YTlhLTg2NzItMDZlMWIyZjM1YTM5Il0sImlhdCI6MTc4NTQ2NzM5OX0.bhcRza5xoD9Z9cPVkmGPbyNekZIl1NbMbIzekEdJEQA",
+    "prompt": "volcanic fumarole vent chimney, layered dark basalt rock cone, glowing orange crack at the top opening, stylized ghibli game asset, clean silhouette",
+    "bbox_condition": null
+  },
+  "Forge_Brazier": {
+    "uuid": "2bec8b97-07c2-47b9-8c28-4aad1911f5ee",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMzA5NDBkNzYtZjM2Zi00ODUxLWIzODQtMDQ2NGI5NTEyZmY4IiwiMTBjOTgzYzMtM2IwOS00MDhiLTgzMDgtZDY1YjM4Zjg2NmQ1IiwiYjE0ZTE5YzUtYjk3ZC00MDhjLWI4ZGUtMzdmZTM1MTY3MmQwIiwiN2I0ZTVlZGYtYWIxNi00NjJmLWIxZmItZmZhNjU4NzdmMGQ3IiwiNmY2NTMwMGQtZDkxOC00MzM5LTgzODctN2IzOGZjZWYzYzY3IiwiYzQ0OTczYzUtYTU3Ny00Nzk2LWI1ZGUtZjk3MGZkY2JiYmM4Il0sImlhdCI6MTc4NTQ2NzQwM30.kaddFLZagvyAEnhiOYTLWixvktoOa7h8-rE2z7EZ1rU",
+    "prompt": "ancient iron fire brazier bowl on three sturdy legs, glowing orange embers and a small flame, dark metal with carved trim, stylized ghibli game asset, clean silhouette",
+    "bbox_condition": null
+  },
+  "Forge_RuneStele": {
+    "uuid": "839507cb-1832-44e6-8482-b2ddd2d3bc14",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiNmUyZDAwMGYtNmMxOC00ZGQyLTgwMjQtZDNlM2RjNTlmNTQwIiwiODllOGI4M2YtZTBmMi00NjM1LWExYWItMzM2OTBhYzIzNDc4IiwiY2I0OGYyNmMtMDcwNC00Mjg1LWIyYzgtYTMwMGIwZjFiOTkwIiwiMDEyYWZkMWEtM2Q3My00YWQ0LWI3ZGUtZmZmNzRlMTU4M2Q0IiwiYmE3NmI0OTAtZWFmYS00MmZiLTlkMTktMjE1ODVkMjcwYmI4IiwiYmM5NjIzNWYtNjY5ZS00OTE3LTg4MDMtOGZiZWE4ZDZlMDFiIl0sImlhdCI6MTc4NTQ2NzQwNn0.ETYjRw9JMouWEq5SzXvLVlOHa_KS2UsjHhx7-luXl3E",
+    "prompt": "ancient obsidian stele tablet standing upright, carved angular glowing orange runes on the front face, chipped volcanic glass edges, stylized ghibli game asset, clean silhouette",
+    "bbox_condition": [
+      2,
+      1,
+      3
+    ]
+  },
+  "Forge_BrokenColumn": {
+    "uuid": "780eb38e-d6c9-4c48-838a-5f0d8b378873",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiNjZkMjg3NWEtNTJhMy00NTMxLWFlNDMtYjVmZDAzMDQ0YTJjIiwiNzUyNDQ1Y2EtNGIzZC00NDQ0LWI5OGUtZGNhZjJlZDBmMzliIiwiOTVlOGU1MmEtMzhhMi00MjlhLTg0NWMtNDgxMGFlMDg1NDA1IiwiZTNjMDdiYjYtMjdhOS00ZGViLWEyMDUtNDA1OTY0NzE5NDljIiwiNGZiZTViZDMtYTUzYy00YWQ1LWJkMTUtNWE0YzQxMjJlZmU1IiwiZGY0NzcyNmUtM2NjMS00ZjMwLWFkOWQtMmVkNGEwMzJhZDVjIl0sImlhdCI6MTc4NTQ2NzQwOX0.QKYpShJS6Uaf3kJM3PfXPw-gjwyAd_5dJkp6aCt5Ncg",
+    "prompt": "broken hexagonal basalt column stump with a sheared jagged top, dark volcanic stone, faint orange seams, small rubble at the base, stylized ghibli game asset, clean silhouette",
+    "bbox_condition": null
+  },
+  "Forge_Rubble": {
+    "uuid": "23cf5a22-58aa-4c29-8c03-697b2ba07717",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiYWM2NGYxZDYtYmQ2NC00NGYwLTkyM2YtN2UyNjk4NDdhOGJkIiwiYWE2YTAxOWEtYmQ0MC00MTAzLThhY2UtY2NlY2FjMjhkOGI0IiwiZTg1MjJlYmMtMTEwOS00OGZjLTg1NzEtMjI2ODlkYjViMWVkIiwiMjcwM2RkZDgtZjdiNC00M2RjLWJjNWQtN2RmZTAzY2E5YzgzIiwiNGZhMDcwMDEtMGFiYy00ZDQwLWJiODgtYWJhYWY4Yzc1MmRiIiwiMzA3Y2QyYmEtNTk1NC00MWM3LTgxNjctNDY4ZTBhMzY2YTcyIl0sImlhdCI6MTc4NTQ2NzQxNX0.byCMWWGQrdqaMudeaAXCpq2QPmb3IGq24kAlWOwS0X4",
+    "prompt": "low wide pile of volcanic scoria rubble and cracked basalt chunks, a few faint glowing embers inside the cracks, stylized ghibli game asset, clean silhouette",
+    "bbox_condition": null
+  },
+  "Forge_IngotStack": {
+    "uuid": "4095b6ad-784d-4f96-ad71-c35df49081f5",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMzg3ODE2MjgtMDEwZS00MmYwLTkwNzItOTI4MjQzMjNmMTczIiwiODI2NmI0NWQtMzgxNi00ZDQyLWEwMTAtOWYyNGI4ZDcwYTI2IiwiZjdkZDkxN2EtNWYxNy00ZGJmLWE1ODctY2VmMzZlMmEwN2M1IiwiNDUyYTYzYzctM2YwZi00MTQyLWFmNTMtMGY4YmRiYTBiOTg4IiwiOGE1MGU5MmMtNWY2Yi00YTZiLWJjODktZjZkZDRiYjlkY2JlIiwiNGMwYjFiZmUtNWVhMS00NzM0LTg5MzYtMDVlMTc4NWJlNTc0Il0sImlhdCI6MTc4NTQ2NzQyNH0.kpGAptIiYrR5eoZG1_d9TSNbWtcQehHpIcPXlRvooyg",
+    "prompt": "neat stack of large ancient bronze metal ingots on a low stone pallet, warm metal sheen, stylized ghibli game asset, clean silhouette",
+    "bbox_condition": null
+  },
+  "Forge_Gargoyle": {
+    "uuid": "7122ce27-f87e-4739-a277-39bfb7076a54",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiNTJkY2NmZDYtMDdlZC00YWIzLWEzM2UtZDNmMzIzYzdiNjBlIiwiMmQ0ZDk3YmQtMzlkNS00MjI5LTlkMWYtOWUzZjgwZGMwN2ZkIiwiZTcxNDI4YTYtNTdkMC00NDJjLTlmMDYtMGIwMmRlYTEwYjNjIiwiYzU1NzhlYzMtYzBlYS00OWUzLWFmYTItZWRjZDZlMDNmODNkIiwiNzg2Yjk0NDEtNzJlMy00NmU0LTllMzctYWVmZTU0NGE4YzBiIiwiMmM0ZGYzZjQtMDcxZC00NTA1LThhMzAtMTljNjgzNTdlZTY1Il0sImlhdCI6MTc4NTQ2NzQzMX0.-8a6_S0TUVQ98GwznfThlmljLiJOisg22bhAginluDc",
+    "prompt": "salamander dragon gargoyle statue crouching on a carved stone plinth, dark basalt, folded wings, simple calm face, faint glowing orange eyes, stylized ghibli game asset, clean silhouette",
+    "bbox_condition": null
+  },
+  "Forge_ArchGate2": {
+    "uuid": "983f26ef-ed27-4b60-9f26-a24e957baec3",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiNzc1ZjI4NzItN2JhZC00OTE4LThkYzktODM1MzNjYTYxOTkxIiwiOTZlNmEzNjMtYWZmOC00ODAwLWI2NzgtOWMwM2EyNzQzM2ZjIiwiZGU0MmYzZGEtZmRiNi00YzdiLWI4NTUtY2Q5MGNiNjU5MDlhIiwiOGU0MDA2MTgtYTlkMy00OTI2LWE0OWMtZjBlMjVkMGE1NjRlIiwiMGIzNDIxN2YtN2YwNS00YmY4LTkzMzEtOTlhMWQ1YzEwMDEyIiwiMWQwYTFiYjQtMTdlYS00M2U3LWIxMzUtNGM0NjcxYmRmZjkzIl0sImlhdCI6MTc4NTQ2ODM0NX0.WReUbgQ4lUx_qxiCrBQ08Li4wIkdlIgmjSkdGVwZM4c",
+    "prompt": "ancient dungeon doorway frame standing upright, two thick vertical hexagonal basalt stone pillars supporting an angled stone lintel across the top, tall open rectangular doorway between the pillars with a dark recessed panel, dark volcanic stone, faint glowing orange runes carved on the lintel, stylized ghibli game asset, clean silhouette",
+    "bbox_condition": [
+      4,
+      1,
+      4
+    ]
+  },
+  "Forge_Column2": {
+    "uuid": "01351aeb-4df2-4ad3-b5a4-dafdebf045e9",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiYzhmYzQzNDktYjlhOS00NDBlLWI4OTEtYzcxMDE1ODYzODg4IiwiNzYwOTU2NjgtM2QxYi00NzUxLWFiZGYtMzljZWM2YjM4NjJkIiwiOTg2Zjg5ZTgtNDMyZi00ZDU0LWIzNmUtMTNjNWJmYzMyYmNiIiwiYzc1MmQwMzgtZjNjZi00OWZhLTk5NWEtYmNhYzdmMTU4OGU0IiwiZTdjNWVlYTItNDFjNC00ZGUyLWEwOWQtOTAzM2Y1YjQxY2QzIiwiY2E4MTMyYjktNmYzNy00YzVkLWFkYzgtOTBiNWE4ZTI4YmMzIl0sImlhdCI6MTc4NTQ2ODc2OX0.0qzmA79f0nE8LaTR1Ip_2LXx2V92gvA_8Vw4ApkRnGg",
+    "prompt": "tall plain hexagonal basalt stone pillar column standing upright, straight six-sided shaft, simple wide square stone base at the bottom, simple flat stone cap at the top, dark volcanic rock with thin glowing orange cracks, stylized ghibli game asset, clean silhouette",
+    "bbox_condition": [
+      1,
+      1,
+      4
+    ]
+  },
+  "Forge_RuneStele2": {
+    "uuid": "4e0134cc-d739-4b10-b52b-3f7f309e9180",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMjYzNDQzMTUtNTY4My00MGFjLWFlMmQtODk0YzRhZDAzYzkzIiwiOGVjNzllNzYtNzVmMC00MTI0LWI5YmMtZjFiYmQ3YmY0NmQyIiwiOTRjYmU3ZjctODk5MS00ZGVkLWEzNWUtYzAwODFlNmU0NmIyIiwiZTg1NmFkNzUtZjU4OS00M2MxLWE4MWUtNjU2NDk1NDk0NWE4IiwiZDU4NzFjMTgtMzhiYy00ZDAwLWI5YmYtNjkyMDg4MzI5Y2NmIiwiYmNkZjRlZWMtZmRmZi00ZTUwLWFiODAtNGE2OGU2MDNjMWI3Il0sImlhdCI6MTc4NTQ2ODc3OH0.WEp59-EnvbWf630yEOmkuJxM6d_6LblGcFd5fKn7Byg",
+    "prompt": "ancient standing stone tablet monument, upright rounded slab, large bright glowing orange runes deeply carved across the entire flat front face, dark volcanic basalt, stylized ghibli game asset, clean silhouette",
+    "bbox_condition": [
+      2,
+      1,
+      3
+    ]
+  }
+}

@@ -49,6 +49,18 @@ export function buildPathStripData(points, {
   // null keeps the classic 4-column ribbon byte-identical; set → 7 columns
   // with the middle pair blending body → coreColor, meandering per-row.
   coreColor = null, coreFrac = 0.34,
+  // Crisp-bank water (set with coreColor): the wide body→ground feather that
+  // makes a soft trail look right makes water read as ground fog. bankShade
+  // (a 0..1 darken factor on the LOCAL ground color) switches to 9 columns —
+  // full-strength body to 0.80, a thin dark wet-bank rim at 0.92, ground at
+  // the edge — the river's toon outline. The rim fades with taper so tail
+  // tips still dissolve into the ground.
+  bankShade = null,
+  // Per-row color override: colorAt(x, z) → { color, groundColor, coreColor }
+  // (linear [r,g,b] triples) sampled at each row's centerline position — long
+  // ribbons grade along their run (the snake river). Column layout still
+  // follows the base coreColor, so pass one when the override supplies cores.
+  colorAt = null,
 } = {}) {
   if (!points || points.length < 2) throw new Error('PathRibbon needs >= 2 points');
   const rng = seededRandom(seed);
@@ -98,12 +110,28 @@ export function buildPathStripData(points, {
     const halfW = (width / 2) * (1 + widthJitter * noise(widTab, u, 5)) * (0.3 + 0.7 * taper);
     const cx = samples[i].x + (-tz) * wobble * noise(wobTab, u, 3) * taper;
     const cz = samples[i].z + tx * wobble * noise(wobTab, u, 3) * taper;
-    const wear = (0.55 + 0.3 * noise(wearTab, u, 4)) * strength * taper; // fades out at tips
-    rows.push({ cx, cz, nx: -tz, nz: tx, tx, tz, halfW, u, taper, inner: mix3(groundColor, color, Math.max(0, Math.min(1, wear))) });
+    // Crisp-bank water holds nearly full body color (the bank rim carries the
+    // edge definition instead of a wear wash); classic ribbons keep the wash.
+    const wear = bankShade
+      ? Math.min(1, (0.85 + 0.15 * noise(wearTab, u, 4)) * strength) * taper
+      : (0.55 + 0.3 * noise(wearTab, u, 4)) * strength * taper; // fades out at tips
+    const oc = colorAt ? colorAt(samples[i].x, samples[i].z) : null;
+    const bodyC = oc ? oc.color : color;
+    const groundC = oc ? oc.groundColor : groundColor;
+    rows.push({ cx, cz, nx: -tz, nz: tx, tx, tz, halfW, u, taper,
+      groundC, coreC: oc && oc.coreColor != null ? oc.coreColor : coreColor,
+      bankC: bankShade == null ? null
+        : mix3(groundC, [groundC[0] * bankShade, groundC[1] * bankShade, groundC[2] * bankShade], taper),
+      inner: mix3(groundC, bodyC, Math.max(0, Math.min(1, wear))) });
   }
 
   const positions = [], colors = [], indices = [];
-  const COLS = coreColor ? [-1, -0.55, -coreFrac, 0, coreFrac, 0.55, 1] : [-1, -0.45, 0.45, 1];
+  const COLS = coreColor
+    ? (bankShade != null
+      ? [-1, -0.92, -0.8, -coreFrac, 0, coreFrac, 0.8, 0.92, 1]
+      : [-1, -0.55, -coreFrac, 0, coreFrac, 0.55, 1])
+    : [-1, -0.45, 0.45, 1];
+  const bodyCol = bankShade != null ? 0.8 : 0.55;
   for (const r of rows) {
     // The luminous core wanders in brightness along the run so the water
     // reads as moving light, not a painted stripe.
@@ -113,13 +141,14 @@ export function buildPathStripData(points, {
     for (let c = 0; c < COLS.length; c++) {
       positions.push(r.cx + r.nx * COLS[c] * r.halfW, y, r.cz + r.nz * COLS[c] * r.halfW);
       let col;
-      if (c === 0 || c === COLS.length - 1) col = groundColor;
+      if (c === 0 || c === COLS.length - 1) col = r.groundC;
       else if (!coreColor) col = r.inner;
       else {
         const a = Math.abs(COLS[c]);
-        if (a >= 0.55 - 1e-6) col = r.inner;                       // body band
-        else if (a >= coreFrac - 1e-6) col = mix3(r.inner, coreColor, 0.55 * coreMix); // core edge
-        else col = mix3(r.inner, coreColor, coreMix);              // center line
+        if (r.bankC && a >= 0.92 - 1e-6) col = r.bankC;            // wet-bank rim
+        else if (a >= bodyCol - 1e-6) col = r.inner;               // body band
+        else if (a >= coreFrac - 1e-6) col = mix3(r.inner, r.coreC, 0.55 * coreMix); // core edge
+        else col = mix3(r.inner, r.coreC, coreMix);                // center line
       }
       colors.push(col[0], col[1], col[2]);
     }

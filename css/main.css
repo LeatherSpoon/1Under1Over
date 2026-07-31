@@ -980,6 +980,12 @@ body {
   color: #55aa77;
 }
 
+.stat-desc {
+  font-size: 0.6rem;
+  color: #4d8866;
+  line-height: 1.25;
+}
+
 .stat-up-btn {
   background: rgba(0, 80, 30, 0.7);
   border: 1px solid #00cc66;
@@ -1319,6 +1325,21 @@ body {
 }
 
 #auto-combat-indicator[hidden] { display: none !important; }
+
+/* ── Combat Sim Indicator (rides the #hud-topcenter stack) ─────── */
+#combat-sim-indicator {
+  background: rgba(0, 40, 32, 0.85);
+  border: 1px solid #00ffcc;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 0.68rem;
+  font-weight: bold;
+  color: #00ffcc;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+}
+
+#combat-sim-indicator[hidden] { display: none !important; }
 
 /* ── Inventory Modal Overlay ───────────────────────────────────── */
 #inventory-panel {

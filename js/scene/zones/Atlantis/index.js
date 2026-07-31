@@ -46,11 +46,13 @@ const SAND_WARM   = 0x8a7658;
  *
  * The grotto ring is broken at its southern point: a mouth opens on a walled
  * corridor running out to a small drowned end chamber — the city's back door.
- * It is a dead end today; the Meltwater Rift's Sunken Door is the obvious thing
- * to put behind it when that link is built.
+ * An Ancient World Gate stands half-drowned in the chamber's pool: the way
+ * into the Labyrinth. (The Meltwater Rift's Sunken Door could still join the
+ * corridor from the side if that link is ever built.)
  *
  * ── Connections ───────────────────────────────────────────────────────────────
- *   mine  →  (0, -16)  always unlocked (return gate into the Breach chamber)
+ *   mine      →  (0, -16)   always unlocked (return gate into the Breach chamber)
+ *   labyrinth →  (0, 30.5)  always unlocked (the end-chamber gate)
  */
 export function build(env) {
   const rng = seededRandom(84213);
@@ -322,4 +324,9 @@ export function build(env) {
 
   // ── Connections ───────────────────────────────────────────────────────────
   env._addPortal(0, -16, 'mine', 0, 'Mine Hub');
+  // The back door was never a dead end: an Ancient World Gate stands
+  // half-drowned in the end chamber's pool, opening on the Labyrinth. The
+  // labyrinth-side return gate carries the spawn override that lands the
+  // traveller back here, so the pair reads as one doorway.
+  env._addPortal(0, 30.5, 'labyrinth', 0, 'The Labyrinth');
 }

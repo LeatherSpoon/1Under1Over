@@ -59,6 +59,7 @@ import { ChallengeSystem } from './systems/ChallengeSystem.js';
 import { NeuralImplantSystem } from './systems/NeuralImplantSystem.js';
 import { TrainingAreaSystem } from './systems/TrainingAreaSystem.js';
 import { ComputeSystem } from './systems/ComputeSystem.js';
+import { warmShaderCache, uploadGlbBuffers } from './scene/shaderWarm.js';
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
 
@@ -288,6 +289,7 @@ const hud = new HUD(
   { bosses: bossSystem, expedition, challenges, implant: neuralImplant }
 );
 hud.trainingAreas = trainingAreas; // training console panel + chamber overlay
+hud.combatSim = combatSim;         // sparring-rig indicator (STR/DEF progress)
 const combatUI = new CombatUI(
   combatSystem, statsSystem, entityManager, player, inventorySystem, ppSystem, sceneManager
 );
@@ -552,6 +554,8 @@ const ZONE_LORE = {
   landingSite: 'theLanding', mine: 'theMine', depths: 'theDepths',
   verdantMaw: 'theMaw', lagoonCoast: 'theCoast', frozenTundra: 'theTundra',
   glacialHollow: 'theHollow', meltwaterRift: 'theRift', atlantis: 'theSunkenCity',
+  labyrinth: 'theLabyrinth',
+  cinderforge: 'theCinderforge',
   spaceship: 'theShip',
   homeSylva: 'denSylva', homeBram: 'lodgeBram', homeSprig: 'burrowSprig',
 };
@@ -1363,8 +1367,10 @@ function gameLoop(now) {
     const rawFadeDelta = Math.min((now - lastTime) / 1000, 0.1);
     if (_zoneFadePhase === 'out') {
       if (_zoneFade >= 1) {
-        // The cover painted fully opaque on the previous frame — the heavy
-        // switch (and its compile hitch) is now genuinely invisible.
+        // The cover painted fully opaque on the previous frame — the switch
+        // (build + arrival-view warm render) runs now, genuinely invisible;
+        // the rest of the zone's shaders compile in the background on the
+        // driver's parallel threads (see zoneManager's warm-up comment).
         if (_pendingZone) {
           switchZone(_pendingZone, _pendingSpawn);
           _pendingZone = null;
@@ -1637,6 +1643,13 @@ function gameLoop(now) {
   // Field auto-combat retired — combat automation lives in the Spaceship
   // sparring rig (CombatSimSystem); real fights stay manual.
   combatSim.update(delta);
+  // Sparring footwork — the character drills in place while standing at the
+  // live rig (getCombatSimPos() is null outside the Spaceship).
+  {
+    const simRig = env.getCombatSimPos();
+    player.trainingPose = !!(combatSim.enabled && simRig &&
+      Math.hypot(player.position.x - simRig.x, player.position.z - simRig.z) < 3.0);
+  }
   minigame.update(delta);
   mathematician.update(delta);
   expedition.update(delta);
@@ -1746,7 +1759,20 @@ function gameLoop(now) {
   // but the accessible check keeps a clipped-through crossing from firing.
   if (!_pendingZone && !player.isInCombat) {
     for (const portal of env.getPortals()) {
-      if (portal.sealed || portal.noGate || !portal.targetZone) continue;
+      if (portal.sealed || !portal.targetZone) continue;
+      if (portal.noGate) {
+        // Walk-activated doors (portal.walkIn — the Starwing's bay): stepping
+        // inside triggerR fires the switch itself. Armed only after the player
+        // has been outside the radius, so spawning near the door can't loop.
+        if (!portal.walkIn) continue;
+        const dist = player.position.distanceTo(portal.position);
+        if (dist > portal.triggerR + 1.0) portal._walkInArmed = true;
+        else if (dist < portal.triggerR && portal._walkInArmed && portal.accessible !== false) {
+          _pendingZone = portal.targetZone;
+          _pendingSpawn = portal.spawnOverride || null;
+        }
+        continue;
+      }
       const crossed = updatePortalPass(
         portal, player.position.x, player.position.z, player.prevX, player.prevZ
       );
@@ -1853,6 +1879,9 @@ function gameLoop(now) {
   hud.update(now);
 
   sceneManager.render();
+  // One background texture pre-upload per frame — first zone visits stop
+  // paying texture-upload stalls (queued once at boot from the GLB cache).
+  sceneManager.tickTexturePreload(1);
 }
 
 sceneManager.renderer.setAnimationLoop(gameLoop);
@@ -1863,11 +1892,19 @@ sceneManager.renderer.setAnimationLoop(gameLoop);
 // Hard 6 s cap: a missing/broken model must never hang boot.
 {
   const bootOverlay = document.getElementById('boot-overlay');
-  if (bootOverlay) {
-    const cap = new Promise(res => setTimeout(res, 6000));
-    Promise.race([Promise.allSettled([env._modelsReady, playerModelReady]), cap]).then(() => {
+  const cap = new Promise(res => setTimeout(res, 6000));
+  Promise.race([Promise.allSettled([env._modelsReady, playerModelReady]), cap]).then(() => {
+    // Zone-switch warm-up, boot half (see js/scene/shaderWarm.js): while the
+    // overlay still covers first paint, push every GLB's buffers + textures
+    // to the GPU in one hidden render, then kick the shader-program matrix
+    // (material families × light buckets) compiling on the driver's parallel
+    // threads. First zone visits stop paying upload + compile stalls.
+    if (env._glb) uploadGlbBuffers(sceneManager.renderer, env._glb);
+    sceneManager.queueTexturePreload(env._glb || {});
+    warmShaderCache(sceneManager.renderer, sceneManager.camera);
+    if (bootOverlay) {
       bootOverlay.style.opacity = '0';
       setTimeout(() => bootOverlay.remove(), 500);
-    });
-  }
+    }
+  });
 }

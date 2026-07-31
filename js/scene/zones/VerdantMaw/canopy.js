@@ -117,13 +117,15 @@ const LOOP_LINKS = [
 ];
 export const LOOP_BRIDGES = LOOP_LINKS.map(([a, b]) => bridgeBetween(a, b));
 
-// ── The River Expanse — the corridor continues north over four rivers ────────
+// ── The River Expanse — the corridor continues north over ONE snaking river ──
 // (owner request 2026-07-27: corridor → river crossing → ramp + corridor on
-// the far side, repeated three more times.) Each band holds an UNCROSSABLE
-// river — a ground collision chain under the span makes the canopy bridge the
-// only way over — then a crossing pad, a second pad, and a Root Spire: a
-// climbable mini-trunk (helix ramp, mossy crown platform) so every far bank
-// keeps its own ground access. The chain ends on Riversend Crown.
+// the far side, repeated three more times; owner request 2026-07-29: "Instead
+// of multiple rivers, make it a snakey river.") Each band's UNCROSSABLE
+// crossing keeps its original sine course through the corridor, but the four
+// courses are now one continuous serpentine — see RIVER_PATH below. Per band:
+// the crossing, a crossing pad, a second pad, and a Root Spire: a climbable
+// mini-trunk (helix ramp, mossy crown platform) so every far bank keeps its
+// own ground access. The chain ends on Riversend Crown.
 const disc = (x, z, r, y) => ({ kind: 'disc', x, z, r, y });
 
 // Root Spire walkable numbers — MIRRORED by Assets/3D/VerdantMaw/build_spire.py.
@@ -152,13 +154,100 @@ export const EXPANSE_BANDS = [
 ];
 export const RIVERS = EXPANSE_BANDS.map(b => b.river);
 
-/** River centerline z at a given x (the wavy course, shared by visual + collision). */
+/** Crossing centerline z at a given x (the wavy course, shared by visual + collision). */
 export const riverZAt = (river, x) => river.z + river.amp * Math.sin(x * river.wave + river.phase);
-/** Sampled centerline points [x, z] between x0..x1. */
-export function riverPoints(river, x0, x1, step) {
+
+// ── The snake — the four crossings joined into ONE serpentine river ──────────
+// The crossings keep their exact sine courses through the corridor (|x| ≤
+// RIVER_XJ, so every pad, bridge, spire and keep-out built against them still
+// holds), and hairpin bends in the flank jungle join them tail-to-head:
+// in from the eastern jungle across band 1, hairpin west, back east across
+// band 2, hairpin east, across band 3, hairpin west, out east past band 4 —
+// the player meets the same river four times. Apexes and tails sit ON the
+// ground plane (ZONE_BOUNDS x ±40 — the first cut overshot to ±42..46 and
+// the lit ribbon floated over the void); the flanks stay sealed because the
+// barrier chain WIDENS through the bends (r 2.6 → 3.3 past |x| 28), covering
+// the whole clamp-side strip (getPlayerBounds: ±39). Each band pocket stays
+// bridge-only — the walkableSurfaces topology test BFS-proves it.
+export const RIVER_XJ = 19; // crossing ↔ hairpin handoff |x|
+const RIVER_TAIL_X = 40;    // both tails end exactly at the eastern plane edge
+const HAIRPINS = [          // hairpin i joins crossing i to crossing i+1
+  { side: -1, apexX: -37 },
+  { side: 1,  apexX: 37.5 },
+  { side: -1, apexX: -37 },
+];
+/** The whole course as a dense [x, z] polyline (~0.65-unit spacing). */
+export const RIVER_PATH = (() => {
   const pts = [];
-  for (let x = x0; x <= x1 + 1e-6; x += step) pts.push([x, riverZAt(river, x)]);
+  const push = (x, z) => {
+    const p = pts[pts.length - 1];
+    if (!p || Math.hypot(x - p[0], z - p[1]) > 1e-6) pts.push([x, z]);
+  };
+  const crossing = (r, x0, x1) => {
+    const n = Math.max(2, Math.round(Math.abs(x1 - x0) / 0.65));
+    for (let i = 0; i <= n; i++) {
+      const x = x0 + (x1 - x0) * i / n;
+      push(x, riverZAt(r, x));
+    }
+  };
+  // Half-ellipse from (±RIVER_XJ, zA) out to the apex and back to (±RIVER_XJ,
+  // zB): tangents at both junctions run along ±x, matching the crossings'
+  // near-flat sine ends; θ steps adapt so samples stay ~0.65 apart.
+  const hairpin = (h, zA, zB) => {
+    const xj = h.side * RIVER_XJ;
+    const a = Math.abs(h.apexX - xj), b = (zA - zB) / 2, zm = (zA + zB) / 2;
+    for (let th = Math.PI / 2; th < Math.PI * 1.5; ) {
+      push(xj - h.side * a * Math.cos(th), zm + b * Math.sin(th));
+      th += 0.65 / Math.max(1, Math.hypot(a * Math.sin(th), b * Math.cos(th)));
+    }
+    push(xj, zB);
+  };
+  crossing(RIVERS[0], RIVER_TAIL_X, -RIVER_XJ);
+  hairpin(HAIRPINS[0], riverZAt(RIVERS[0], -RIVER_XJ), riverZAt(RIVERS[1], -RIVER_XJ));
+  crossing(RIVERS[1], -RIVER_XJ, RIVER_XJ);
+  hairpin(HAIRPINS[1], riverZAt(RIVERS[1], RIVER_XJ), riverZAt(RIVERS[2], RIVER_XJ));
+  crossing(RIVERS[2], RIVER_XJ, -RIVER_XJ);
+  hairpin(HAIRPINS[2], riverZAt(RIVERS[2], -RIVER_XJ), riverZAt(RIVERS[3], -RIVER_XJ));
+  crossing(RIVERS[3], -RIVER_XJ, RIVER_TAIL_X);
   return pts;
+})();
+/** Barrier chain — circles at exact 2.35-unit arc steps along the whole
+ * course: r 2.6 through the corridor (the water is never narrower than ~2.27
+ * from the centerline), widening to 3.3 through the flank bends (|x| past 28)
+ * so the on-plane apexes still seal the clamp-side strip (±39). */
+const chainR = (x) => {
+  const s = Math.min(1, Math.max(0, (Math.abs(x) - 28) / 8));
+  return 2.6 + 0.7 * s * s * (3 - 2 * s);
+};
+export const RIVER_CHAIN = (() => {
+  const chain = [{ x: RIVER_PATH[0][0], z: RIVER_PATH[0][1], r: chainR(RIVER_PATH[0][0]) }];
+  let acc = 0;
+  for (let i = 1; i < RIVER_PATH.length; i++) {
+    const [ax, az] = RIVER_PATH[i - 1];
+    let [bx, bz] = RIVER_PATH[i];
+    let seg = Math.hypot(bx - ax, bz - az), t0 = 0;
+    while (acc + (seg - t0) >= 2.35) {
+      const t = t0 + (2.35 - acc);
+      const f = t / seg;
+      const cx = ax + (bx - ax) * f;
+      chain.push({ x: cx, z: az + (bz - az) * f, r: chainR(cx) });
+      t0 = t; acc = 0;
+    }
+    acc += seg - t0;
+  }
+  const last = RIVER_PATH[RIVER_PATH.length - 1];
+  if (acc > 0.6) chain.push({ x: last[0], z: last[1], r: chainR(last[0]) });
+  return chain;
+})();
+/** Distance from (x, z) to the river's course (min over the dense polyline —
+ * ≤ ~0.02 over the true curve distance). Keep-outs and scatters use this. */
+export function riverClearance(x, z) {
+  let best = Infinity;
+  for (const [px, pz] of RIVER_PATH) {
+    const d = Math.hypot(x - px, z - pz);
+    if (d < best) best = d;
+  }
+  return best;
 }
 
 export const SPIRE_HELIXES = EXPANSE_BANDS.map(b => spireHelix(...b.spire));
@@ -210,6 +299,30 @@ export function mawGroundHex(z) {
   }
   return s[s.length - 1][1];
 }
+// The water rides the same phase: teal in the south, jade, then gold-green by
+// the fourth crossing (Kumandra water). One stop per crossing z; the snake's
+// hairpins blend between neighbouring stops, so the single ribbon grades
+// continuously along its whole course (index.js samples this per row via
+// pathStrip's colorAt).
+const RIVER_WATER_STOPS = [
+  [-37.5, 0x1f7a99, 0x7fe8f0],
+  [-54,   0x217b8a, 0x7fe8f0],
+  [-70.5, 0x25795f, 0x9fe8c8],
+  [-87,   0x2e7a4f, 0xc8e8a0],
+];
+/** { body, core } water hexes at a given z (clamped, smoothstep between stops). */
+export function riverWaterHexAt(z) {
+  const s = RIVER_WATER_STOPS;
+  if (z >= s[0][0]) return { body: s[0][1], core: s[0][2] };
+  for (let i = 1; i < s.length; i++) {
+    if (z >= s[i][0]) {
+      const t = smoothstep01((z - s[i - 1][0]) / (s[i][0] - s[i - 1][0]));
+      return { body: lerpHex(s[i - 1][1], s[i][1], t), core: lerpHex(s[i - 1][2], s[i][2], t) };
+    }
+  }
+  return { body: s[s.length - 1][1], core: s[s.length - 1][2] };
+}
+
 const srgb1 = c => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
 /** Linear [r,g,b] for the vertex-colored ground; the band boundary wavers
  * with x so the phase never reads as a straight seam. */
@@ -290,11 +403,10 @@ export const GROUND_CIRCLES = [
   // the helix band's inner edge is the guardrail up there, Hometree-style)
   ...EXPANSE_PADS.map(p => ({ x: p.x, z: p.z, r: 0.9 })),
   ...EXPANSE_BANDS.map(b => ({ x: b.spire[0], z: b.spire[1], r: 1.55 })),
-  // River barriers — the water is NOT navigable. A chain of ground circles
-  // follows each wavy centerline with no player-sized gap (r 2.6 at step 2.4
-  // → the barrier is never narrower than 2.3 from the centerline); circles
-  // carry no y, so canopy bridges cross 7 units above them untouched.
-  ...RIVERS.flatMap(r => riverPoints(r, -43, 43, 2.4).map(([x, z]) => ({ x, z, r: 2.6 }))),
+  // River barrier — the water is NOT navigable. RIVER_CHAIN follows the whole
+  // serpentine centerline with no player-sized gap; circles carry no y, so
+  // canopy bridges cross 7 units above them untouched.
+  ...RIVER_CHAIN,
   // Emberglade: the tree's trunk + every arch pier (sky-isles add nothing —
   // they are airborne visuals only)
   { x: EMBER_TREE.x, z: EMBER_TREE.z, r: EMBER_TREE.r },

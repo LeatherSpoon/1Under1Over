@@ -30,9 +30,9 @@ export const MODEL_KEYS = Object.freeze([
   'tundraSastrugi', 'tundraSastrugiLong', 'tundraShelfWall', 'tundraRiftWall',
   'tundraIceBridge', 'tundraIceArch',
 
-  // The grounded lifter at the Landing Site — boarded through its rear cargo
-  // ramp rather than a portal — and the ridge with the mine adit cut into it.
-  'dropship', 'landMountain',
+  // The Starwing at the Landing Site — boarded through its open cargo bay
+  // rather than a portal — and the ridge with the mine adit cut into it.
+  'starwing', 'landMountain',
 
   // Glacial Hollow
   'hollowCaveMouth', 'hollowStalagmites', 'hollowIceCrystal', 'hollowFrostShroom',
@@ -53,6 +53,18 @@ export const MODEL_KEYS = Object.freeze([
   'landGrass', 'landFlowers', 'landBush', 'landLog',
   'landAdit', 'landOutcrop', 'landTent', 'landCampfire',
   'npcMara', 'npcFinch',
+
+  // The Labyrinth — ancient-stone-maze kit (walls generated from the cell map)
+  'labWallStraight', 'labArchGate', 'labMinotaur', 'labShrine', 'labFountain',
+  'labWell', 'labBrazier', 'labColumn', 'labBrokenColumn', 'labRuneStele',
+  'labGargoyle', 'labPedestal', 'labTombChest', 'labBullSkull', 'labSpikeTrap',
+  'labRubble', 'labBones', 'npcWarden', 'npcDelver',
+
+  // The Cinderforge — volcanic forge-maze kit (walls generated from the cell map)
+  'forgeWallStraight', 'forgeArchGate', 'forgeGolem', 'forgeAnvil',
+  'forgeCrucible', 'forgeVent', 'forgeBrazier', 'forgeColumn',
+  'forgeBrokenColumn', 'forgeRuneStele', 'forgeGargoyle', 'forgeIngotStack',
+  'forgeRubble',
 
   // Atlantis — drowned-city ruins, guardians, water flora
   'atlGuardianHead', 'atlTempleDome', 'atlColumn', 'atlColumnBroken',

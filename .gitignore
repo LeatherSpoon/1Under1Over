@@ -9,17 +9,17 @@ node_modules/
 .claude/settings.local.json
 *.log
 
-# Art sources — the 1024px item originals (~41MB) and their pre-cutout versions
-# (~51MB) are now TRACKED (owner call, 2026-07-28): they exist nowhere else in
-# the repo, so a clone without them cannot regenerate the 128px derivatives the
-# game serves from Assets/Inventory/icons/ (see "Item icon art" in CLAUDE.md).
-# They were previously ignored with "keep the originals backed up outside git".
+# Art sources — ~80MB of 1024px originals. The game only serves the 128px
+# derivatives in Assets/Inventory/icons/ (regenerate from these when adding art;
+# see "Item icon art" in CLAUDE.md). Keep the originals backed up outside git.
+Assets/Inventory/*.png
+Assets/Inventory/originals_with_background/
+
+# Python cache (Blender pipeline scripts)
+__pycache__/
 
 # OS junk
 Thumbs.db
 Desktop.ini
 .DS_Store
 *.blend1
-
-# Python bytecode from Blender build-script imports
-__pycache__/

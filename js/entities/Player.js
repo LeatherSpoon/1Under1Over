@@ -56,6 +56,10 @@ export class Player {
     this._gatherTarget = null; // ResourceNode
     this._gatherDuration = 0;
 
+    // Set per-frame by main.js while the Combat Sim rig trains and the player
+    // stands at it — plays the locomotion clip slowly in place (see update()).
+    this.trainingPose = false;
+
     this.group = new THREE.Group();
     this._buildMesh();
     scene.add(this.group);
@@ -218,9 +222,16 @@ export class Player {
   update(keysDown, delta, touchInput = null) {
     this._movedThisFrame = false;
     this._updateMovement(keysDown, delta, touchInput);
-    this._setMoving(this._movedThisFrame);
+    // Sparring footwork: while trainingPose is set (main.js — standing at the
+    // live Combat Sim rig) the locomotion clip runs slowly in place, so the
+    // character visibly drills instead of standing frozen.
+    const posing = this.trainingPose && !this._movedThisFrame
+      && !this.isGathering && !this.isInCombat;
+    this._setMoving(this._movedThisFrame || posing);
     if (this._movedThisFrame && this._actions?.run) {
       this._actions.run.timeScale = this._lastSpeed / RUN_CLIP_SPEED;
+    } else if (posing && this._actions?.run) {
+      this._actions.run.timeScale = 0.55;
     }
     this._mixer?.update(delta);
   }

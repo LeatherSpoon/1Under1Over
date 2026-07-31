@@ -46,6 +46,16 @@ export function addPathRibbon(env, points, opts) {
     groundColor: hexToLinear(opts.groundColor),
     stoneColor: opts.stoneColor != null ? hexToLinear(opts.stoneColor) : null,
     coreColor: opts.coreColor != null ? hexToLinear(opts.coreColor) : null,
+    // colorAt returns hex ints ({ color, groundColor, coreColor? }) — convert
+    // per row here so the pure builder stays hex-free.
+    colorAt: opts.colorAt ? (x, z) => {
+      const o = opts.colorAt(x, z);
+      return {
+        color: hexToLinear(o.color),
+        groundColor: hexToLinear(o.groundColor),
+        coreColor: o.coreColor != null ? hexToLinear(o.coreColor) : null,
+      };
+    } : null,
   });
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(data.positions, 3));

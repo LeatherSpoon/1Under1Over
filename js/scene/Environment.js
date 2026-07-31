@@ -6,7 +6,8 @@ import { ZONE_ASSETS } from './ZoneAssets.js';
 import {
   buildLandingSite, buildMine,         buildDepths,    buildVerdantMaw,
   buildLagoonCoast, buildFrozenTundra, buildSpaceship, buildWorkspace,
-  buildGlacialHollow, buildMeltwaterRift, buildAtlantis,
+  buildGlacialHollow, buildMeltwaterRift, buildAtlantis, buildLabyrinth,
+  buildCinderforge,
   buildHomeSylva, buildHomeBram, buildHomeSprig,
 } from './zones/index.js';
 import { mineWorldToCell, mineCellToWorld, isMineFloorCell } from './zones/Mine/layout.js';
@@ -259,10 +260,42 @@ export class Environment {
       loadModel('./models/Tundra_RiftWall.glb').catch(() => null),
       loadModel('./models/Tundra_IceBridge.glb').catch(() => null),
       loadModel('./models/Tundra_IceArch.glb').catch(() => null),
-      loadModel('./models/Landing_Dropship.glb').catch(() => null),
+      loadModel('./models/Landing_Starwing.glb').catch(() => null),
       loadModel('./models/Landing_Mountain.glb').catch(() => null),
-    ]).then(([treeH, treeI, treeJ, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal, ship, mossyBoulder, treeD, treeH2, shipShell, stFabricator, stOffload, stCharging, stDroneMonitor, stAscension, stMastery, stCombatRig, stTrainingConsole, stHoloPylon, shipPlant, crateStack, pipeManifold, snowPine, snowPineSquat, tundraDeadTree, iceCrystal, snowBoulder, frozenShrine, hollowCaveMouth, hollowStalagmites, hollowIceCrystal, hollowFrostShroom, hollowIceRubble, hollowMammothSkull, hollowBoneArch, mawCanopyTree, mawBanyanTree, mawFernCluster, mawPlant, mawMossIdol, mawMossBoulder, mawGlowShroom, homeSylva, homeBram, homeSprig, npcSylva, npcBram, npcSprig, furnSylvaCot, furnSylvaRack, furnSylvaTable, furnBramBench, furnBramBed, furnBramRack, furnSprigBench, furnSprigHammock, furnSprigPots, landGrass, landFlowers, landBush, landLog, landAdit, landOutcrop, landTent, landCampfire, npcMara, npcFinch, atlGuardianHead, atlTempleDome, atlColumn, atlColumnBroken, atlArchway, atlCrystalHeart, atlKelp, atlCoral, atlShipwreck, atlStele, atlBrazier, atlAmphora, atlStoneFish, atlRuinWall, pandoraHometree, pandoraCanopyPad, pandoraBranchBridge, pandoraSpiritTree, pandoraHelicoradian, pandoraPuffball, pandoraBranchBridgeLong, pandoraCanopyPad2, jungleCanopyMass, pandoraVineCurtain, landKnoll, pandoraRootGate, pandoraGreatTree, pandoraRootSpire, emberLanternTree, emberGladeArch, pandoraSkyIsle, jungleBambooGrove, jungleGoldTree, tundraSastrugi, tundraSastrugiLong, tundraShelfWall, tundraRiftWall, tundraIceBridge, tundraIceArch, dropship, landMountain]) => {
-      this._glb = { treeH, treeI, treeJ, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal, ship, mossyBoulder, treeD, treeH2, shipShell, stFabricator, stOffload, stCharging, stDroneMonitor, stAscension, stMastery, stCombatRig, stTrainingConsole, stHoloPylon, shipPlant, crateStack, pipeManifold, snowPine, snowPineSquat, tundraDeadTree, iceCrystal, snowBoulder, frozenShrine, hollowCaveMouth, hollowStalagmites, hollowIceCrystal, hollowFrostShroom, hollowIceRubble, hollowMammothSkull, hollowBoneArch, mawCanopyTree, mawBanyanTree, mawFernCluster, mawPlant, mawMossIdol, mawMossBoulder, mawGlowShroom, homeSylva, homeBram, homeSprig, npcSylva, npcBram, npcSprig, furnSylvaCot, furnSylvaRack, furnSylvaTable, furnBramBench, furnBramBed, furnBramRack, furnSprigBench, furnSprigHammock, furnSprigPots, landGrass, landFlowers, landBush, landLog, landAdit, landOutcrop, landTent, landCampfire, npcMara, npcFinch, atlGuardianHead, atlTempleDome, atlColumn, atlColumnBroken, atlArchway, atlCrystalHeart, atlKelp, atlCoral, atlShipwreck, atlStele, atlBrazier, atlAmphora, atlStoneFish, atlRuinWall, pandoraHometree, pandoraCanopyPad, pandoraBranchBridge, pandoraSpiritTree, pandoraHelicoradian, pandoraPuffball, pandoraBranchBridgeLong, pandoraCanopyPad2, jungleCanopyMass, pandoraVineCurtain, landKnoll, pandoraRootGate, pandoraGreatTree, pandoraRootSpire, emberLanternTree, emberGladeArch, pandoraSkyIsle, jungleBambooGrove, jungleGoldTree, tundraSastrugi, tundraSastrugiLong, tundraShelfWall, tundraRiftWall, tundraIceBridge, tundraIceArch, dropship, landMountain };
+      loadModel('./models/Lab_WallStraight.glb').catch(() => null),
+      loadModel('./models/Lab_ArchGate.glb').catch(() => null),
+      loadModel('./models/Lab_Minotaur.glb').catch(() => null),
+      loadModel('./models/Lab_Shrine.glb').catch(() => null),
+      loadModel('./models/Lab_Fountain.glb').catch(() => null),
+      loadModel('./models/Lab_Well.glb').catch(() => null),
+      loadModel('./models/Lab_Brazier.glb').catch(() => null),
+      loadModel('./models/Lab_Column.glb').catch(() => null),
+      loadModel('./models/Lab_BrokenColumn.glb').catch(() => null),
+      loadModel('./models/Lab_RuneStele.glb').catch(() => null),
+      loadModel('./models/Lab_Gargoyle.glb').catch(() => null),
+      loadModel('./models/Lab_Pedestal.glb').catch(() => null),
+      loadModel('./models/Lab_TombChest.glb').catch(() => null),
+      loadModel('./models/Lab_BullSkull.glb').catch(() => null),
+      loadModel('./models/Lab_SpikeTrap.glb').catch(() => null),
+      loadModel('./models/Lab_Rubble.glb').catch(() => null),
+      loadModel('./models/Lab_Bones.glb').catch(() => null),
+      loadModel('./models/Npc_Warden.glb').catch(() => null),
+      loadModel('./models/Npc_Delver.glb').catch(() => null),
+      loadModel('./models/Forge_WallStraight.glb').catch(() => null),
+      loadModel('./models/Forge_ArchGate.glb').catch(() => null),
+      loadModel('./models/Forge_Golem.glb').catch(() => null),
+      loadModel('./models/Forge_Anvil.glb').catch(() => null),
+      loadModel('./models/Forge_Crucible.glb').catch(() => null),
+      loadModel('./models/Forge_Vent.glb').catch(() => null),
+      loadModel('./models/Forge_Brazier.glb').catch(() => null),
+      loadModel('./models/Forge_Column.glb').catch(() => null),
+      loadModel('./models/Forge_BrokenColumn.glb').catch(() => null),
+      loadModel('./models/Forge_RuneStele.glb').catch(() => null),
+      loadModel('./models/Forge_Gargoyle.glb').catch(() => null),
+      loadModel('./models/Forge_IngotStack.glb').catch(() => null),
+      loadModel('./models/Forge_Rubble.glb').catch(() => null),
+    ]).then(([treeH, treeI, treeJ, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal, ship, mossyBoulder, treeD, treeH2, shipShell, stFabricator, stOffload, stCharging, stDroneMonitor, stAscension, stMastery, stCombatRig, stTrainingConsole, stHoloPylon, shipPlant, crateStack, pipeManifold, snowPine, snowPineSquat, tundraDeadTree, iceCrystal, snowBoulder, frozenShrine, hollowCaveMouth, hollowStalagmites, hollowIceCrystal, hollowFrostShroom, hollowIceRubble, hollowMammothSkull, hollowBoneArch, mawCanopyTree, mawBanyanTree, mawFernCluster, mawPlant, mawMossIdol, mawMossBoulder, mawGlowShroom, homeSylva, homeBram, homeSprig, npcSylva, npcBram, npcSprig, furnSylvaCot, furnSylvaRack, furnSylvaTable, furnBramBench, furnBramBed, furnBramRack, furnSprigBench, furnSprigHammock, furnSprigPots, landGrass, landFlowers, landBush, landLog, landAdit, landOutcrop, landTent, landCampfire, npcMara, npcFinch, atlGuardianHead, atlTempleDome, atlColumn, atlColumnBroken, atlArchway, atlCrystalHeart, atlKelp, atlCoral, atlShipwreck, atlStele, atlBrazier, atlAmphora, atlStoneFish, atlRuinWall, pandoraHometree, pandoraCanopyPad, pandoraBranchBridge, pandoraSpiritTree, pandoraHelicoradian, pandoraPuffball, pandoraBranchBridgeLong, pandoraCanopyPad2, jungleCanopyMass, pandoraVineCurtain, landKnoll, pandoraRootGate, pandoraGreatTree, pandoraRootSpire, emberLanternTree, emberGladeArch, pandoraSkyIsle, jungleBambooGrove, jungleGoldTree, tundraSastrugi, tundraSastrugiLong, tundraShelfWall, tundraRiftWall, tundraIceBridge, tundraIceArch, starwing, landMountain, labWallStraight, labArchGate, labMinotaur, labShrine, labFountain, labWell, labBrazier, labColumn, labBrokenColumn, labRuneStele, labGargoyle, labPedestal, labTombChest, labBullSkull, labSpikeTrap, labRubble, labBones, npcWarden, npcDelver, forgeWallStraight, forgeArchGate, forgeGolem, forgeAnvil, forgeCrucible, forgeVent, forgeBrazier, forgeColumn, forgeBrokenColumn, forgeRuneStele, forgeGargoyle, forgeIngotStack, forgeRubble]) => {
+      this._glb = { treeH, treeI, treeJ, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal, ship, mossyBoulder, treeD, treeH2, shipShell, stFabricator, stOffload, stCharging, stDroneMonitor, stAscension, stMastery, stCombatRig, stTrainingConsole, stHoloPylon, shipPlant, crateStack, pipeManifold, snowPine, snowPineSquat, tundraDeadTree, iceCrystal, snowBoulder, frozenShrine, hollowCaveMouth, hollowStalagmites, hollowIceCrystal, hollowFrostShroom, hollowIceRubble, hollowMammothSkull, hollowBoneArch, mawCanopyTree, mawBanyanTree, mawFernCluster, mawPlant, mawMossIdol, mawMossBoulder, mawGlowShroom, homeSylva, homeBram, homeSprig, npcSylva, npcBram, npcSprig, furnSylvaCot, furnSylvaRack, furnSylvaTable, furnBramBench, furnBramBed, furnBramRack, furnSprigBench, furnSprigHammock, furnSprigPots, landGrass, landFlowers, landBush, landLog, landAdit, landOutcrop, landTent, landCampfire, npcMara, npcFinch, atlGuardianHead, atlTempleDome, atlColumn, atlColumnBroken, atlArchway, atlCrystalHeart, atlKelp, atlCoral, atlShipwreck, atlStele, atlBrazier, atlAmphora, atlStoneFish, atlRuinWall, pandoraHometree, pandoraCanopyPad, pandoraBranchBridge, pandoraSpiritTree, pandoraHelicoradian, pandoraPuffball, pandoraBranchBridgeLong, pandoraCanopyPad2, jungleCanopyMass, pandoraVineCurtain, landKnoll, pandoraRootGate, pandoraGreatTree, pandoraRootSpire, emberLanternTree, emberGladeArch, pandoraSkyIsle, jungleBambooGrove, jungleGoldTree, tundraSastrugi, tundraSastrugiLong, tundraShelfWall, tundraRiftWall, tundraIceBridge, tundraIceArch, starwing, landMountain, labWallStraight, labArchGate, labMinotaur, labShrine, labFountain, labWell, labBrazier, labColumn, labBrokenColumn, labRuneStele, labGargoyle, labPedestal, labTombChest, labBullSkull, labSpikeTrap, labRubble, labBones, npcWarden, npcDelver, forgeWallStraight, forgeArchGate, forgeGolem, forgeAnvil, forgeCrucible, forgeVent, forgeBrazier, forgeColumn, forgeBrokenColumn, forgeRuneStele, forgeGargoyle, forgeIngotStack, forgeRubble };
       // Place GLB props for the initial zone (already built procedurally)
       this._placeGLBProps(this.currentZone);
       // Trees built before the GLBs resolved (fresh-load race) get re-skinned
@@ -332,6 +365,8 @@ export class Environment {
       case 'glacialHollow': buildGlacialHollow(this); break;
       case 'meltwaterRift': buildMeltwaterRift(this); break;
       case 'atlantis': buildAtlantis(this); break;
+      case 'labyrinth': buildLabyrinth(this); break;
+      case 'cinderforge': buildCinderforge(this); break;
       case 'spaceship':    buildSpaceship(this);    break;
       case 'workspace':    buildWorkspace(this);    break;
       case 'homeSylva':    buildHomeSylva(this);    break;
@@ -728,6 +763,8 @@ export class Environment {
       glacialHollow: 'Glacial Hollow',
       meltwaterRift: 'Meltwater Rift',
       atlantis: 'Atlantis',
+      labyrinth: 'The Labyrinth',
+      cinderforge: 'The Cinderforge',
       spaceship: 'Spaceship Interior',
       workspace: 'Workspace',
       depths: 'The Depths',
@@ -843,6 +880,29 @@ export class Environment {
         { x: 5, z: 15.5, type: 'quartz', requiredTool: 'diveTool' },
         { x: -5.5, z: 17, type: 'silver' },
         { x: 17.5, z: 4.5, type: 'silver' },
+      ];
+      // The Labyrinth — deep-vein stone: every node sits in a pocket the maze
+      // makes you earn. Coordinates are floor cells of zones/Labyrinth/layout.js.
+      case 'labyrinth': return [
+        { x: -30, z: -5, type: 'quartz', requiredTool: 'harvestBlade' },        // west run
+        { x: 25, z: -25, type: 'quartz', requiredTool: 'harvestBlade' },        // well yard
+        { x: -27, z: -18, type: 'silica', requiredTool: 'harvestBlade' },       // fountain court
+        { x: -25, z: 31.6, type: 'silver' },                                    // past the spike pit
+        { x: 30, z: -28.5, type: 'silver', richness: 2 },                       // NE tomb alcove
+        { x: 4, z: -30.5, type: 'obsidian', requiredTool: 'cryoPick', richness: 2 }, // the sanctum
+        { x: -40, z: -40, type: 'quartz', requiredTool: 'harvestBlade', richness: 2 }, // NW corner of the outer walk
+        { x: 40, z: -15, type: 'silica', requiredTool: 'harvestBlade' },        // east arc of the outer walk
+      ];
+      // The Cinderforge — forge-vein ore: the maze's pockets pay out in metal
+      // and volcanic glass. Coordinates are floor cells of
+      // zones/Cinderforge/layout.js (mirrored in cinderforgeLayout.test.js).
+      case 'cinderforge': return [
+        { x: -25, z: -30, type: 'obsidian', requiredTool: 'cryoPick', richness: 2 }, // the anvil sanctum
+        { x: 25, z: 5, type: 'obsidian', requiredTool: 'cryoPick' },            // east loop
+        { x: -15, z: 30, type: 'embermoss' },                                   // south pocket
+        { x: 15, z: -30, type: 'tungsten', requiredTool: 'cryoPick' },          // slag vault
+        { x: -25, z: 25, type: 'copper' },                                      // west loop
+        { x: 20, z: 30, type: 'quartz', requiredTool: 'harvestBlade' },         // SE pocket
       ];
       case 'spaceship': return []; // no gatherables inside the ship
       case 'workspace': return []; // no gatherables in the workspace
@@ -992,6 +1052,28 @@ export class Environment {
         { x: -15, z: 13,    archetype: 'spoonvark' },
         { x: 6, z: 18,      archetype: 'blubberfin' },
         { x: -6.5, z: -13.5, archetype: 'blubberfin' },
+      ];
+      // The Labyrinth — stone-dwellers prowling the corridors. Tight leashes:
+      // corridors are 5 units wide, so a default patrol would clip the walls.
+      // No resident boss this round — the Minotaur is a statue. For now.
+      case 'labyrinth': return [
+        { x: -20, z: 10,  archetype: 'cavecrab',    patrolR: 1.6 },
+        { x: 20, z: -5,   archetype: 'cavecrab',    patrolR: 1.6 },
+        { x: -5, z: 15,   archetype: 'scalerunner', patrolR: 1.8 },
+        { x: 25, z: 0,    archetype: 'scalerunner', patrolR: 1.6 },
+        { x: -10, z: -30, archetype: 'duneplate',   patrolR: 1.4 }, // the sanctum's warden
+        { x: -40, z: 0,   archetype: 'cavecrab',    patrolR: 1.6 }, // the long dark, west arc
+        { x: 40, z: 10,   archetype: 'scalerunner', patrolR: 1.6 }, // east arc of the outer walk
+      ];
+      // The Cinderforge — heat-hardened stone-dwellers. Tight leashes:
+      // corridors are 5 units wide, so a default patrol would clip the walls.
+      // No resident boss — the Forgemaster is a statue. For now.
+      case 'cinderforge': return [
+        { x: -15, z: 15,  archetype: 'cavecrab',    patrolR: 1.6 },
+        { x: 25, z: 0,    archetype: 'cavecrab',    patrolR: 1.6 },
+        { x: 0, z: 15,    archetype: 'scalerunner', patrolR: 1.8 },
+        { x: -30, z: -5,  archetype: 'scalerunner', patrolR: 1.6 },
+        { x: 10, z: -10,  archetype: 'duneplate',   patrolR: 1.6 }, // the crucible road
       ];
       case 'spaceship': return []; // no enemies in the ship
       case 'workspace': return []; // no enemies in the workspace
@@ -1169,7 +1251,11 @@ export class Environment {
   // the player physically passes through the energy membrane to change zones
   // (main.js runs the crossing test in js/scene/portalPass.js). `scale`
   // shrinks the whole gate for indoor placements (spaceship/workspace).
-  _addPortal(x, z, targetZone, ppRequired, label, scale = 1) {
+  // `spawnOverride` ([x, z], optional) lands the traveller at a specific
+  // point in the TARGET zone instead of its default spawn — for gate pairs
+  // that are one doorway (Labyrinth ↔ Atlantis' end chamber), same
+  // convention as _addDoorway.
+  _addPortal(x, z, targetZone, ppRequired, label, scale = 1, spawnOverride = null) {
     const group = new THREE.Group();
     group.position.set(x, 0, z);
     this.group.add(group);
@@ -1180,6 +1266,7 @@ export class Environment {
       ppRequired,
       label,
       scale,
+      spawnOverride,
       mesh: group,
       energyMat: null,   // membrane material (swirl shader), tinted by refreshPortalAccess()
       hasModel: false,
@@ -1237,7 +1324,7 @@ export class Environment {
    * collision, which stops the player at the threshold just inside the 2.5-unit
    * interact radius.
    */
-  _addCaveEntrance(x, z, targetZone, label) {
+  _addCaveEntrance(x, z, targetZone, label, opts = {}) {
     const group = new THREE.Group();
     group.position.set(x, 0, z);
     this.group.add(group);
@@ -1250,6 +1337,11 @@ export class Environment {
       energyMat: null,
       hasModel: true,   // nothing to late-attach
       noGate: true,
+      // Walk-activated doors (the Starwing's bay) fire the switch on entering
+      // triggerR — no key press. main.js arms the crossing once the player is
+      // seen outside the radius, so a spawn inside it can never insta-fire.
+      walkIn: !!opts.walkIn,
+      triggerR: opts.triggerR || 2.5,
     });
   }
 

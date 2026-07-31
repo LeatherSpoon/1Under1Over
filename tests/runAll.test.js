@@ -40,6 +40,8 @@ import './systems/sectorView.test.js';
 import './systems/biomeLayout.test.js';
 import './systems/pathRibbon.test.js';
 import './systems/walkableSurfaces.test.js';
+import './systems/labyrinthLayout.test.js';
+import './systems/cinderforgeLayout.test.js';
 import './systems/glacierSurfaces.test.js';
 import './systems/portalPass.test.js';
 import './ui/panelWiring.test.js';

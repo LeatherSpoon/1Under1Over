@@ -100,6 +100,10 @@ export const CONFIG = {
     // to the arch plaza (zones/FrozenTundra/glacier.js Z_SHELF_3 ends at −58),
     // with the aurora curtain standing beyond that.
     frozenTundra: { minX: -34, maxX: 34, minZ: -62, maxZ: 32 },
+    // The Labyrinth: the outer-walk ring (zones/Labyrinth/layout.js, 19×19
+    // cells) puts the border wall centerline at ±45; ground runs to the
+    // slabs' outer faces.
+    labyrinth: { minX: -48, maxX: 48, minZ: -48, maxZ: 48 },
   },
   WORLD_EDGE_MARGIN: 1,
   LANDING_PAD_RADIUS: 2.5,
@@ -153,6 +157,8 @@ export const CONFIG = {
     glacialHollow: 0, // sub-area of the tundra — free once you can reach the mouth
     meltwaterRift: 0, // sub-area below the hollow — free once you can reach the rift
     atlantis: 50000,  // gate marker only — the real gate is Unmaker clearance or steps
+    labyrinth: 0,     // behind Atlantis' back door — reaching Atlantis IS the gate
+    cinderforge: 0,   // below the Rift's Ember Chasm — reaching the Rift IS the gate
   },
 
   // Status effects

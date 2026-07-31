@@ -23,6 +23,26 @@ const STAT_LABELS = {
   gatherSpeed: 'Gather Speed',
 };
 
+// What one level buys — shown under each row in the stats panel. Numbers
+// mirror the derived-value getters below and their consumers (CombatSystem,
+// CraftingSystem, ExpeditionSystem); keep them in sync when a formula moves.
+const STAT_DESCS = {
+  strength: `+${CONFIG.BASE_DAMAGE} attack damage per Lv (field combat + Sim Ladder)`,
+  health: `+${CONFIG.MAX_HP_PER_LEVEL} max HP per Lv`,
+  defense: '−1 damage taken per 2 Lv · +10 Sim Ladder survivability per Lv',
+  constitution: '+5 max Energy per Lv',
+  dexterity: 'Dormant subsystem — no effect yet',
+  agility: '+5% flee chance per Lv',
+  perception: 'Dormant subsystem — no effect yet',
+  focusRate: `+${CONFIG.FP_RATE_PER_LEVEL} FP regen/s per Lv (FP fuels combat skills)`,
+  focus: `+${CONFIG.FP_PER_FOCUS_LEVEL} max FP per Lv (FP fuels combat skills)`,
+  crafting: 'Unlocks higher-tier recipes',
+  craftingSpeed: '+20% crafting speed per Lv',
+  speed: '+0.15 move speed per Lv',
+  energyCap: '+10 max Energy per Lv',
+  gatherSpeed: `+${Math.round(CONFIG.GATHER_SPEED_PER_LEVEL * 100)}% gather speed per Lv`,
+};
+
 export class StatsSystem {
   constructor() {
     this.stats = {};
@@ -43,6 +63,7 @@ export class StatsSystem {
 
   get statNames() { return STAT_NAMES; }
   get statLabels() { return STAT_LABELS; }
+  get statDescs() { return STAT_DESCS; }
 
   getStat(name) {
     return this.stats[name]?.level || 0;

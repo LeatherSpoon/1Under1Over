@@ -150,13 +150,21 @@ const _LANDING_KEEPOUT_SEGS = [
 // The Verdant Maw's canopy structure comes from the same constants the
 // walkable surfaces and the Blender export use — one source of truth.
 import { PLACEMENTS as MAW_CANOPY_PLACEMENTS, EXPANSE_BANDS as MAW_BANDS,
-         RIVERS as MAW_RIVERS, riverZAt as mawRiverZAt,
+         RIVER_PATH as MAW_RIVER_PATH, RIVER_XJ as MAW_RIVER_XJ,
+         riverClearance as mawRiverClearance,
          EMBER_TREE as MAW_EMBER_TREE, ARCH_FEET as MAW_ARCH_FEET,
          GROTTO_TRAIL as MAW_GROTTO_TRAIL } from './zones/VerdantMaw/canopy.js';
 // Same discipline for the Frozen Tundra's glacier: the risers, rift flanks,
 // spans, arch and dune field are generated from the constants that define the
 // walkable surfaces, so the ice you see is the ice you stand on.
 import { GLACIER_PROPS, SASTRUGI_FIELD } from './zones/FrozenTundra/glacier.js';
+// …and for the Labyrinth: the maze wall slabs generate from the same cell map
+// the collision chains and tests read.
+import { wallPlacements as labWallPlacements } from './zones/Labyrinth/layout.js';
+const LAB_WALL_ROWS = labWallPlacements();
+// The Cinderforge is the Labyrinth's volcanic sibling — same one-map rule.
+import { wallPlacements as forgeWallPlacements } from './zones/Cinderforge/layout.js';
+const FORGE_WALL_ROWS = forgeWallPlacements();
 
 /**
  * Jungle fill for the Maw's River Expanse (z −36..−100): dense canopy-tree /
@@ -168,7 +176,7 @@ import { GLACIER_PROPS, SASTRUGI_FIELD } from './zones/FrozenTundra/glacier.js';
 function scatterMawExpanse(seed) {
   const rng = seededRandom(seed);
   const stems = MAW_BANDS.flatMap(b => [...b.pads.map(p => [p.x, p.z, 2.6]), [b.spire[0], b.spire[1], 4.5]]);
-  const clearOfWater = (x, z) => MAW_RIVERS.every(r => Math.abs(z - mawRiverZAt(r, x)) > 4.4);
+  const clearOfWater = (x, z) => mawRiverClearance(x, z) > 4.4;
   const clearOfStems = (x, z) => stems.every(([sx, sz, sr]) => Math.hypot(x - sx, z - sz) > sr);
   const out = [];
   const put = (model, x, z, s0, s1, extra = {}) => {
@@ -211,11 +219,15 @@ function scatterMawExpanse(seed) {
 }
 
 /**
- * River-bank dressing for the four expanse rivers: mossy boulders, ferns and
- * glow shrooms hugging each bank (|Δz| 3.3..4.3 off the wavy centerline — a
- * band the flank/undergrowth scatter deliberately leaves empty), plus a few
- * midstream stones ON the centerline (visual only; the collision chain
- * already blocks the water). Sells "river" instead of "painted stripe".
+ * River-bank dressing along the snake river: mossy boulders, ferns and glow
+ * shrooms hugging the banks (3.3..4.3 off the centerline, perpendicular to
+ * the LOCAL course — a band the flank/undergrowth scatter deliberately leaves
+ * empty), plus a few midstream stones ON the centerline (visual only; the
+ * collision chain already blocks the water). The dressing follows the
+ * hairpin bends through the flank jungle, which is what sells "one river
+ * winding through the world" instead of "painted stripes". Corridor banks
+ * dress every ~4.2 units; the flank bends (|x| past the crossing handoff)
+ * roll sparser so the bend dressing doesn't double the zone's prop count.
  */
 function scatterRiverBanks(seed) {
   const rng = seededRandom(seed);
@@ -223,30 +235,40 @@ function scatterRiverBanks(seed) {
   const clearOfStems = (x, z) => stems.every(([sx, sz, sr]) => Math.hypot(x - sx, z - sz) > sr);
   const out = [];
   const put = (model, x, z, s0, s1, extra = {}) => {
+    if (Math.abs(x) > 38.5) return; // stay on the ground plane at the bends
     if (!clearOfStems(x, z)) return;
     if (out.some(e => Math.hypot(x - e.x, z - e.z) < 1.7)) return;
     out.push({ model, x: Math.round(x * 100) / 100, z: Math.round(z * 100) / 100,
       scale: Math.round((s0 + rng() * (s1 - s0)) * 100) / 100,
       rotY: Math.round(rng() * Math.PI * 2 * 100) / 100, ...extra });
   };
-  for (const r of MAW_RIVERS) {
-    const warm = r.z < -60; // rivers 3-4 sit inside the transitional phase
-    for (let x = -34; x <= 34; x += 4.2) {
-      const xx = x + (rng() - 0.5) * 2.4;
-      const side = rng() < 0.5 ? -1 : 1;
-      const zz = mawRiverZAt(r, xx) + side * (3.3 + rng() * 1.0);
-      const roll = rng();
-      if (warm && roll < 0.22) put('jungleBambooGrove', xx, zz, 0.5, 0.75, { noOutline: true });
-      else if (roll < 0.38) put('mawMossBoulder', xx, zz, 0.55, 0.85, { r: 0.5 });
-      else if (roll < 0.72) put('mawFernCluster', xx, zz, 0.8, 1.15, { noOutline: true });
-      else put('mawGlowShroom', xx, zz, 0.45, 0.7, { noOutline: true });
-    }
-    // midstream stones — two or three per river, breaking the surface
-    for (let i = 0; i < 3; i++) {
-      const xx = -30 + rng() * 60;
-      if (i === 2 && rng() < 0.4) continue;
-      put('mawMossBoulder', xx, mawRiverZAt(r, xx) + (rng() - 0.5) * 1.2, 0.45, 0.65, {});
-    }
+  const P = MAW_RIVER_PATH;
+  let acc = 0;
+  for (let i = 1; i < P.length; i++) {
+    const [ax, az] = P[i - 1], [bx, bz] = P[i];
+    acc += Math.hypot(bx - ax, bz - az);
+    if (acc < 4.2) continue;
+    acc = 0;
+    if (Math.abs(bx) > MAW_RIVER_XJ && rng() < 0.3) continue; // sparser bends (on-plane since river refine — dress them)
+    let tx = bx - ax, tz = bz - az;
+    const tl = Math.hypot(tx, tz) || 1;
+    tx /= tl; tz /= tl;
+    const along = (rng() - 0.5) * 2.4;
+    const off = (rng() < 0.5 ? -1 : 1) * (3.3 + rng() * 1.0);
+    const xx = bx + tx * along - tz * off;
+    const zz = bz + tz * along + tx * off;
+    const warm = zz < -60; // the deep half sits inside the transitional phase
+    const roll = rng();
+    if (warm && roll < 0.22) put('jungleBambooGrove', xx, zz, 0.5, 0.75, { noOutline: true });
+    else if (roll < 0.38) put('mawMossBoulder', xx, zz, 0.55, 0.85, { r: 0.5 });
+    else if (roll < 0.72) put('mawFernCluster', xx, zz, 0.8, 1.15, { noOutline: true });
+    else put('mawGlowShroom', xx, zz, 0.45, 0.7, { noOutline: true });
+  }
+  // midstream stones — a dozen along the whole course, breaking the surface
+  for (let i = 0; i < 12; i++) {
+    const k = Math.floor(rng() * P.length);
+    if (rng() < 0.25) continue;
+    put('mawMossBoulder', P[k][0] + (rng() - 0.5) * 1.2, P[k][1] + (rng() - 0.5) * 1.2, 0.45, 0.65, {});
   }
   return out;
 }
@@ -328,7 +350,6 @@ export const ZONE_ASSETS = {
   // timber mine adit for the mountain, and outcrops/logs filling the outer ring
   // that used to be bare green out to the ±39 bound.
   landingSite: [
-    { model: 'tower',   x: -7,   z: -6,  scale: 1.5,  rotY: Math.PI * 0.75, r: 0.9  },
     { model: 'crate',   x: 2,    z: 3,   scale: 0.55, rotY: 0.4,            r: 0.5  },
     { model: 'crate',   x: -2,   z: 2,   scale: 0.5,  rotY: 1.1,            r: 0.5  },
     // treeH2 = cavity-ink variant of treeH (A/B beside the pool's plain H trees)
@@ -339,15 +360,17 @@ export const ZONE_ASSETS = {
     { model: 'boulder', x: -4,   z: 7,   scale: 0.85, rotY: 0.3,            r: 0.75 },
     { model: 'boulder', x: 9,    z: 5,   scale: 0.7,  rotY: 1.9,            r: 0.75 },
     { model: 'boulder', x: -8,   z: -5,  scale: 0.65, rotY: 0.8,            r: 0.75 },
-    // The lifter the player arrived in — the site's namesake, and now the way
-    // aboard: its rear cargo ramp is down and boarding is a walk-in, so it is
-    // parked tail-toward the landing pad. Authored at true world scale
-    // (Assets/3D/LandingSite/build_dropship.py) so scale is 1.0. `r` is 0 on
-    // purpose: one circle at the hull centre would either wall off the ramp or
-    // leave the 15-unit wingspan walk-through, so the zone builder lays a real
-    // hull footprint with the ramp corridor left open (SHIP in
-    // zones/LandingSite/index.js).
-    { model: 'dropship', x: 9.0, z: -10.5, scale: 1.0, rotY: 2.45,          r: 0    },
+    // The Starwing the player arrived in (owner concept) — the site's
+    // namesake, and the way aboard: its cargo bay stands open and boarding is
+    // a walk-in, so it is parked bay-toward the landing pad. Authored at true
+    // world scale (Assets/3D/LandingSite/build_starwing.py) so scale is 1.0.
+    // `r` is 0 on purpose: one circle at the hull centre would either wall
+    // off the bay or leave the 19-unit wingspan walk-through, so the zone
+    // builder lays the real hull footprint with the bay corridor left open
+    // (SHIP in zones/LandingSite/index.js). `noOutline`: a runtime scale-hull
+    // on a big faceted delta speckles; the dark panel lines and glow strips
+    // carry its edges.
+    { model: 'starwing', x: 9.0, z: -10.5, scale: 1.0, rotY: 2.45, r: 0, noOutline: true },
     { model: 'mossyBoulder', x: -6, z: 9,   scale: 0.8, rotY: 0.7,          r: 0.8  },
     { model: 'mossyBoulder', x: 12, z: 2,   scale: 0.6, rotY: 2.4,          r: 0.65 },
     { model: 'rock',    x: 5,    z: -12, scale: 0.7,  rotY: 1.2,            r: 0.75 },
@@ -778,6 +801,136 @@ export const ZONE_ASSETS = {
     { model: 'atlCoral', x: -15.8, z: 4.2,   scale: 0.85, rotY: 1.4,  noOutline: true },
     { model: 'atlCoral', x: 7.9,   z: 10.8,  scale: 1.0,  rotY: 5.2,  noOutline: true },
     { model: 'atlCoral', x: 18,    z: 2.2,   scale: 0.9,  rotY: 0.2,  noOutline: true },
+  ],
+
+  // ── The Labyrinth ───────────────────────────────────────────────────────────
+  // The maze walls generate from zones/Labyrinth/layout.js (one source of
+  // truth with the collision chains); everything below is the furniture the
+  // corridors exist to hide. ArchGate frames carry no r — their leg circles
+  // are pushed by the zone builder so the aperture stays walkable.
+  labyrinth: [
+    // Landmarks
+    { model: 'labMinotaur', x: 0,     z: 0,     scale: 1.0,  rotY: 0,    r: 1.5 },  // faces the entry
+    { model: 'labShrine',   x: 0,     z: -31.3, scale: 1.0,  rotY: 0,    r: 1.3 },
+    { model: 'labFountain', x: -25,   z: -20,   scale: 1.0,  rotY: 0.4,  r: 1.0 },
+    { model: 'labWell',     x: 20,    z: -20,   scale: 1.0,  rotY: 1.9,  r: 1.1 },
+    { model: 'labArchGate', x: 0,     z: 10,    scale: 1.0,  rotY: 0 },              // plaza threshold
+    { model: 'labArchGate', x: -7.5,  z: -30,   scale: 1.0,  rotY: Math.PI / 2 },    // sanctum door
+    // Brazier light-posts — plaza corners, gate flanks, sanctum
+    { model: 'labBrazier', x: -4.2, z: -4.2,  scale: 1.0,  rotY: 0.3, r: 0.5 },
+    { model: 'labBrazier', x: 4.2,  z: -4.2,  scale: 0.95, rotY: 2.2, r: 0.5 },
+    { model: 'labBrazier', x: -4.2, z: 4.2,   scale: 1.0,  rotY: 4.1, r: 0.5 },
+    { model: 'labBrazier', x: 4.2,  z: 4.2,   scale: 1.05, rotY: 1.0, r: 0.5 },
+    { model: 'labBrazier', x: -2.9, z: 26.8,  scale: 1.0,  rotY: 0.6, r: 0.5 },
+    { model: 'labBrazier', x: 2.9,  z: 26.8,  scale: 0.95, rotY: 3.4, r: 0.5 },
+    { model: 'labBrazier', x: -2.6, z: -30.6, scale: 0.9,  rotY: 5.0, r: 0.5 },
+    { model: 'labBrazier', x: 2.6,  z: -30.6, scale: 0.9,  rotY: 1.6, r: 0.5 },
+    // Court dressing
+    { model: 'labColumn', x: -6.3, z: 18.6, scale: 1.0,  rotY: 0.2, r: 0.7 },
+    { model: 'labColumn', x: 6.3,  z: 18.6, scale: 0.97, rotY: 2.8, r: 0.7 },
+    { model: 'labColumn', x: -8.2, z: -1,   scale: 1.0,  rotY: 1.1, r: 0.7 },
+    { model: 'labColumn', x: 8.2,  z: -1,   scale: 0.95, rotY: 4.5, r: 0.7 },
+    { model: 'labPedestal', x: 5.2, z: 4.6,          scale: 1.0, rotY: -0.6, r: 0.6 },
+    { model: 'labBullSkull', x: 5.2, z: 4.6, y: 1.31, scale: 1.0, rotY: -0.6 },      // mounted trophy
+    { model: 'labGargoyle', x: -3.6, z: -32, scale: 1.0,  rotY: 0, r: 0.8 },
+    { model: 'labGargoyle', x: 3.6,  z: -32, scale: 1.0,  rotY: 0, r: 0.8 },
+    // Waymark steles at the junctions
+    { model: 'labRuneStele', x: 4,     z: 16.2,  scale: 1.0,  rotY: 0.4, r: 0.4 },
+    { model: 'labRuneStele', x: -21.4, z: 13.6,  scale: 0.95, rotY: 2.1, r: 0.4 },
+    { model: 'labRuneStele', x: 24.2,  z: -29.2, scale: 1.0,  rotY: 4.3, r: 0.4 },
+    // Ruin storytelling — fallen columns, the sprung pit, tombs, bones
+    { model: 'labBrokenColumn', x: -20.9, z: 10.9, scale: 1.0,  rotY: 2.2, r: 0.9 },
+    { model: 'labBrokenColumn', x: 24.5,  z: 14.2, scale: 0.95, rotY: 5.1, r: 0.9 },
+    { model: 'labSpikeTrap', x: -25, z: 30,    scale: 1.0, rotY: 0,   r: 2.0 },
+    { model: 'labTombChest', x: 30,  z: -30,   scale: 1.0, rotY: 0.4, r: 0.5 },
+    { model: 'labTombChest', x: 25,  z: -15,   scale: 1.0, rotY: 2.6, r: 0.5 },
+    { model: 'labTombChest', x: -30, z: 30.4,  scale: 1.0, rotY: 5.8, r: 0.5 },
+    { model: 'labRubble', x: -5.4,  z: -9.6,  scale: 1.0,  rotY: 0.7, noOutline: true },
+    { model: 'labRubble', x: 20.6,  z: 10.8,  scale: 0.9,  rotY: 2.9, noOutline: true },
+    { model: 'labRubble', x: -24.3, z: -5.6,  scale: 1.05, rotY: 4.4, noOutline: true },
+    { model: 'labRubble', x: 15.4,  z: 24.4,  scale: 0.85, rotY: 1.3, noOutline: true },
+    { model: 'labRubble', x: -10.4, z: -24.6, scale: 0.95, rotY: 3.6, noOutline: true },
+    { model: 'labRubble', x: 29.6,  z: 0.8,   scale: 0.9,  rotY: 5.7, noOutline: true },
+    { model: 'labBones', x: -29.6, z: 10.4, scale: 1.0,  rotY: 1.1, noOutline: true },
+    { model: 'labBones', x: 20.4,  z: 29.5, scale: 0.9,  rotY: 3.8, noOutline: true },
+    { model: 'labBones', x: 19.6,  z: -30.4, scale: 1.0, rotY: 0.2, noOutline: true },
+    { model: 'labBones', x: -23.4, z: 29.2, scale: 1.1,  rotY: 2.5, noOutline: true },
+    { model: 'labBones', x: -4.6,  z: 3.8,  scale: 0.9,  rotY: 4.9, noOutline: true },
+    // The outer walk — the perimeter ring. West arc (the long dark): a stele
+    // marks the way in, a gargoyle watches the shrine's hidden back door, and
+    // the SW stub dead-ends on a chest. East arc: a looping route with its
+    // own tomb, braziers signposting the two openings.
+    { model: 'labRuneStele', x: -34,   z: 16.8,  scale: 1.0,  rotY: 1.2, r: 0.4 },   // west opening
+    { model: 'labTombChest', x: -10.4, z: 40.3,  scale: 1.0,  rotY: 3.3, r: 0.5 },   // SW stub payoff
+    { model: 'labGargoyle',  x: -22.5, z: -39.2, scale: 1.0,  rotY: 2.8, r: 0.8 },   // back-door watcher
+    { model: 'labBrokenColumn', x: -35.4, z: -39.6, scale: 1.0, rotY: 1.7, r: 0.9 },
+    { model: 'labBones',  x: -39.5, z: 24.6,  scale: 1.0,  rotY: 2.2, noOutline: true },
+    { model: 'labRubble', x: -40.4, z: 5.6,   scale: 0.95, rotY: 0.8, noOutline: true },
+    { model: 'labRubble', x: -39.6, z: -22.4, scale: 1.05, rotY: 3.1, noOutline: true },
+    { model: 'labTombChest', x: 40.4, z: -39.6, scale: 1.0,  rotY: 0.8, r: 0.5 },    // NE corner tomb
+    { model: 'labRuneStele', x: 39.2, z: 1.8,   scale: 0.95, rotY: 4.6, r: 0.4 },    // east opening
+    { model: 'labBrazier', x: 17.8, z: 39.6,  scale: 0.95, rotY: 0.9, r: 0.5 },      // south opening
+    { model: 'labBrazier', x: 22.3, z: -35.7, scale: 1.0,  rotY: 2.4, r: 0.5 },      // north opening
+    { model: 'labBrokenColumn', x: 40.1, z: 30.2, scale: 0.95, rotY: 3.9, r: 0.9 },
+    { model: 'labRubble', x: 40.2, z: 22.6,  scale: 0.9,  rotY: 5.3, noOutline: true },
+    { model: 'labRubble', x: 39.6, z: -25.4, scale: 1.0,  rotY: 1.9, noOutline: true },
+    { model: 'labBones',  x: 35.2, z: 40.3,  scale: 0.9,  rotY: 4.4, noOutline: true },
+    { model: 'labBones',  x: 30.4, z: -39.5, scale: 1.1,  rotY: 0.6, noOutline: true },
+    ...LAB_WALL_ROWS,
+  ],
+
+  // ── The Cinderforge ─────────────────────────────────────────────────────────
+  // The maze walls generate from zones/Cinderforge/layout.js (one source of
+  // truth with the collision chains); everything below is the forge furniture
+  // the corridors exist to hide. ArchGate frames carry no r — their leg
+  // circles are pushed by the zone builder so the aperture stays walkable.
+  cinderforge: [
+    // Landmarks
+    { model: 'forgeGolem',    x: 0,   z: 0,     scale: 1.0,  rotY: 0,    r: 1.5 },    // faces the entry
+    { model: 'forgeAnvil',    x: -25, z: -25,   scale: 1.0,  rotY: 0,    r: 1.3 },
+    { model: 'forgeCrucible', x: 25,  z: -15,   scale: 1.0,  rotY: 0.4,  r: 1.2 },
+    { model: 'forgeVent',     x: -30, z: 5,     scale: 1.0,  rotY: 1.9,  r: 0.9 },
+    { model: 'forgeVent',     x: -30, z: 15,    scale: 0.9,  rotY: 4.2,  r: 0.85 },
+    { model: 'forgeArchGate', x: -5,  z: -10,   scale: 1.0,  rotY: 0 },              // plaza north approach
+    { model: 'forgeArchGate', x: 10,  z: 0,     scale: 1.0,  rotY: Math.PI / 2 },    // plaza east mouth
+    { model: 'forgeArchGate', x: -25, z: -10,   scale: 1.0,  rotY: 0 },              // sanctum door
+    // Brazier light-posts — plaza corners, gate flanks, sanctum
+    { model: 'forgeBrazier', x: -4.2, z: -4.2,  scale: 1.0,  rotY: 0.3, r: 0.5 },
+    { model: 'forgeBrazier', x: 4.2,  z: -4.2,  scale: 0.95, rotY: 2.2, r: 0.5 },
+    { model: 'forgeBrazier', x: -4.2, z: 4.2,   scale: 1.0,  rotY: 4.1, r: 0.5 },
+    { model: 'forgeBrazier', x: 4.2,  z: 4.2,   scale: 1.05, rotY: 1.0, r: 0.5 },
+    { model: 'forgeBrazier', x: -2.9, z: 26.8,  scale: 1.0,  rotY: 0.6, r: 0.5 },
+    { model: 'forgeBrazier', x: 2.9,  z: 26.8,  scale: 0.95, rotY: 3.4, r: 0.5 },
+    { model: 'forgeBrazier', x: -27,  z: -21.2, scale: 0.9,  rotY: 5.0, r: 0.5 },
+    { model: 'forgeBrazier', x: -23,  z: -21.2, scale: 0.9,  rotY: 1.6, r: 0.5 },
+    // Court dressing
+    { model: 'forgeColumn', x: -6.3, z: 18.6, scale: 1.0,  rotY: 0.2, r: 0.7 },
+    { model: 'forgeColumn', x: 6.3,  z: 18.6, scale: 0.97, rotY: 2.8, r: 0.7 },
+    { model: 'forgeColumn', x: -8.2, z: -1,   scale: 1.0,  rotY: 1.1, r: 0.7 },
+    { model: 'forgeColumn', x: 8.2,  z: -1,   scale: 0.95, rotY: 4.5, r: 0.7 },
+    { model: 'forgeGargoyle', x: -28.5, z: -28.5, scale: 1.0, rotY: 0.5,  r: 0.8 },
+    { model: 'forgeGargoyle', x: -21.5, z: -28.5, scale: 1.0, rotY: -0.5, r: 0.8 },
+    // Waymark steles at the junctions
+    { model: 'forgeRuneStele', x: 4,     z: 16.2,  scale: 1.0,  rotY: 0.4, r: 0.4 },
+    { model: 'forgeRuneStele', x: -21.4, z: 13.6,  scale: 0.95, rotY: 2.1, r: 0.4 },
+    { model: 'forgeRuneStele', x: 24.2,  z: -29.2, scale: 1.0,  rotY: 4.3, r: 0.4 },
+    // Ruin storytelling — fallen columns, ingot hoards, slag and char
+    { model: 'forgeBrokenColumn', x: -20.9, z: 10.9, scale: 1.0,  rotY: 2.2, r: 0.9 },
+    { model: 'forgeBrokenColumn', x: 24.5,  z: 14.2, scale: 0.95, rotY: 5.1, r: 0.9 },
+    { model: 'forgeIngotStack', x: 26.4, z: -30.6, scale: 1.0, rotY: 0.4, r: 0.5 },  // slag vault
+    { model: 'forgeIngotStack', x: 29.2, z: -6.2,  scale: 0.9, rotY: 2.6, r: 0.5 },  // east alcove
+    { model: 'forgeIngotStack', x: 0.8,  z: -14.4, scale: 1.0, rotY: 5.8, r: 0.5 },  // north spur pool
+    { model: 'forgeRubble', x: -10.6, z: -24.4, scale: 1.0,  rotY: 0.7, noOutline: true },
+    { model: 'forgeRubble', x: 5.4,   z: -25.2, scale: 0.9,  rotY: 2.9, noOutline: true },
+    { model: 'forgeRubble', x: -19.6, z: 0.6,   scale: 1.05, rotY: 4.4, noOutline: true },
+    { model: 'forgeRubble', x: 15.4,  z: -4.6,  scale: 0.85, rotY: 1.3, noOutline: true },
+    { model: 'forgeRubble', x: 29.6,  z: 10.4,  scale: 0.95, rotY: 3.6, noOutline: true },
+    { model: 'forgeRubble', x: 15.2,  z: 29.6,  scale: 0.9,  rotY: 5.7, noOutline: true },
+    // Charred bones — the Labyrinth's bone piles read as scorched here
+    { model: 'labBones', x: -14.6, z: -9.6, scale: 0.9,  rotY: 1.1, noOutline: true },
+    { model: 'labBones', x: 20.4,  z: 15.5, scale: 1.0,  rotY: 3.8, noOutline: true },
+    { model: 'labBones', x: -25.4, z: 29.5, scale: 0.95, rotY: 0.2, noOutline: true },
+    ...FORGE_WALL_ROWS,
   ],
 
   // ── Spaceship Interior ──────────────────────────────────────────────────────
