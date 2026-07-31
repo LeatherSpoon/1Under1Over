@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { createToonMaterial, createRevealToonMaterial, addOutline, addOutlineToGroup } from './ToonMaterials.js';
+import { createToonMaterial, createRevealToonMaterial, addOutline, addOutlineToGroup, createPortalEnergyMaterial } from './ToonMaterials.js';
 import { CONFIG, getZoneBounds } from '../config.js';
 import { ZONE_ASSETS } from './ZoneAssets.js';
 import {
@@ -259,8 +259,10 @@ export class Environment {
       loadModel('./models/Tundra_RiftWall.glb').catch(() => null),
       loadModel('./models/Tundra_IceBridge.glb').catch(() => null),
       loadModel('./models/Tundra_IceArch.glb').catch(() => null),
-    ]).then(([treeH, treeI, treeJ, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal, ship, mossyBoulder, treeD, treeH2, shipShell, stFabricator, stOffload, stCharging, stDroneMonitor, stAscension, stMastery, stCombatRig, stTrainingConsole, stHoloPylon, shipPlant, crateStack, pipeManifold, snowPine, snowPineSquat, tundraDeadTree, iceCrystal, snowBoulder, frozenShrine, hollowCaveMouth, hollowStalagmites, hollowIceCrystal, hollowFrostShroom, hollowIceRubble, hollowMammothSkull, hollowBoneArch, mawCanopyTree, mawBanyanTree, mawFernCluster, mawPlant, mawMossIdol, mawMossBoulder, mawGlowShroom, homeSylva, homeBram, homeSprig, npcSylva, npcBram, npcSprig, furnSylvaCot, furnSylvaRack, furnSylvaTable, furnBramBench, furnBramBed, furnBramRack, furnSprigBench, furnSprigHammock, furnSprigPots, landGrass, landFlowers, landBush, landLog, landAdit, landOutcrop, landTent, landCampfire, npcMara, npcFinch, atlGuardianHead, atlTempleDome, atlColumn, atlColumnBroken, atlArchway, atlCrystalHeart, atlKelp, atlCoral, atlShipwreck, atlStele, atlBrazier, atlAmphora, atlStoneFish, atlRuinWall, pandoraHometree, pandoraCanopyPad, pandoraBranchBridge, pandoraSpiritTree, pandoraHelicoradian, pandoraPuffball, pandoraBranchBridgeLong, pandoraCanopyPad2, jungleCanopyMass, pandoraVineCurtain, landKnoll, pandoraRootGate, pandoraGreatTree, pandoraRootSpire, emberLanternTree, emberGladeArch, pandoraSkyIsle, jungleBambooGrove, jungleGoldTree, tundraSastrugi, tundraSastrugiLong, tundraShelfWall, tundraRiftWall, tundraIceBridge, tundraIceArch]) => {
-      this._glb = { treeH, treeI, treeJ, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal, ship, mossyBoulder, treeD, treeH2, shipShell, stFabricator, stOffload, stCharging, stDroneMonitor, stAscension, stMastery, stCombatRig, stTrainingConsole, stHoloPylon, shipPlant, crateStack, pipeManifold, snowPine, snowPineSquat, tundraDeadTree, iceCrystal, snowBoulder, frozenShrine, hollowCaveMouth, hollowStalagmites, hollowIceCrystal, hollowFrostShroom, hollowIceRubble, hollowMammothSkull, hollowBoneArch, mawCanopyTree, mawBanyanTree, mawFernCluster, mawPlant, mawMossIdol, mawMossBoulder, mawGlowShroom, homeSylva, homeBram, homeSprig, npcSylva, npcBram, npcSprig, furnSylvaCot, furnSylvaRack, furnSylvaTable, furnBramBench, furnBramBed, furnBramRack, furnSprigBench, furnSprigHammock, furnSprigPots, landGrass, landFlowers, landBush, landLog, landAdit, landOutcrop, landTent, landCampfire, npcMara, npcFinch, atlGuardianHead, atlTempleDome, atlColumn, atlColumnBroken, atlArchway, atlCrystalHeart, atlKelp, atlCoral, atlShipwreck, atlStele, atlBrazier, atlAmphora, atlStoneFish, atlRuinWall, pandoraHometree, pandoraCanopyPad, pandoraBranchBridge, pandoraSpiritTree, pandoraHelicoradian, pandoraPuffball, pandoraBranchBridgeLong, pandoraCanopyPad2, jungleCanopyMass, pandoraVineCurtain, landKnoll, pandoraRootGate, pandoraGreatTree, pandoraRootSpire, emberLanternTree, emberGladeArch, pandoraSkyIsle, jungleBambooGrove, jungleGoldTree, tundraSastrugi, tundraSastrugiLong, tundraShelfWall, tundraRiftWall, tundraIceBridge, tundraIceArch };
+      loadModel('./models/Landing_Dropship.glb').catch(() => null),
+      loadModel('./models/Landing_Mountain.glb').catch(() => null),
+    ]).then(([treeH, treeI, treeJ, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal, ship, mossyBoulder, treeD, treeH2, shipShell, stFabricator, stOffload, stCharging, stDroneMonitor, stAscension, stMastery, stCombatRig, stTrainingConsole, stHoloPylon, shipPlant, crateStack, pipeManifold, snowPine, snowPineSquat, tundraDeadTree, iceCrystal, snowBoulder, frozenShrine, hollowCaveMouth, hollowStalagmites, hollowIceCrystal, hollowFrostShroom, hollowIceRubble, hollowMammothSkull, hollowBoneArch, mawCanopyTree, mawBanyanTree, mawFernCluster, mawPlant, mawMossIdol, mawMossBoulder, mawGlowShroom, homeSylva, homeBram, homeSprig, npcSylva, npcBram, npcSprig, furnSylvaCot, furnSylvaRack, furnSylvaTable, furnBramBench, furnBramBed, furnBramRack, furnSprigBench, furnSprigHammock, furnSprigPots, landGrass, landFlowers, landBush, landLog, landAdit, landOutcrop, landTent, landCampfire, npcMara, npcFinch, atlGuardianHead, atlTempleDome, atlColumn, atlColumnBroken, atlArchway, atlCrystalHeart, atlKelp, atlCoral, atlShipwreck, atlStele, atlBrazier, atlAmphora, atlStoneFish, atlRuinWall, pandoraHometree, pandoraCanopyPad, pandoraBranchBridge, pandoraSpiritTree, pandoraHelicoradian, pandoraPuffball, pandoraBranchBridgeLong, pandoraCanopyPad2, jungleCanopyMass, pandoraVineCurtain, landKnoll, pandoraRootGate, pandoraGreatTree, pandoraRootSpire, emberLanternTree, emberGladeArch, pandoraSkyIsle, jungleBambooGrove, jungleGoldTree, tundraSastrugi, tundraSastrugiLong, tundraShelfWall, tundraRiftWall, tundraIceBridge, tundraIceArch, dropship, landMountain]) => {
+      this._glb = { treeH, treeI, treeJ, rock, barrel, crate, tower, pc, scrapper, boulder, blueBoulder, redRock, firePlant, portal, ship, mossyBoulder, treeD, treeH2, shipShell, stFabricator, stOffload, stCharging, stDroneMonitor, stAscension, stMastery, stCombatRig, stTrainingConsole, stHoloPylon, shipPlant, crateStack, pipeManifold, snowPine, snowPineSquat, tundraDeadTree, iceCrystal, snowBoulder, frozenShrine, hollowCaveMouth, hollowStalagmites, hollowIceCrystal, hollowFrostShroom, hollowIceRubble, hollowMammothSkull, hollowBoneArch, mawCanopyTree, mawBanyanTree, mawFernCluster, mawPlant, mawMossIdol, mawMossBoulder, mawGlowShroom, homeSylva, homeBram, homeSprig, npcSylva, npcBram, npcSprig, furnSylvaCot, furnSylvaRack, furnSylvaTable, furnBramBench, furnBramBed, furnBramRack, furnSprigBench, furnSprigHammock, furnSprigPots, landGrass, landFlowers, landBush, landLog, landAdit, landOutcrop, landTent, landCampfire, npcMara, npcFinch, atlGuardianHead, atlTempleDome, atlColumn, atlColumnBroken, atlArchway, atlCrystalHeart, atlKelp, atlCoral, atlShipwreck, atlStele, atlBrazier, atlAmphora, atlStoneFish, atlRuinWall, pandoraHometree, pandoraCanopyPad, pandoraBranchBridge, pandoraSpiritTree, pandoraHelicoradian, pandoraPuffball, pandoraBranchBridgeLong, pandoraCanopyPad2, jungleCanopyMass, pandoraVineCurtain, landKnoll, pandoraRootGate, pandoraGreatTree, pandoraRootSpire, emberLanternTree, emberGladeArch, pandoraSkyIsle, jungleBambooGrove, jungleGoldTree, tundraSastrugi, tundraSastrugiLong, tundraShelfWall, tundraRiftWall, tundraIceBridge, tundraIceArch, dropship, landMountain };
       // Place GLB props for the initial zone (already built procedurally)
       this._placeGLBProps(this.currentZone);
       // Trees built before the GLBs resolved (fresh-load race) get re-skinned
@@ -1163,7 +1165,11 @@ export class Environment {
     this.group.add(group);
   }
 
-  _addPortal(x, z, targetZone, ppRequired, label) {
+  // The Ancient World Gate is a VERTICAL walk-through ring (v2, 2026-07-28):
+  // the player physically passes through the energy membrane to change zones
+  // (main.js runs the crossing test in js/scene/portalPass.js). `scale`
+  // shrinks the whole gate for indoor placements (spaceship/workspace).
+  _addPortal(x, z, targetZone, ppRequired, label, scale = 1) {
     const group = new THREE.Group();
     group.position.set(x, 0, z);
     this.group.add(group);
@@ -1173,12 +1179,17 @@ export class Environment {
       targetZone,
       ppRequired,
       label,
+      scale,
       mesh: group,
-      energyMat: null,   // baked "PortalEnergy" material, tinted by refreshPortalAccess()
+      energyMat: null,   // membrane material (swirl shader), tinted by refreshPortalAccess()
       hasModel: false,
       // Kept in sync by refreshPortalAccess() so UI (the nav-aid chips) can show
       // a gate's locked state without re-deriving the unlock rules.
       accessible: ppRequired === 0,
+      // Aperture blocker while the gate is locked. refreshPortalAccess() opens
+      // it by setting r negative (never collides); the cached collision array
+      // holds this same object, so the in-place mutation propagates.
+      lockCircle: { x, z, r: ppRequired === 0 ? -1 : 1.35 * scale },
     };
     // Attaches the Ancient World Gate GLB. On the very first zone the models are
     // still loading, so this no-ops here and _attachPortalModel runs again once
@@ -1186,28 +1197,29 @@ export class Environment {
     this._attachPortalModel(portal);
 
     // Until the GLB attaches (first-zone load race, or a failed download) show a
-    // glowing floor ring so a gate is never invisible; removed on attach.
+    // glowing upright ring so a gate is never invisible; removed on attach.
     if (!portal.hasModel) {
       const fb = new THREE.Group();
       const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.9, side: THREE.DoubleSide });
-      const ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.8, 32), ringMat);
-      ring.rotation.x = -Math.PI / 2;
-      ring.position.y = 0.05;
+      const ring = new THREE.Mesh(new THREE.RingGeometry(1.15 * scale, 1.4 * scale, 40), ringMat);
+      ring.position.y = 1.5 * scale;
       fb.add(ring);
       const disc = new THREE.Mesh(
-        new THREE.CircleGeometry(0.55, 32),
-        new THREE.MeshBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.25 })
+        new THREE.CircleGeometry(1.15 * scale, 40),
+        new THREE.MeshBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.25, side: THREE.DoubleSide })
       );
-      disc.rotation.x = -Math.PI / 2;
-      disc.position.y = 0.04;
+      disc.position.y = 1.5 * scale;
       fb.add(disc);
       portal.fallbackMesh = fb;
       portal.energyMat = ringMat; // refreshPortalAccess tints the fallback too
       group.add(fb);
     }
 
-    // Block player from walking into the portal hole
-    this._collisionCircles.push({ x, z, r: 0.9 });
+    // The ring's footings are solid; the aperture between them is open so the
+    // player can pass through (the lockCircle above seals it while locked).
+    this._collisionCircles.push({ x: x - 1.62 * scale, z, r: 0.55 * scale });
+    this._collisionCircles.push({ x: x + 1.62 * scale, z, r: 0.55 * scale });
+    this._collisionCircles.push(portal.lockCircle);
 
     this._zonePortals.push(portal);
   }
@@ -1300,15 +1312,35 @@ export class Environment {
 
   _attachPortalModel(portal) {
     if (portal.noGate || portal.hasModel || !this._glb || !this._glb.portal) return;
-    const model = cloneModel(this._glb.portal, 1.0);
+    const model = cloneModel(this._glb.portal, portal.scale || 1);
     model.position.y = 0;
     model.traverse(n => {
-      if (n.isMesh && n.material && /PortalEnergy/i.test(n.material.name)) {
-        n.material = n.material.clone();
-        portal.energyMat = n.material;
+      if (!n.isMesh) return;
+      // The membrane gets the animated swirl shader (per-portal instance so
+      // each gate tints its own locked/unlocked colour). uTime advances via a
+      // spinner entry — cleared on zone switch alongside the portal itself.
+      if (/PortalEnergy/i.test(n.material?.name) || /PortalMembrane/i.test(n.name)) {
+        const mat = createPortalEnergyMaterial(1.5);
+        n.material = mat;
+        portal.energyMat = mat;
+        this._spinners.push({ update: (d) => { mat.uniforms.uTime.value += d; } });
+        return;
+      }
+      // The floating glyph ring spins in the gate plane (its local z axis).
+      if (/RuneRing/i.test(n.name)) {
+        this._spinners.push({ mesh: n, axis: 'z', speed: 0.3 });
+        return;
+      }
+      // Stone parts: re-shade to toon (the GLB's plain-color PBR materials
+      // render ~3x darker than the toon-tuned zone lights intend — the 1/π
+      // energy-conserving diffuse), then ink. A hull on the membrane disc
+      // would paint it solid black (thin-shell tent lesson), and glow parts
+      // never get hulls.
+      if (/^Stone/i.test(n.material?.name)) {
+        n.material = createToonMaterial(n.material.color.getHex());
+        addOutline(n, 0.04);
       }
     });
-    addOutlineToGroup(model, 0.04);
     portal.mesh.add(model);
     portal.hasModel = true;
     if (portal.fallbackMesh) {
@@ -1329,8 +1361,16 @@ export class Environment {
       const col = accessible ? 0x00ffcc : 0xff7a1a;
       const mat = portal.energyMat;
       if (mat) {
-        mat.color.setHex(col);
-        if (mat.emissive) mat.emissive.setHex(col);
+        if (mat.uniforms && mat.uniforms.uColor) {
+          mat.uniforms.uColor.value.setHex(col); // membrane swirl shader
+        } else {
+          mat.color.setHex(col);                 // pre-model fallback ring
+          if (mat.emissive) mat.emissive.setHex(col);
+        }
+      }
+      // Open/seal the walk-through aperture (r < 0 never collides).
+      if (portal.lockCircle) {
+        portal.lockCircle.r = accessible ? -1 : 1.35 * (portal.scale || 1);
       }
     }
   }
@@ -2192,38 +2232,7 @@ export class Environment {
   getRefineryStationPos() { return this._refineryStationPos || null; }
   getDrillPos() { return this._drillPos || null; }
 
-  /**
-   * Tall glowing cyan beacon placed above the return portal so mobile players
-   * can spot it from the spawn point at (0, 0).
-   */
-  _addReturnBeacon(x, z) {
-    const group = new THREE.Group();
-
-    // Tall thin pillar
-    const pillarGeo = new THREE.CylinderGeometry(0.12, 0.18, 5, 8);
-    const pillarMat = createToonMaterial(0x00ffcc);
-    const pillar = new THREE.Mesh(pillarGeo, pillarMat);
-    pillar.position.y = 2.5 + 1.5; // sit above portal ring (which is at y=1.5)
-    group.add(pillar);
-    addOutline(pillar, 0.04);
-
-    // Arrowhead cone pointing upward
-    const arrowGeo = new THREE.ConeGeometry(0.35, 0.7, 8);
-    const arrowMat = createToonMaterial(0x00ffcc);
-    const arrow = new THREE.Mesh(arrowGeo, arrowMat);
-    arrow.position.y = 2.5 + 1.5 + 2.5 + 0.35; // on top of pillar
-    group.add(arrow);
-    addOutline(arrow, 0.04);
-
-    // Floor ring to draw attention
-    const ringGeo = new THREE.TorusGeometry(1.6, 0.1, 6, 20);
-    const ringMat = createToonMaterial(0x00ffcc);
-    const ring = new THREE.Mesh(ringGeo, ringMat);
-    ring.rotation.x = Math.PI / 2;
-    ring.position.y = 0.12;
-    group.add(ring);
-
-    group.position.set(x, 0, z);
-    this.group.add(group);
-  }
+  // (_addReturnBeacon removed 2026-07-28 — the old-model-era cyan wayfinding
+  // spike impaled the new 3-unit vertical gates; the gate itself plus the
+  // off-screen nav-aid chips now carry that job.)
 }

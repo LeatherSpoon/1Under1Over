@@ -175,6 +175,10 @@ M_GLOWW = mat('Ship_GlowWarm', GLOW_W, emit=2.4)
 # the nose tapers and drops, the aft end lifts into the boom so the ramp has
 # clear air behind it — that upsweep is the C-130 cue doing structural work.
 bm = bmesh.new()
+# The cargo box stays LOW and full-section all the way aft, and the boom above
+# does the upsweep. The first pass lifted the aft stations instead, which put the
+# open rear ring — the cargo door — up in the air above the ramp hinge instead of
+# at deck level, so there was no doorway to walk into.
 STATIONS = [
     # (y, centre z, width, height, corner r)
     (NOSE_Y - 0.10, DECK_Z + 1.05, 1.20, 1.30, 0.45),
@@ -182,9 +186,8 @@ STATIONS = [
     (NOSE_Y + 1.90, DECK_Z + 1.30, 3.10, 2.90, 0.70),
     (NOSE_Y + 3.60, DECK_Z + 1.32, FUS_W, FUS_H, 0.72),
     (0.0,           DECK_Z + 1.32, FUS_W, FUS_H, 0.72),
-    (TAIL_Y - 3.40, DECK_Z + 1.32, FUS_W, FUS_H, 0.72),
-    (TAIL_Y - 1.70, DECK_Z + 1.55, 3.10, 2.80, 0.70),
-    (TAIL_Y - 0.35, DECK_Z + 2.05, 2.60, 2.35, 0.62),
+    (TAIL_Y - 2.20, DECK_Z + 1.32, FUS_W, FUS_H, 0.72),
+    (TAIL_Y - 0.30, DECK_Z + 1.30, 3.16, 2.92, 0.70),
 ]
 rings = [rounded_rect(bm, y, cz, w, h, r) for (y, cz, w, h, r) in STATIONS]
 # Nose capped; tail left OPEN — that hole is the cargo door the player walks in.
@@ -194,43 +197,61 @@ parts.append(obj_from_bm('Dropship_Fuselage', bm, [M_HULL]))
 # ── Tail boom + empennage ────────────────────────────────────────────────────
 bm = bmesh.new()
 boom = [
-    (TAIL_Y - 0.60, DECK_Z + 3.05, 2.10, 1.25, 0.40),
-    (TAIL_Y + 0.90, DECK_Z + 3.55, 1.70, 1.10, 0.36),
-    (TAIL_Y + 2.10, DECK_Z + 4.05, 1.25, 0.90, 0.30),
+    (TAIL_Y - 2.60, DECK_Z + 2.55, 2.55, 1.30, 0.44),
+    (TAIL_Y - 0.70, DECK_Z + 2.95, 2.20, 1.25, 0.40),
+    (TAIL_Y + 0.90, DECK_Z + 3.40, 1.70, 1.10, 0.36),
+    (TAIL_Y + 2.10, DECK_Z + 3.85, 1.25, 0.90, 0.30),
 ]
 loft(bm, [rounded_rect(bm, y, cz, w, h, r, n=16) for (y, cz, w, h, r) in boom],
      close_first=True, close_last=True)
 parts.append(obj_from_bm('Dropship_Boom', bm, [M_HULL]))
 
-# Vertical stabiliser (swept trailing edge) + tailplanes
+# Vertical stabiliser + T-tail. The tailplanes ride the TOP of the fin rather
+# than the boom: on the boom they intersected it in a visual jumble, and a T-tail
+# is the honest cargo-lifter answer anyway — it keeps the horizontal surfaces out
+# of the wash of a rear door that opens in flight.
 bm = bmesh.new()
-FIN_ROOT_Y, FIN_TIP_Y = TAIL_Y + 0.30, TAIL_Y + 2.35
+FIN_ROOT_Y, FIN_TIP_Y = TAIL_Y + 0.30, TAIL_Y + 2.05
 fin = [
-    [(-0.16, FIN_ROOT_Y - 1.30, DECK_Z + 3.90), (0.16, FIN_ROOT_Y - 1.30, DECK_Z + 3.90),
-     (0.16, FIN_ROOT_Y + 1.75, DECK_Z + 3.90), (-0.16, FIN_ROOT_Y + 1.75, DECK_Z + 3.90)],
-    [(-0.10, FIN_TIP_Y - 1.05, FIN_Z), (0.10, FIN_TIP_Y - 1.05, FIN_Z),
-     (0.10, FIN_TIP_Y + 0.55, FIN_Z), (-0.10, FIN_TIP_Y + 0.55, FIN_Z)],
+    [(-0.17, FIN_ROOT_Y - 1.40, DECK_Z + 3.70), (0.17, FIN_ROOT_Y - 1.40, DECK_Z + 3.70),
+     (0.17, FIN_ROOT_Y + 1.60, DECK_Z + 3.70), (-0.17, FIN_ROOT_Y + 1.60, DECK_Z + 3.70)],
+    [(-0.11, FIN_TIP_Y - 0.85, FIN_Z), (0.11, FIN_TIP_Y - 0.85, FIN_Z),
+     (0.11, FIN_TIP_Y + 0.45, FIN_Z), (-0.11, FIN_TIP_Y + 0.45, FIN_Z)],
 ]
 rings = [[bm.verts.new(p) for p in ring] for ring in fin]
 loft(bm, rings, close_first=True, close_last=True)
+# Tailplanes: mounted at the fin cap, tapered, slight anhedral toward the tips
 for sx in (-1, 1):
-    box(bm, sx * 1.75, TAIL_Y + 1.35, DECK_Z + 4.30, 3.10, 1.20, 0.20)
+    root = [(sx * 0.10, FIN_TIP_Y - 0.80, FIN_Z - 0.09), (sx * 0.10, FIN_TIP_Y + 0.40, FIN_Z - 0.09),
+            (sx * 0.10, FIN_TIP_Y + 0.40, FIN_Z + 0.09), (sx * 0.10, FIN_TIP_Y - 0.80, FIN_Z + 0.09)]
+    tip = [(sx * 2.45, FIN_TIP_Y - 0.34, FIN_Z - 0.18), (sx * 2.45, FIN_TIP_Y + 0.30, FIN_Z - 0.18),
+           (sx * 2.45, FIN_TIP_Y + 0.30, FIN_Z - 0.06), (sx * 2.45, FIN_TIP_Y - 0.34, FIN_Z - 0.06)]
+    rings = [[bm.verts.new(p) for p in r] for r in (root, tip)]
+    loft(bm, rings, close_first=True, close_last=True)
 parts.append(obj_from_bm('Dropship_Tail', bm, [M_HULL]))
 
 # ── Wings ────────────────────────────────────────────────────────────────────
 # Straight, high-mounted, slight dihedral — the shoulder wing is what stops the
 # silhouette reading as a fighter and starts it reading as a lifter.
+# Three-station loft per side (root -> mid -> tip) so the wing TAPERS in both
+# chord and thickness. The first pass lofted root straight to tip at near-equal
+# chord and 0.52 thickness, which read as a flat plank bolted to the hull.
 bm = bmesh.new()
 for sx in (-1, 1):
-    root = [(sx * 1.55, -2.25, WING_Z - 0.22), (sx * 1.55, 1.95, WING_Z - 0.22),
-            (sx * 1.55, 1.95, WING_Z + 0.30), (sx * 1.55, -2.25, WING_Z + 0.30)]
-    tipx = sx * WING_SPAN * 0.5
-    tip = [(tipx, -1.35, WING_Z + 0.62), (tipx, 1.30, WING_Z + 0.62),
-           (tipx, 1.30, WING_Z + 0.86), (tipx, -1.35, WING_Z + 0.86)]
-    rings = [[bm.verts.new(p) for p in r] for r in (root, tip)]
+    def sect(f, chord0, chord1, thick, dz):
+        x = sx * f
+        y0, y1 = -chord0, chord1
+        z = WING_Z + dz
+        return [(x, y0, z - thick), (x, y1, z - thick), (x, y1, z + thick), (x, y0, z + thick)]
+    stations = [
+        sect(1.55, 2.30, 2.00, 0.26, 0.00),
+        sect(WING_SPAN * 0.28, 1.95, 1.60, 0.20, 0.16),
+        sect(WING_SPAN * 0.50, 1.15, 0.85, 0.11, 0.40),
+    ]
+    rings = [[bm.verts.new(p) for p in s] for s in stations]
     loft(bm, rings, close_first=True, close_last=True)
     # Wingtip navigation strake
-    box(bm, tipx * 1.02, -0.05, WING_Z + 0.74, 0.16, 2.50, 0.14, mi=1)
+    box(bm, sx * WING_SPAN * 0.505, -0.15, WING_Z + 0.40, 0.13, 1.90, 0.11, mi=1)
 parts.append(obj_from_bm('Dropship_Wings', bm, [M_HULL, M_TRIM]))
 
 # ── Warp pods ────────────────────────────────────────────────────────────────
@@ -238,16 +259,32 @@ parts.append(obj_from_bm('Dropship_Wings', bm, [M_HULL, M_TRIM]))
 # grille: the FTL half of the brief, worn like engines rather than like nacelles.
 bm = bmesh.new()
 bmg = bmesh.new()
+
+
+def wing_dz(f):
+    """Local wing height at |x| = f, matching the three-station loft above, so a
+    pod hangs the same distance under the wing at either station."""
+    a, b, c = 1.55, WING_SPAN * 0.28, WING_SPAN * 0.50
+    if f <= b:
+        return 0.16 * (f - a) / (b - a)
+    return 0.16 + 0.24 * (f - b) / (c - b)
+
+
 for sx in (-1, 1):
-    for j, px in enumerate((POD_X, POD_X + 2.55)):
+    for px in (3.60, 5.95):
         x = sx * px
-        pylon_z = WING_Z + 0.30 - 0.55 * (0.35 if j else 0.0)
-        box(bm, x, 0.30, WING_Z - 0.28, 0.42, 1.70, 0.95)          # pylon
-        cyl(bm, x, -0.35, WING_Z - 1.05, 0.62, 0.70, 3.90)          # pod body
-        cyl(bm, x, -2.34, WING_Z - 1.05, 0.50, 0.62, 0.20, mi=1)    # intake lip
-        cyl(bmg, x, -2.44, WING_Z - 1.05, 0.44, 0.44, 0.10)         # intake glow
-        # Outboard glow grille along the pod flank
-        box(bmg, x + sx * 0.63, -0.45, WING_Z - 1.05, 0.06, 2.40, 0.26)
+        wz = WING_Z + wing_dz(px)
+        pod_z = wz - 0.92
+        box(bm, x, 0.10, wz - 0.48, 0.38, 1.55, 0.86)               # pylon
+        cyl(bm, x, -0.55, pod_z, 0.60, 0.68, 3.55)                  # pod body
+        cyl(bm, x, -2.36, pod_z, 0.50, 0.60, 0.16, mi=1)            # intake lip
+        cyl(bmg, x, -2.46, pod_z, 0.44, 0.44, 0.09)                 # intake glow
+        # Exhaust ring at the back of the pod. The first pass ran a long straight
+        # glow strip down the pod FLANK; against a tapering cylinder its ends
+        # punched out through the hull as white shards, so the glow now lives on
+        # the two faces where an engine actually shows light.
+        cyl(bm, x, 1.28, pod_z, 0.62, 0.52, 0.18, mi=1)             # exhaust bell
+        cyl(bmg, x, 1.40, pod_z, 0.42, 0.42, 0.09)                  # exhaust glow
 parts.append(obj_from_bm('Dropship_Pods', bm, [M_HULL, M_BRASS]))
 parts.append(obj_from_bm('Dropship_PodGlow', bmg, [M_GLOWC]))
 
@@ -266,7 +303,7 @@ parts.append(obj_from_bm('Dropship_Deflector', bm, [M_GLOWW]))
 # ── Sponsons, gear, hull banding ─────────────────────────────────────────────
 bm = bmesh.new()
 for sx in (-1, 1):
-    box(bm, sx * (FUS_W * 0.5 + 0.16), 0.55, DECK_Z + 0.10, 0.62, 4.30, 1.05)   # sponson
+    box(bm, sx * (FUS_W * 0.5 + 0.10), 0.75, DECK_Z - 0.18, 0.50, 3.60, 0.82)   # sponson
 parts.append(obj_from_bm('Dropship_Sponsons', bm, [M_TEAL]))
 
 bm = bmesh.new()
@@ -305,18 +342,35 @@ for i in range(6):
         rw * 1.86, 0.13, 0.05, mi=1, rot=-math.atan2(DECK_Z, RAMP_LEN))
 parts.append(obj_from_bm('Dropship_Ramp', bm, [M_HULL, M_TRIM]))
 
-# Hold floor + a dark interior backing, so looking up the open ramp reads as a
-# bay rather than straight through the model.
+# The hold itself. The fuselage is a single-skinned loft with backface culling
+# on, so without a liner you would look straight THROUGH the ship from behind.
+# This is an inward-facing tube running from the open rear ring forward to a
+# bulkhead, which turns the doorway into visible depth: a dark bay with a lit
+# floor, which is what makes the ramp read as somewhere to walk rather than a
+# decal on the back of a model.
 bm = bmesh.new()
-box(bm, 0.0, TAIL_Y - 2.30, DECK_Z - 0.09, FUS_W - 0.60, 4.30, 0.18)
-box(bm, 0.0, TAIL_Y - 4.35, DECK_Z + 1.15, FUS_W - 0.62, 0.20, 2.40, mi=1)
-parts.append(obj_from_bm('Dropship_Hold', bm, [M_HULL, M_TRIM]))
+BAY_FRONT = TAIL_Y - 4.60
+liner = [
+    (BAY_FRONT,     DECK_Z + 1.28, FUS_W - 0.34, FUS_H - 0.30, 0.62),
+    (TAIL_Y - 2.20, DECK_Z + 1.28, FUS_W - 0.30, FUS_H - 0.28, 0.64),
+    (TAIL_Y - 0.32, DECK_Z + 1.26, 3.16 - 0.30, 2.92 - 0.28, 0.62),
+]
+rings = [rounded_rect(bm, y, cz, w, h, r, n=20) for (y, cz, w, h, r) in liner]
+loft(bm, rings, close_first=True, close_last=False)
+bmesh.ops.reverse_faces(bm, faces=bm.faces)   # face inward — this is an interior
+parts.append(obj_from_bm('Dropship_Bay', bm, [M_TRIM]))
+
+# Cargo deck plating, sitting at exactly DECK_Z where the ramp hinges.
+bm = bmesh.new()
+box(bm, 0.0, (BAY_FRONT + TAIL_Y - 0.32) * 0.5, DECK_Z - 0.08,
+    FUS_W - 0.70, (TAIL_Y - 0.32) - BAY_FRONT, 0.16)
+parts.append(obj_from_bm('Dropship_Hold', bm, [M_HULL]))
 
 # Bay throat glow — reads as "there is light in there, go in"
 bm = bmesh.new()
-box(bm, 0.0, TAIL_Y - 0.45, DECK_Z + 2.42, 1.85, 0.10, 0.10)
+box(bm, 0.0, TAIL_Y - 0.50, DECK_Z + 2.30, 2.10, 0.10, 0.10)
 for sx in (-1, 1):
-    box(bm, sx * 1.18, TAIL_Y - 1.90, DECK_Z + 0.12, 0.08, 3.10, 0.07)
+    box(bm, sx * 1.16, TAIL_Y - 2.30, DECK_Z + 0.05, 0.07, 3.60, 0.06)
 parts.append(obj_from_bm('Dropship_BayGlow', bm, [M_GLOWW]))
 
 # ── Baked outline hull ───────────────────────────────────────────────────────

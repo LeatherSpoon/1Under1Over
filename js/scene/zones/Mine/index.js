@@ -837,49 +837,10 @@ function _buildBreach(env, rng) {
     env.group.add(rune);
   }
 
-  // World gates — stone arches facing the Great Ring. All five stand on the one
-  // row-21 gallery, so the two end gates face inward like their neighbours.
-  _buildWorldGate(env, MINE_ZONE_PORTALS.atlantis,     Math.PI / 2);  // west end faces +x
-  _buildWorldGate(env, MINE_ZONE_PORTALS.verdantMaw,   Math.PI / 2);  // west gate faces +x
-  _buildWorldGate(env, MINE_ZONE_PORTALS.frozenTundra, -Math.PI / 2); // east gate faces -x
-  _buildWorldGate(env, MINE_ZONE_PORTALS.lagoonCoast,  -Math.PI / 2); // east end faces -x
-}
-
-// A rough-hewn arch around a world portal. rotY orients the opening.
-function _buildWorldGate(env, pos, rotY) {
-  const g = new THREE.Group();
-  const stoneMat = createToonMaterial(ALIEN_STONE);
-
-  for (const px of [-1.7, 1.7]) {
-    const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.8, 3.5, 0.8), stoneMat);
-    pillar.position.set(px, 1.75, 0);
-    pillar.castShadow = true;
-    g.add(pillar);
-    const cap = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.4, 1.0), stoneMat);
-    cap.position.set(px, 3.65, 0);
-    g.add(cap);
-  }
-  const lintel = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.65, 0.9), stoneMat);
-  lintel.position.set(0, 4.1, 0);
-  lintel.castShadow = true;
-  g.add(lintel);
-  const keyGlyph = new THREE.Mesh(
-    new THREE.OctahedronGeometry(0.16, 0),
-    new THREE.MeshBasicMaterial({ color: RUNE_VIOLET })
-  );
-  keyGlyph.position.set(0, 4.75, 0);
-  g.add(keyGlyph);
-  addOutlineToGroup(g, 0.035);
-
-  g.position.set(pos.x, 0, pos.z);
-  g.rotation.y = rotY;
-  env.group.add(g);
-
-  // Pillar collision (rotate the offsets with the arch)
-  const cos = Math.cos(rotY), sin = Math.sin(rotY);
-  for (const px of [-1.7, 1.7]) {
-    env._collisionCircles.push({ x: pos.x + px * cos, z: pos.z - px * sin, r: 0.55 });
-  }
+  // (The old procedural rough-hewn arches around each gate were removed
+  // 2026-07-28: the vertical Ancient World Gate GLB carries its own
+  // architecture, and the arches' pillars + collision sat right on the new
+  // walk-through axis.)
 }
 
 // ── Scattered stalagmites and glow crystals ──────────────────────────────────

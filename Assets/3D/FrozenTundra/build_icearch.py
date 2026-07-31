@@ -65,6 +65,32 @@ def finish(bm, name, material, parts, recalc=False):
     return ob
 
 
+
+def rock_into(bm, cx, cy, cz, s, rnd, subdiv=2):
+    """A noise-displaced rock blob merged into `bm`.
+
+    create_icosphere(subdivisions=1) is 80 flat triangles, and at the game's
+    camera every one of them is legible — the owner flagged exactly this ("I
+    can see the primitive triangles"). Three subdivisions plus per-vertex
+    displacement gives a silhouette that reads as broken ice rather than a
+    faceted ball. Two subdivisions, not three: these are ~20px on screen and
+    the shelf wall carrying them is instanced ~30x across the zone."""
+    tmp = bmesh.new()
+    bmesh.ops.create_icosphere(tmp, subdivisions=subdiv, radius=s)
+    ax, ay, az = rnd.uniform(0, 9), rnd.uniform(0, 9), rnd.uniform(0, 9)
+    sx, sy, sz = (0.72 + rnd.random() * 0.6, 0.72 + rnd.random() * 0.6, 0.62 + rnd.random() * 0.5)
+    for v in tmp.verts:
+        n = (math.sin(v.co.x * 3.1 + ax) * math.cos(v.co.y * 2.7 + ay)
+             + 0.55 * math.sin(v.co.z * 5.3 + az) * math.cos(v.co.x * 4.1 + ay)
+             + 0.30 * math.sin(v.co.y * 8.7 + az))
+        v.co *= 1.0 + 0.17 * n
+        v.co.x *= sx; v.co.y *= sy; v.co.z *= sz
+        v.co.x += cx; v.co.y += cy; v.co.z += cz
+    me = bpy.data.meshes.new('tmp')
+    tmp.to_mesh(me); tmp.free()
+    bm.from_mesh(me); bpy.data.meshes.remove(me)
+
+
 # ── The sweep ────────────────────────────────────────────────────────────────
 def path_at(t):
     """Centreline point. sin^0.72 keeps the legs steep and the crown broad."""
@@ -230,14 +256,7 @@ try:
             a = rnd.uniform(0, 2 * math.pi)
             d = rnd.uniform(1.4, 3.4)
             s = rnd.uniform(0.20, 0.62)
-            tmp = bmesh.new()
-            bmesh.ops.create_icosphere(tmp, subdivisions=1, radius=s)
-            for v in tmp.verts:
-                v.co.x += foot + math.cos(a) * d
-                v.co.y += math.sin(a) * d * 0.7
-                v.co.z += s * 0.4
-            me = bpy.data.meshes.new('tmp'); tmp.to_mesh(me); tmp.free()
-            bmr.from_mesh(me); bpy.data.meshes.remove(me)
+            rock_into(bmr, foot + math.cos(a) * d, math.sin(a) * d * 0.7, s * 0.4, s, rnd)
     bmr.normal_update()
     finish(bmr, 'IceArch_Rubble', ICE, parts)
 

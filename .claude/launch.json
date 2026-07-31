@@ -7,6 +7,13 @@
       "runtimeArgs": ["serve", "."],
       "port": 8080,
       "autoPort": true
+    },
+    {
+      "name": "machine-worktree",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", ".worktrees/machine-phase1-2"],
+      "port": 8081,
+      "autoPort": true
     }
   ]
 }

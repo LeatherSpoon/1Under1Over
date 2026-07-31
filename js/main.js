@@ -1,6 +1,7 @@
 import { SceneManager } from './scene/SceneManager.js';
 import { Environment } from './scene/Environment.js';
 import { resolveHeight } from './scene/walkableSurfaces.js';
+import { updatePortalPass } from './scene/portalPass.js';
 import { LootPopups } from './scene/LootPopups.js';
 import { Player, playerModelReady } from './entities/Player.js';
 import { EntityManager } from './entities/EntityManager.js';
@@ -1347,11 +1348,40 @@ window.__debugSnapshot = () => {
 
 
 
+// Zone-transition fade: 'out' covers the screen, the switch runs on the fully
+// covered frame (its build cost + first-render shader compiles land behind the
+// cover), then 'in' reveals the new zone. Driven per-frame so a long covered
+// frame can't desync a CSS animation.
+const _zoneFadeEl = document.getElementById('zone-fade');
+let _zoneFade = 0;        // 0 = clear, 1 = opaque
+let _zoneFadePhase = null; // null | 'out' | 'in'
+const ZONE_FADE_OUT_S = 0.13, ZONE_FADE_IN_S = 0.24;
+
 function gameLoop(now) {
-  if (_pendingZone) {
-    switchZone(_pendingZone, _pendingSpawn);
-    _pendingZone = null;
-    _pendingSpawn = null;
+  if (_pendingZone && !_zoneFadePhase) _zoneFadePhase = 'out';
+  if (_zoneFadePhase) {
+    const rawFadeDelta = Math.min((now - lastTime) / 1000, 0.1);
+    if (_zoneFadePhase === 'out') {
+      if (_zoneFade >= 1) {
+        // The cover painted fully opaque on the previous frame — the heavy
+        // switch (and its compile hitch) is now genuinely invisible.
+        if (_pendingZone) {
+          switchZone(_pendingZone, _pendingSpawn);
+          _pendingZone = null;
+          _pendingSpawn = null;
+        }
+        _zoneFadePhase = 'in';
+      } else {
+        _zoneFade = Math.min(1, _zoneFade + rawFadeDelta / ZONE_FADE_OUT_S);
+      }
+    } else {
+      _zoneFade = Math.max(0, _zoneFade - rawFadeDelta / ZONE_FADE_IN_S);
+      if (_zoneFade <= 0) _zoneFadePhase = null;
+    }
+    if (_zoneFadeEl) {
+      _zoneFadeEl.style.display = _zoneFade > 0 ? 'block' : 'none';
+      _zoneFadeEl.style.opacity = _zoneFade;
+    }
   }
 
   const rawDelta = (now - lastTime) / 1000;
@@ -1709,6 +1739,24 @@ function gameLoop(now) {
     }
   }
 
+  // Walk-through gates: physically crossing the vertical membrane fires the
+  // transition — no key press. Runs for EVERY gate each frame (not just the
+  // prompt's nearest) so the armed-crossing state in portalPass.js stays
+  // continuous; locked gates are sealed by their lockCircle collision anyway,
+  // but the accessible check keeps a clipped-through crossing from firing.
+  if (!_pendingZone && !player.isInCombat) {
+    for (const portal of env.getPortals()) {
+      if (portal.sealed || portal.noGate || !portal.targetZone) continue;
+      const crossed = updatePortalPass(
+        portal, player.position.x, player.position.z, player.prevX, player.prevZ
+      );
+      if (crossed && portal.accessible) {
+        _pendingZone = portal.targetZone;
+        _pendingSpawn = portal.spawnOverride || null;
+      }
+    }
+  }
+
   // Zone portals
   let showingPortalHint = false;
   if (!player.isInCombat && !player.isGathering && !_gatherType && !showingHint) {
@@ -1729,7 +1777,10 @@ function gameLoop(now) {
           || bossSystem.hasClearance(portal.targetZone);
         
         if (zoneUnlocked) {
-          hud.showInteractHint(`[E/ACT] Enter ${portal.label}`);
+          // Real gates are walked through; door-style entries still take [E].
+          hud.showInteractHint(portal.noGate
+            ? `[E/ACT] Enter ${portal.label}`
+            : `Walk through — ${portal.label}`);
           if ((keysDown.has('KeyE') || touchInput.actionPressed) && _actionCooldown <= 0) {
             _pendingZone = portal.targetZone;
             _pendingSpawn = portal.spawnOverride || null;

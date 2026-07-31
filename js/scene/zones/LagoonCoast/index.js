@@ -59,7 +59,6 @@ export function build(env) {
 
   // ── Connections ───────────────────────────────────────────────────────────
   env._addPortal(0, -18, 'mine', 0, 'Mine Hub');
-  env._addReturnBeacon(0, -18);
 }
 
 function _addPalmTree(env, x, z) {

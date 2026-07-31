@@ -322,5 +322,4 @@ export function build(env) {
 
   // ── Connections ───────────────────────────────────────────────────────────
   env._addPortal(0, -16, 'mine', 0, 'Mine Hub');
-  env._addReturnBeacon(0, -16);
 }

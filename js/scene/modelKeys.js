@@ -30,6 +30,10 @@ export const MODEL_KEYS = Object.freeze([
   'tundraSastrugi', 'tundraSastrugiLong', 'tundraShelfWall', 'tundraRiftWall',
   'tundraIceBridge', 'tundraIceArch',
 
+  // The grounded lifter at the Landing Site — boarded through its rear cargo
+  // ramp rather than a portal — and the ridge with the mine adit cut into it.
+  'dropship', 'landMountain',
+
   // Glacial Hollow
   'hollowCaveMouth', 'hollowStalagmites', 'hollowIceCrystal', 'hollowFrostShroom',
   'hollowIceRubble', 'hollowMammothSkull', 'hollowBoneArch',

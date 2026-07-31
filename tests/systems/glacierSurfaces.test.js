@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { STEP_UP, resolveHeight } from '../../js/scene/walkableSurfaces.js';
 import {
-  SURFACES, SHELF_1, SHELF_2, SHELF_3,
+  SURFACES, GLACIER_COLLIDERS, SHELF_1, SHELF_2, SHELF_3,
   RAMPS_1, RAMPS_2, RAMPS_3, RIFT_DESCENT, BRIDGES,
   BRIDGE_RIFT_S, BRIDGE_RIFT_N, BRIDGE_WEST,
   RIFT_MAIN, RIFT_WEST, ASCENT_ROUTE,
@@ -53,6 +53,84 @@ test('nothing below ground is reachable — this is why the glacier is raised', 
   for (const s of SURFACES) {
     const ys = s.kind === 'ramp' ? [s.y0, s.y1] : [s.y];
     for (const y of ys) assert.ok(y >= 0, `surface at y ${y} would be unreachable`);
+  }
+});
+
+// ── The glacier is SOLID at ground level ─────────────────────────────────────
+// The defect these guard: resolveHeight always offers ground (y 0), and the
+// ground plane spans the whole zone, so a shelf blocks NOTHING at y 0. Before
+// the collision chains you could walk due north from the portal straight
+// through the riser and on under the entire glacier.
+
+const PLAYER_R = 0.45;
+const LEVEL_BAND = 1.6;   // main.js: a circle only bites within this of player y
+
+/** Does any ground-level chain circle overlap (x, z)? */
+function blockedAtGround(x, z) {
+  return GLACIER_COLLIDERS.some(c =>
+    Math.abs((c.y || 0) - 0) <= LEVEL_BAND &&
+    Math.hypot(x - c.x, z - c.z) < c.r + PLAYER_R);
+}
+
+test('a ground walker cannot cross the shelf-1 riser line anywhere but the west slot', () => {
+  // Sweep the full zone width at 0.15 (a third of the player radius, so no
+  // gap a player could thread goes unsampled) and march z across the line.
+  const leaks = [];
+  for (let x = -33; x <= 33; x += 0.15) {
+    const inSlot = x > RIFT_WEST.minX - 0.4 && x < RIFT_WEST.maxX + 0.4;
+    let crossed = true;
+    for (let z = Z_SHELF_1.s + 1.6; z >= Z_SHELF_1.s - 1.6; z -= 0.15) {
+      if (blockedAtGround(x, z)) { crossed = false; break; }
+    }
+    if (crossed && !inSlot) leaks.push(+x.toFixed(2));
+  }
+  assert.deepEqual(leaks, [], `ground walker can slip past the riser at x = ${leaks.slice(0, 12)}`);
+});
+
+test('the west slot is open at its mouth and closed at its head and flanks', () => {
+  const midX = (RIFT_WEST.minX + RIFT_WEST.maxX) / 2;
+  // Open: you can walk in from the south.
+  assert.equal(blockedAtGround(midX, Z_SHELF_1.s + 0.5), false, 'slot mouth should be open');
+  assert.equal(blockedAtGround(midX, Z_SHELF_1.s - 1.0), false, 'slot should be walkable inside');
+  // Closed: the head, and both flanks along its length.
+  assert.equal(blockedAtGround(midX, RIFT_WEST.minZ - 0.3), true, 'slot head should be closed');
+  for (let z = RIFT_WEST.minZ + 1; z <= RIFT_WEST.maxZ - 1; z += 0.5) {
+    assert.equal(blockedAtGround(RIFT_WEST.minX - 0.3, z), true, `west flank open at z ${z}`);
+    assert.equal(blockedAtGround(RIFT_WEST.maxX + 0.3, z), true, `east flank open at z ${z}`);
+  }
+});
+
+test('the Blue Rift floor is contained — its flanks and head are sealed', () => {
+  for (let z = RIFT_MAIN.minZ + 1; z <= RIFT_MAIN.maxZ - 1; z += 0.5) {
+    assert.equal(blockedAtGround(RIFT_MAIN.minX - 0.3, z), true, `rift west flank open at z ${z}`);
+    assert.equal(blockedAtGround(RIFT_MAIN.maxX + 0.3, z), true, `rift east flank open at z ${z}`);
+  }
+  assert.equal(blockedAtGround((RIFT_MAIN.minX + RIFT_MAIN.maxX) / 2, RIFT_MAIN.minZ - 0.3), true,
+    'rift head should be closed');
+});
+
+test('the chains leave the rift floors genuinely walkable, not a scrape', () => {
+  // A padded chain that squeezed the 5-wide west slot to 1.9 would be
+  // technically passable and horrible to play.
+  const usable = (r) => {
+    let lo = null, hi = null;
+    for (let x = r.minX - 2; x <= r.maxX + 2; x += 0.05) {
+      const free = !blockedAtGround(x, (r.minZ + r.maxZ) / 2);
+      if (free && lo === null) lo = x;
+      if (free) hi = x;
+    }
+    return hi - lo;
+  };
+  assert.ok(usable(RIFT_WEST) > 3.0, `west slot only ${usable(RIFT_WEST).toFixed(2)} wide`);
+  assert.ok(usable(RIFT_MAIN) > 4.5, `Blue Rift only ${usable(RIFT_MAIN).toFixed(2)} wide`);
+});
+
+test('the chains never bite a climber or a player on a shelf', () => {
+  // Every chain circle is y-banded to the ground; a shelf is 3.0 up and a
+  // climber clears 1.6 well before the riser line.
+  for (const c of GLACIER_COLLIDERS) {
+    assert.equal(c.y, 0, 'chain circles must be ground-banded');
+    assert.ok(Math.abs(c.y - Y_SHELF_1) > LEVEL_BAND, 'must not bite a shelf-1 walker');
   }
 });
 

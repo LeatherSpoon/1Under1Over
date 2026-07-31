@@ -425,3 +425,29 @@
   0%, 100% { opacity: 0.8; }
   50% { opacity: 1; }
 }
+
+/* ── Outcome banner — instant feedback the moment a fight resolves ──── */
+#combat-result {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44px;
+  font-weight: bold;
+  letter-spacing: 0.35em;
+  text-indent: 0.35em; /* recenters against letter-spacing trailing gap */
+  pointer-events: none;
+  z-index: 10;
+  text-shadow: 0 0 26px currentColor, 0 0 4px currentColor;
+  animation: result-pop 0.18s ease-out;
+}
+#combat-result[hidden] { display: none !important; }
+#combat-result.result-win  { color: #00ffcc; }
+#combat-result.result-fled { color: #ffd75e; }
+#combat-result.result-loss { color: #ff5e5e; font-size: 26px; letter-spacing: 0.2em; }
+
+@keyframes result-pop {
+  from { transform: scale(1.7); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}

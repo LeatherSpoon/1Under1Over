@@ -450,5 +450,4 @@ export function build(env) {
   // Land back at the rift mouth inside the Hollow, not the Hollow's default
   // spawn by the tundra gate (home-door "doorstep" convention).
   env._zonePortals[env._zonePortals.length - 1].spawnOverride = [1, 16.5];
-  env._addReturnBeacon(0, -16);
 }

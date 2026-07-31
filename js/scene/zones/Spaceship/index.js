@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createToonMaterial } from '../../ToonMaterials.js';
+import { SHIP_RAMP_FOOT } from '../LandingSite/index.js';
 
 /**
  * Spaceship Interior zone — all stations and interactive terminals.
@@ -8,7 +9,7 @@ import { createToonMaterial } from '../../ToonMaterials.js';
  *
  * ── Connections ───────────────────────────────────────────────────────────────
  *   workspace    →  (0, -9)  always unlocked
- *   landingSite  →  (0,  6)  always unlocked (exit ship)
+ *   landingSite  →  (0,  6)  always unlocked (walk out the aft door)
  */
 export function build(env) {
   // Floor — warm under-layer; the SpaceshipShell GLB lays its plank deck on top
@@ -53,7 +54,12 @@ export function build(env) {
   env._addMasteryTerminal(6, -6);
 
   // ── Connections ───────────────────────────────────────────────────────────
-  env._addPortal(0, -9, 'workspace',   0, 'Workspace');
-  env._addPortal(0,  6, 'landingSite', 0, 'Exit Ship');
-  env._addReturnBeacon(0, 6);
+  env._addPortal(0, -9, 'workspace',   0, 'Workspace', 0.8); // indoor gate — shrunk to fit the cabin
+  // Leaving is the reverse of boarding: out the aft door and down the cargo
+  // ramp. A doorway (not a gate) with a spawnOverride onto the ramp foot the
+  // player walked up, so stepping off the ship and stepping back onto it are
+  // the same place. Without the override you would land at the zone's default
+  // spawn out on the landing pad, which reads as a teleport.
+  env._addDoorway(0, 6, 'landingSite', 'Exit Ship',
+    [SHIP_RAMP_FOOT.x, SHIP_RAMP_FOOT.z]);
 }

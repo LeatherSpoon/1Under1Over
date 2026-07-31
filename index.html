@@ -122,6 +122,11 @@
     INITIALIZING&nbsp;SYSTEMS…
   </div>
 
+  <!-- Zone-transition cover — the game loop drives its opacity so the whole
+       scene teardown/rebuild (and its first-render shader-compile hitch)
+       happens behind an opaque cover instead of a visible freeze. -->
+  <div id="zone-fade" style="position:fixed;inset:0;z-index:90;background:#060a12;pointer-events:none;opacity:0;display:none;"></div>
+
   <!-- HUD overlay -->
   <div id="hud">
     <div id="hud-topleft">
@@ -651,6 +656,7 @@
 
   <!-- Combat overlay -->
   <div id="combat-overlay" hidden>
+    <div id="combat-result" hidden></div>
     <div id="combat-scene">
       <div id="enemy-panel">
         <div id="enemy-name">SCRAPPER</div>
