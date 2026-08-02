@@ -1,5 +1,7 @@
 # Design Decisions Log
 
+> **RETIRED (owner, 2026-08-01). Do not treat anything below as doctrine.** Session-level calls got recorded here as permanent decisions, and some landed exactly backwards from what the owner actually thinks (e.g. "gear-as-level REJECTED" — the owner likes gear-as-level, now Locked the other way). The design log of record is `Plans/Design-plan-8.1.md` (see its corrections ledger for known inversions); the synthesized vision for code sessions is `Plans/Design-8.1-Vision-Handoff.md`. This file is kept as history only.
+
 *Every interview answer and standing decision gets one line here, recorded the moment it's made. Format: decision — why — source game/doc. Newest rounds at the bottom. Started 2026-07-19.*
 
 ## Standing decisions (pre-interview, from memory + specs)
