@@ -119,6 +119,9 @@ function scatterGroundCover({ seed, count, rMin, rMax, mix, avoidCircles, avoidS
       // meadow. Skipping it also drops ~150 draw calls, which the phone build
       // notices and the look does not.
       noOutline: true,
+      // Marks the placed mesh (userData.isGroundCover) so the Generation
+      // Engine's shell build can clear scatter under new chunks.
+      groundCover: true,
     });
   }
   return out;
@@ -127,7 +130,7 @@ function scatterGroundCover({ seed, count, rMin, rMax, mix, avoidCircles, avoidS
 // Keep-outs for the Landing Site meadow scatter. The mountain radius matches
 // the collision circle in the zone builder; the path segment is the tutorial
 // walk from the landing pad to the mine adit.
-const _LANDING_KEEPOUT = [
+export const LANDING_KEEPOUT = [
   { x: 0, z: 0, r: 3.6 },        // landing pad
   { x: 4, z: -3, r: 2.8 },       // Spaceship gate
   { x: -10, z: -10, r: 2.8 },    // Mine gate
@@ -143,6 +146,7 @@ const _LANDING_KEEPOUT = [
   { x: 14, z: -4, r: 1.4 }, { x: -19, z: 9, r: 1.4 }, { x: 21, z: -14, r: 1.4 },
   { x: 24, z: 6, r: 1.4 },
 ];
+const _LANDING_KEEPOUT = LANDING_KEEPOUT; // internal scatter reference stands
 const _LANDING_KEEPOUT_SEGS = [
   { ax: 0, az: 0, bx: -11.5, bz: -11.5, r: 1.6 },  // pad → mine gate → adit mouth
 ];

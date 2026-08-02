@@ -94,6 +94,10 @@ export class Environment {
     this._trackGroup = new THREE.Group(); // track markers live here, separate from env
     scene.add(this._trackGroup);
 
+    this._computerGroup = new THREE.Group(); // Generation Engine shell, rebuilt per plan edit
+    scene.add(this._computerGroup);
+    this._computerCircles = [];              // our collision refs, spliced out on rebuild
+
     // Construct cursor — shows selected tile in construction mode
     this._cursorGroup = new THREE.Group();
     this._cursorGroup.visible = false;
@@ -530,7 +534,7 @@ export class Environment {
     const entries = ZONE_ASSETS[zoneName];
     if (!entries) return;
 
-    for (const { model, x, z, y = 0, scale, rotY = 0, r, tint, noOutline, reveal, aim, scaleXYZ } of entries) {
+    for (const { model, x, z, y = 0, scale, rotY = 0, r, tint, noOutline, reveal, aim, scaleXYZ, groundCover } of entries) {
       // Reveal-shaded props must not get the plain black auto-hull — the
       // reveal hole would expose the hull interior as a solid black blob.
       const m = this.buildPropMesh({ model, x: x ?? 0, z: z ?? 0, scale, rotY, tint, scaleXYZ,
@@ -551,6 +555,8 @@ export class Environment {
       // Canopy platforms/trunks re-shade to reveal materials so the cutout
       // opens around a player walking beneath them (mine-wall convention).
       if (reveal) this._applyRevealShading(m);
+      // Collisionless scatter marks itself so clearGroundCoverIn can find it.
+      if (groundCover) m.userData.isGroundCover = true;
       this.group.add(m);
       if (r !== undefined) {
         this._collisionCircles.push(y ? { x, z, r, y } : { x, z, r });
@@ -731,6 +737,89 @@ export class Environment {
     for (const t of tracks) {
       this._addTrackMarker(t.x, t.z);
     }
+  }
+
+  /**
+   * Rebuild the computer building's exterior from the player's plan. Called on
+   * zone entry (landingSite) and once per plan edit — never per frame. All
+   * visuals live in _computerGroup; collision circles are tracked so a rebuild
+   * can splice exactly ours out of _collisionCircles.
+   */
+  buildComputerShell(computer) {
+    while (this._computerGroup.children.length > 0) {
+      this._computerGroup.remove(this._computerGroup.children[0]);
+    }
+    for (const c of this._computerCircles) {
+      const i = this._collisionCircles.indexOf(c);
+      if (i !== -1) this._collisionCircles.splice(i, 1);
+    }
+    this._computerCircles = [];
+    // getCollisionCircles()'s merged sector cache keys on _collisionCircles
+    // LENGTH — a splice-then-push rebuild can land on the same count, so
+    // invalidate explicitly (the zone-switch way).
+    this._collisionCacheStatic = -1;
+    if (this.currentZone !== 'landingSite' || !computer.hasFounded()) return;
+
+    const { wallRuns, shellCollisionCircles } = computer._shellFns; // injected in main.js (see Task 7)
+    const { chunkToWorld, CHUNK } = computer._gridFns;
+    const H = computer.row().storyHeight;
+    const wallMat = createToonMaterial(0x8a94a0);   // expedition-alloy grey (placeholder kit)
+    const floorMat = createToonMaterial(0x4a5058);
+    const roofMat = createToonMaterial(0x39404a);
+
+    for (const r of wallRuns(computer.plan, computer.door)) {
+      const horiz = r.z1 === r.z2;
+      const len = horiz ? Math.abs(r.x2 - r.x1) : Math.abs(r.z2 - r.z1);
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(horiz ? len : 0.3, H, horiz ? 0.3 : len), wallMat);
+      wall.position.set((r.x1 + r.x2) / 2, H / 2, (r.z1 + r.z2) / 2);
+      this._computerGroup.add(wall);
+    }
+    for (const key of computer.plan) {
+      const [cx, cz] = key.split(',').map(Number);
+      const [wx, wz] = chunkToWorld(cx, cz);
+      const floor = new THREE.Mesh(new THREE.BoxGeometry(CHUNK, 0.08, CHUNK), floorMat);
+      floor.position.set(wx, 0.04, wz);
+      this._computerGroup.add(floor);
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(CHUNK + 0.4, 0.25, CHUNK + 0.4), roofMat);
+      roof.position.set(wx, H + 0.12, wz);
+      this._computerGroup.add(roof);
+    }
+    // Lit window strips — one per generation reached (exterior tell)
+    // (skip on gen 1: the shed is dark until the machine grows)
+    for (let g = 2; g <= computer.generation; g++) {
+      const [dwx, dwz] = computer.doorWorld();
+      const strip = new THREE.Mesh(
+        new THREE.BoxGeometry(0.9, 0.5, 0.06),
+        new THREE.MeshBasicMaterial({ color: 0x8fe8cc })
+      );
+      // spread strips along the door face, left of the door
+      strip.position.set(dwx - 1.6 - (g - 2) * 1.2, H * 0.6, dwz + (computer.door.side === 'S' ? 0.18 : -0.18));
+      if (computer.door.side === 'E' || computer.door.side === 'W') {
+        strip.rotation.y = Math.PI / 2;
+        strip.position.set(dwx + (computer.door.side === 'E' ? 0.18 : -0.18), H * 0.6, dwz - 1.6 - (g - 2) * 1.2);
+      }
+      this._computerGroup.add(strip);
+    }
+    for (const c of shellCollisionCircles(computer.plan, computer.door)) {
+      const circle = { ...c };
+      this._collisionCircles.push(circle);
+      this._computerCircles.push(circle);
+    }
+    this.clearGroundCoverIn(computer.plan, computer._gridFns);
+  }
+
+  /** Remove collisionless scatter (grass/flowers/bushes) whose position falls
+   *  inside the plan's chunks — trees and collision-bearing props instead veto
+   *  placement via the validity mask. */
+  clearGroundCoverIn(plan, { worldToChunk, chunkKey }) {
+    const doomed = [];
+    this.group.traverse(o => {
+      if (!o.userData?.isGroundCover) return;
+      const p = o.getWorldPosition(new THREE.Vector3());
+      const [cx, cz] = worldToChunk(p.x, p.z);
+      if (plan.has(chunkKey(cx, cz))) doomed.push(o);
+    });
+    for (const o of doomed) o.parent?.remove(o);
   }
 
   _addTrackMarker(x, z) {
