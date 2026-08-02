@@ -55,25 +55,34 @@ export function onKitLoaded(fn) {
 }
 
 // Source material → game material, shared across all clones of all pieces.
+// vc: honor baked vertex colors (COLOR_0 — the v2 kit bakes Cycles AO there)
+// when the mesh's geometry carries the attribute; glow materials skip it —
+// AO would dim the emissive read (Mine/kit.js convention).
 const _shaded = new WeakMap();
-function _shadeMaterial(mat) {
+function _shadeMaterial(mat, vc) {
   if (!mat) return mat;
-  let m = _shaded.get(mat);
-  if (!m) {
+  let entry = _shaded.get(mat);
+  if (!entry) {
+    entry = {};
+    _shaded.set(mat, entry);
+  }
+  const key = vc ? 'vc' : 'flat';
+  if (!entry[key]) {
+    let m;
     if (/glow|screen|led/i.test(mat.name || '')) {
       m = new THREE.MeshBasicMaterial({
         color: mat.color ? mat.color.getHex() : 0xffffff,
         map: mat.map || null,
       });
     } else if (mat.map) {
-      m = createToonMaterial(0xffffff, { map: mat.map });
+      m = createToonMaterial(0xffffff, { map: mat.map, vertexColors: vc });
     } else {
-      m = createToonMaterial(mat.color ? mat.color.getHex() : 0x8a94a0);
+      m = createToonMaterial(mat.color ? mat.color.getHex() : 0x8a94a0, { vertexColors: vc });
     }
     m.name = mat.name; // tint-friendly (future color-variant round)
-    _shaded.set(mat, m);
+    entry[key] = m;
   }
-  return m;
+  return entry[key];
 }
 
 /** Re-shaded deep clone of a kit piece, or null (caller keeps its fallback). */
@@ -85,9 +94,10 @@ export function getKitPiece(key) {
     if (!n.isMesh) return;
     n.castShadow = true;
     n.receiveShadow = true;
+    const vc = !!(n.geometry && n.geometry.attributes && n.geometry.attributes.color);
     n.material = Array.isArray(n.material)
-      ? n.material.map(_shadeMaterial)
-      : _shadeMaterial(n.material);
+      ? n.material.map((m) => _shadeMaterial(m, vc))
+      : _shadeMaterial(n.material, vc);
   });
   return clone;
 }
