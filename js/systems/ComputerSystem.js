@@ -144,7 +144,11 @@ export class ComputerSystem {
     const n = Math.min(qty, rem[mat], held);
     if (n <= 0) return 0;
     this.inventory.removeMaterial(mat, n);
+    const hadAny = Object.values(this.delivered).some((v) => v > 0);
     this.delivered[mat] = (this.delivered[mat] || 0) + n;
+    // First delivery toward a schematic shows the supply-pallet tell by the
+    // door — that lives in the shell rebuild, so fire it on the 0→>0 edge.
+    if (!hadAny) this.onPlanChanged?.();
     return n;
   }
 

@@ -12,6 +12,8 @@ import {
 } from './zones/index.js';
 import { mineWorldToCell, mineCellToWorld, isMineFloorCell } from './zones/Mine/layout.js';
 import { buildComputerCore } from './zones/ComputerBuilding/interior.js';
+import { exteriorEdges } from './zones/ComputerBuilding/shell.js';
+import { kitReady as computerKitReady, getKitPiece as getComputerKitPiece, onKitLoaded as onComputerKitLoaded } from './zones/ComputerBuilding/kit.js';
 import { addPathRibbon } from './PathRibbon.js';
 import { cloneSkinned } from '../entities/Enemy.js';
 
@@ -98,6 +100,14 @@ export class Environment {
 
     this._computerGroup = new THREE.Group(); // Generation Engine shell, rebuilt per plan edit
     scene.add(this._computerGroup);
+    this._computerSystemRef = null; // set in main.js; read by the kit late-attach below
+    // ComputerKit late attach — a cold cache boots on the procedural shell,
+    // then the exterior rebuilds in place once the GLBs land (idempotent, cheap).
+    onComputerKitLoaded(() => {
+      if (this.currentZone === 'landingSite' && this._computerSystemRef?.hasFounded()) {
+        this.buildComputerShell(this._computerSystemRef);
+      }
+    });
     this._computerCircles = [];              // our collision refs, spliced out on rebuild
 
     // Construct cursor — shows selected tile in construction mode
@@ -787,16 +797,37 @@ export class Environment {
     const { wallRuns, shellCollisionCircles } = computer._shellFns; // injected in main.js (see Task 7)
     const { chunkToWorld, CHUNK } = computer._gridFns;
     const H = computer.row().storyHeight;
-    const wallMat = createToonMaterial(0x8a94a0);   // expedition-alloy grey (placeholder kit)
+    const kit = computerKitReady();
     const floorMat = createToonMaterial(0x4a5058);
     const roofMat = createToonMaterial(0x39404a);
+    // Outward-facing yaw per exterior side (kit fronts are authored toward +z).
+    const SIDE_ROT = { S: 0, N: Math.PI, E: Math.PI / 2, W: -Math.PI / 2 };
 
-    for (const r of wallRuns(computer.plan, computer.door)) {
-      const horiz = r.z1 === r.z2;
-      const len = horiz ? Math.abs(r.x2 - r.x1) : Math.abs(r.z2 - r.z1);
-      const wall = new THREE.Mesh(new THREE.BoxGeometry(horiz ? len : 0.3, H, horiz ? 0.3 : len), wallMat);
-      wall.position.set((r.x1 + r.x2) / 2, H / 2, (r.z1 + r.z2) / 2);
-      this._computerGroup.add(wall);
+    if (kit) {
+      // One CK1_Wall per plain exterior edge; CK1_WallDoor on the door edge
+      // (doorway cut faces outward). A per-edge seeded 0/π yaw flip breaks
+      // repetition — hashed from the edge itself so a plan edit never
+      // reshuffles existing walls.
+      const d = computer.door;
+      for (const e of exteriorEdges(computer.plan)) {
+        const isDoor = d && e.cx === d.cx && e.cz === d.cz && e.side === d.side;
+        const piece = getComputerKitPiece(isDoor ? 'WallDoor' : 'Wall');
+        const sideIdx = { N: 0, S: 1, E: 2, W: 3 }[e.side];
+        const flip = !isDoor &&
+          (((e.cx * 73856093) ^ (e.cz * 19349663) ^ (sideIdx * 83492791)) >>> 0) % 2 === 1;
+        piece.rotation.y = SIDE_ROT[e.side] + (flip ? Math.PI : 0);
+        piece.position.set(e.x, 0, e.z);
+        this._computerGroup.add(piece);
+      }
+    } else {
+      const wallMat = createToonMaterial(0x8a94a0);   // expedition-alloy grey (pre-kit fallback)
+      for (const r of wallRuns(computer.plan, computer.door)) {
+        const horiz = r.z1 === r.z2;
+        const len = horiz ? Math.abs(r.x2 - r.x1) : Math.abs(r.z2 - r.z1);
+        const wall = new THREE.Mesh(new THREE.BoxGeometry(horiz ? len : 0.3, H, horiz ? 0.3 : len), wallMat);
+        wall.position.set((r.x1 + r.x2) / 2, H / 2, (r.z1 + r.z2) / 2);
+        this._computerGroup.add(wall);
+      }
     }
     for (const key of computer.plan) {
       const [cx, cz] = key.split(',').map(Number);
@@ -804,9 +835,17 @@ export class Environment {
       const floor = new THREE.Mesh(new THREE.BoxGeometry(CHUNK, 0.08, CHUNK), floorMat);
       floor.position.set(wx, 0.04, wz);
       this._computerGroup.add(floor);
+      // The procedural slab stays even under the kit — the CK1_RoofPanel
+      // footprint is a chamfered octagon, and the slab fills its corner
+      // notches so no gap ever shows from the fixed camera.
       const roof = new THREE.Mesh(new THREE.BoxGeometry(CHUNK + 0.4, 0.25, CHUNK + 0.4), roofMat);
       roof.position.set(wx, H + 0.12, wz);
       this._computerGroup.add(roof);
+      if (kit) {
+        const panel = getComputerKitPiece('RoofPanel');
+        panel.position.set(wx, H + 0.26, wz); // atop the slab (top H+0.245), no z-fight
+        this._computerGroup.add(panel);
+      }
     }
     // Lit window strips — one per generation reached (exterior tell)
     // (skip on gen 1: the shed is dark until the machine grows)
@@ -816,16 +855,43 @@ export class Environment {
       // every offset keeps the 0.9-wide strip inside the chunk's ±3 half-face
       // so no strip can float past a wall corner (era-1 caps at 3 strips)
       const off = [-1.6, 1.6, -2.55][(g - 2) % 3];
+      // proud of the wall face: kit walls are 0.5 thick (half 0.25) vs the
+      // procedural 0.3 (half 0.15) — sit the strip just outside either.
+      const proud = kit ? 0.29 : 0.18;
       const strip = new THREE.Mesh(
         new THREE.BoxGeometry(0.9, 0.5, 0.06),
         new THREE.MeshBasicMaterial({ color: 0x8fe8cc })
       );
-      strip.position.set(dwx + off, H * 0.6, dwz + (computer.door.side === 'S' ? 0.18 : -0.18));
+      strip.position.set(dwx + off, H * 0.6, dwz + (computer.door.side === 'S' ? proud : -proud));
       if (computer.door.side === 'E' || computer.door.side === 'W') {
         strip.rotation.y = Math.PI / 2;
-        strip.position.set(dwx + (computer.door.side === 'E' ? 0.18 : -0.18), H * 0.6, dwz + off);
+        strip.position.set(dwx + (computer.door.side === 'E' ? proud : -proud), H * 0.6, dwz + off);
       }
       this._computerGroup.add(strip);
+    }
+    // Delivery tell — a supply pallet beside the door while a schematic is
+    // partially delivered; the evolve rebuild clears it (delivered resets).
+    if (kit && Object.values(computer.delivered).some((v) => v > 0)) {
+      const pallet = getComputerKitPiece('Pallet');
+      if (pallet) {
+        const [dwx, dwz] = computer.doorWorld();
+        const OUT = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] }[computer.door.side];
+        // perpendicular to the door face; pick the side farther from the
+        // landing pad (1.5, 1.5) so the pad→door path ribbon stays clear
+        const perp = [-OUT[1], OUT[0]];
+        const cand = [1, -1].map((s) => [
+          dwx + OUT[0] * 1.1 + perp[0] * s * 2.0,
+          dwz + OUT[1] * 1.1 + perp[1] * s * 2.0,
+        ]);
+        const [px, pz] = Math.hypot(cand[0][0] - 1.5, cand[0][1] - 1.5) >=
+          Math.hypot(cand[1][0] - 1.5, cand[1][1] - 1.5) ? cand[0] : cand[1];
+        pallet.position.set(px, 0, pz);
+        pallet.rotation.y = SIDE_ROT[computer.door.side] + 0.35;
+        this._computerGroup.add(pallet);
+        const circle = { x: px, z: pz, r: 0.8, computer: true };
+        this._collisionCircles.push(circle);
+        this._computerCircles.push(circle);
+      }
     }
     for (const c of shellCollisionCircles(computer.plan, computer.door)) {
       // `computer: true` marks these as the building's own shell — the chunk

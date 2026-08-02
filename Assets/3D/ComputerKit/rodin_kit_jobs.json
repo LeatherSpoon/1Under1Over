@@ -1,0 +1,92 @@
+{
+  "CK1_WallDoor": {
+    "uuid": "555af1fa-987c-4843-a82b-a77d2f46303e",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiOTc5NjFjM2ItNTcyYS00YTNiLTllM2QtYmE1OGNkN2JiYjJiIiwiYmU0ZTA3OGMtNzE0ZS00NDIyLTgwNmEtODc4YzJjMzg5Y2ZmIiwiZTQ5MzhjYTAtZTYzZS00MjVlLTk3YjItOGRkNjVhNTkyYzU0IiwiMTU4OWNmNzItMzJiMC00OTMxLWIyMWEtYmNmYmIyZWQ1MTM5IiwiZjkyZDJlZDktNDg0Ni00NjZlLWExYzktMzJkM2NkM2UxNjVmIiwiNTUxODVhZTYtZDM2MC00OGFjLTlkNzctNmFhZmY4Nzg2MDE4Il0sImlhdCI6MTc4NTY5MTYxNX0.jSM6e2nDD0gZayA3zdbr3l-T9jjCjXk8M7pq8zgAv3w",
+    "prompt": "rectangular modular wall panel for a prefab expedition building with a centered rectangular doorway opening, reinforced door frame with a small teal status lamp above, crisp ribbed alloy cladding in ordered rows, standing upright on flat ground, isolated object no base, westernized anime game asset, clean confident outlines, flat color with soft gradient shading, strong silhouette, studio ghibli and avatar the last airbender influence, no photorealism, expedition white and gunmetal alloy hull panels with teal glow accents, stenciled expedition markings, neat data-center organization",
+    "bbox_condition": [
+      6,
+      1,
+      3
+    ]
+  },
+  "CK1_RoofPanel": {
+    "uuid": "65bfc303-7189-48f9-92c9-f11af88ca95f",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiYzA4MzRiMDgtMmRlMi00OTFiLTg0YzYtM2IwNGY3YWQ1MmZhIiwiODhiZDZlY2EtZTI0MS00ZWFkLWIxODMtYzM5OGVhYjJkNmNkIiwiNDQ0ZTQ2MzUtNThhYy00ZDIzLWE2ZjItYTc0MzAxNzE4MmM4IiwiNjJlMmQxYTQtY2IzYi00MmU3LTk3YjYtZDU5NjljMGZhYTgxIiwiNThkNzJkMjgtNmNkYS00NzE2LTk2OTYtYWQ3N2Y1MzllMzNjIiwiM2YyZGZkZjYtMWYxYi00MDY4LTlmZjYtNjcwNWI2NTU1NjdjIl0sImlhdCI6MTc4NTY5MTYxOH0.eJglBNVJJAE5zfD-Uk8q1_S65mkux1RSY6UJeiM35UU",
+    "prompt": "flat square modular roof tile for a prefab expedition building, low parapet rim, neat parallel rows of vents and small solar cells, one teal-lit conduit line, lying flat, isolated object no base, westernized anime game asset, clean confident outlines, flat color with soft gradient shading, strong silhouette, studio ghibli and avatar the last airbender influence, no photorealism, expedition white and gunmetal alloy hull panels with teal glow accents, stenciled expedition markings, neat data-center organization",
+    "bbox_condition": [
+      6,
+      6,
+      1
+    ]
+  },
+  "CK1_FieldTerminal": {
+    "uuid": "f94392ed-c7aa-4d8f-86ef-3e2854c6c442",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiZTgxYzYyOWItZjY0Ni00ODU5LTljYTQtNDlhNzliY2JiYjE1IiwiMzIyYzJjZWQtMzYzOC00Mjc2LThkOWUtZDU5ZDM3ZjRhZmYyIiwiOGYwMjZmZjMtOWNmYi00OTI2LWI4YWEtOWJmM2NhZjQ5ZjE1IiwiMzM1NTQ5MTYtMjkyMy00NzQ1LTg0NWQtOWVkYzU5MDQ0YWM1IiwiNzMwZmQyMTMtNGRmMS00Y2UwLWEzYzYtYWI0OGRiOWU0YTYwIiwiMTQwZmE1MmUtNGUwMy00MTYzLWEyMDktNWQ0ZDRlNGNmMWU4Il0sImlhdCI6MTc4NTY5MTYyMn0.-TbA2anEBBQ5reG4R7XImzOy_zBxu1kYR_BP-4_yWVY",
+    "prompt": "flight-cased portable computer terminal deployed on sturdy folding legs, hard-shell expedition cases with latches and stencils arranged neatly beside it, glowing teal screen, tidy coiled cables, standing upright on flat ground, isolated object no base, westernized anime game asset, clean confident outlines, flat color with soft gradient shading, strong silhouette, studio ghibli and avatar the last airbender influence, no photorealism, expedition white and gunmetal alloy hull panels with teal glow accents, stenciled expedition markings, neat data-center organization",
+    "bbox_condition": [
+      4,
+      3,
+      3
+    ]
+  },
+  "CK1_MissionServer": {
+    "uuid": "85ee38db-cf1c-4ffd-b727-0599254c4def",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiODYzMmFiZTMtYjNiYy00YmQ0LTljNjYtMmU5MjM5YjhhNjYzIiwiMWE3ZTEwNmEtMDYwNi00ZThjLTk0NzQtYWIzNmMzMjBkMWJjIiwiMWUzZWFiYjEtNDJiZS00YjI1LTg1YTgtMDQ2YzE1ZTU4N2Y0IiwiNjU0MTQzMjEtZGZlMC00OWVjLTkwMTItOGZhNjA1OTY0NGIwIiwiOTdhNTA2NjEtMzdiZC00MTNmLWI2ZTQtZjFlMTgzZGY3ZDM5IiwiMzg1NDExODMtMmQ2Zi00MzU1LTgyNDMtYWI2YmU4YmE4ZDlhIl0sImlhdCI6MTc4NTY5MTYyNn0.KlnYGJeUVUvb9MWlH6l_tFPTMUM-rJIJrlf9Dvf0M60",
+    "prompt": "twin upright mission server towers side by side on a small rack base, ordered rows of drive bays with teal status lights, a labeled cable spool mounted between them, immaculate cable management, standing upright on flat ground, isolated object no base, westernized anime game asset, clean confident outlines, flat color with soft gradient shading, strong silhouette, studio ghibli and avatar the last airbender influence, no photorealism, expedition white and gunmetal alloy hull panels with teal glow accents, stenciled expedition markings, neat data-center organization",
+    "bbox_condition": [
+      4,
+      2,
+      5
+    ]
+  },
+  "CK1_ExpeditionRack": {
+    "uuid": "95be8ad2-4656-4e25-b330-64a0a3d5c39d",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiOGZjMDQ3MDMtYmY3Ny00Mzg5LTg5YWQtYzBkMjM5NDNiY2RmIiwiYjk3YTc0YmUtMWFiOC00OGE4LTk2OWUtMmNlOGEzNmNjZWY2IiwiMjNiZjkwYjItNDU1NC00ZDgwLWE2Y2ItMDIyYjhlZDgyZGViIiwiNWE2MzZjZDktZDNmOS00OGMzLTk3Y2YtMDNmM2UwNjRhNWM5IiwiNDNhNWE2YzctZjI2OC00MDcyLWJhNmItZGY1N2EwYzlhNGI0IiwiMjJlYzJmZjQtNjU0Yy00YmQzLTk4ODEtNGNiNzk3ZTliODg5Il0sImlhdCI6MTc4NTY5MTYzNH0.-tE1wHC2L6gZbYuXXBsjbeQsyMH_Gsqr_Jfq4FRTaA0",
+    "prompt": "full-height server rack cabinet, open front showing perfectly ordered equipment modules floor to top, vertical teal LED status column, dressed cable bundles routed cleanly down one side, standing upright on flat ground, isolated object no base, westernized anime game asset, clean confident outlines, flat color with soft gradient shading, strong silhouette, studio ghibli and avatar the last airbender influence, no photorealism, expedition white and gunmetal alloy hull panels with teal glow accents, stenciled expedition markings, neat data-center organization",
+    "bbox_condition": [
+      3,
+      2,
+      6
+    ]
+  },
+  "CK1_Pallet": {
+    "uuid": "148f73a0-aee9-4c5a-b439-391c4dc2c161",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMWMzNzlhOTUtY2M5YS00MTQzLWJmMWQtYWZmM2QzNTJhZTI5IiwiMDgxODQxYzgtZWM2Ny00Mjc3LWEwNjctYWFlY2MwYzFkODdhIiwiZmMwZmY0NjYtNDk5OS00Mzc5LWIwYWItZDIzZTRkMTY1ZDJkIiwiMWRjMjVhODQtMTdlMC00ZDM4LWEwYjMtYzVhZGE4OGNhOTVlIiwiN2M4OGIxYjMtYzZhMS00MDlhLThjNGEtZWYyMTU5ODM1OGZhIiwiZTYyZTZhM2ItNDVhMi00YmM0LWE4MmQtMWYzNzljYjlkZjFlIl0sImlhdCI6MTc4NTY5MTYzOX0.98IwEl5cfJpcJ6GVBjZ7k_fp6ckJDuR8ko2Q0uM4hks",
+    "prompt": "supply pallet stacked with strapped expedition crates and material bundles, neat cubic stack, stenciled labels, one teal inventory tag, standing upright on flat ground, isolated object no base, westernized anime game asset, clean confident outlines, flat color with soft gradient shading, strong silhouette, studio ghibli and avatar the last airbender influence, no photorealism, expedition white and gunmetal alloy hull panels with teal glow accents, stenciled expedition markings, neat data-center organization",
+    "bbox_condition": [
+      4,
+      4,
+      3
+    ]
+  },
+  "CK1_IntegrationBench": {
+    "uuid": "3043946c-70f0-4a46-b780-145cd850071c",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiZDAxYTgzODUtOGY1YS00N2NmLTljNjAtZmRiYzUxMmIwOTVlIiwiMDVlZDdmMzMtNzM2Zi00ZjgyLTkwOTMtM2U2MzBhOTkwMWViIiwiZWQ0NjMwZjItODE4YS00ZTExLWI1YTctNzBmYjkzN2NlZWZjIiwiODFiYmZhZGMtNmJlOS00MzAxLWExNjYtMjQ2YmMyNDJkOTgxIiwiMTMzNmFkODUtMzgwZS00YmVlLWFhNDQtODJiYjUwZGYxZDE4IiwiYzBmMWQwMzAtZDZmZS00YTVjLWEwMjUtYzNhNzI0NWViYzJiIl0sImlhdCI6MTc4NTY5MTY2MH0.e3PIFhEoCR0qOoSLpJNwhJRRiY-XL7kC8_8ztxAs63I",
+    "prompt": "sturdy electronics work table with an open metal frame, rows of squared circuit boards and equipment modules arranged neatly on two shelf levels, small hanging tool strip, teal indicator light strip, tidy and organized, standing upright on flat ground, isolated object no base, westernized anime game asset, clean confident outlines, flat color with soft gradient shading, strong silhouette, studio ghibli and avatar the last airbender influence, no photorealism, expedition white and gunmetal alloy hull panels with teal glow accents, stenciled expedition markings, neat data-center organization",
+    "bbox_condition": [
+      5,
+      2,
+      3
+    ]
+  },
+  "CK1_Wall_v1": {
+    "uuid": "1ecabfe1-c115-4265-bd59-278797dca31f",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiZjBkNTZiOWYtOWM4OC00MDkzLTk3ODgtZmU1MzAwNzk5MTBhIiwiZDMxMjcxMTktN2NhOC00MWY5LWI5OGYtOWRmZWVmNWNmNTJiIiwiMDBkODk3ZmMtZmJmYi00MWVkLThmYTAtNjA2MWIyY2FkYTI0IiwiZmI0M2JkZmYtNzdiYi00ZWJjLTlhNmEtNzkwNzg2OTYwMmU3IiwiMzYzOTEwOTktYjk1OS00M2IyLWI0MDItNWJlNjM4MDBmOTY3IiwiMDBkMzFiMTgtMjk1My00MzY5LWEzMWEtNmVhMThhNzc5ZDljIl0sImlhdCI6MTc4NTY5MTYxMH0.UKtaVyUHkWoOFil6srw6QRPltZpu6QBIkI8--C8zLyk",
+    "prompt": "rectangular modular wall panel for a prefab expedition building, wide flat panel with crisp ribbed alloy cladding in ordered rows, stenciled expedition markings, subtle teal trim line, standing upright on flat ground, isolated object no base, westernized anime game asset, clean confident outlines, flat color with soft gradient shading, strong silhouette, studio ghibli and avatar the last airbender influence, no photorealism, expedition white and gunmetal alloy hull panels with teal glow accents, stenciled expedition markings, neat data-center organization",
+    "bbox_condition": [
+      6,
+      1,
+      3
+    ]
+  },
+  "CK1_Wall": {
+    "uuid": "2ea48d8b-0fa8-4d43-a5e6-dd526b0ebdde",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMDA0YWI4MWMtNTJlYy00NjcxLTk3YTYtZGQyYmQ4YTlmYmMwIiwiOTNkOWI3MGItMjUzYi00NWZlLTkyMjUtMTIwNjQxNTQyM2I3IiwiZDdjNmQxNzAtNTVjYy00ZjM0LTgwZTMtODA1MGQwYjg0MDViIiwiOTFhOTQ3MTAtZWI1ZS00N2E3LTkwMjgtZTFlMzNlOGI3YmI0IiwiNjk1Y2FlY2QtOGQzYi00NDM3LTgyODYtNWUzNmI2YmJkMmRhIiwiOWZkNWI1YzQtNzA4MC00OWZjLWJiNmUtODlmNTViMmYyYWU4Il0sImlhdCI6MTc4NTY5MzEzNH0.rBn_bCIkZHEixnLgcFNlHBdtRloeBD_H_aCf7wANoME",
+    "prompt": "rectangular modular wall panel for a prefab expedition building, sharp square corners, rectangular slab silhouette, both broad faces clad in white ribbed alloy panels in ordered rows, thin teal trim line, crisp ribbed alloy cladding in ordered rows, standing upright on flat ground, isolated object no base, westernized anime game asset, clean confident outlines, flat color with soft gradient shading, strong silhouette, studio ghibli and avatar the last airbender influence, no photorealism, expedition white and gunmetal alloy hull panels with teal glow accents, stenciled expedition markings, neat data-center organization",
+    "bbox_condition": [
+      6,
+      1,
+      3
+    ]
+  }
+}
