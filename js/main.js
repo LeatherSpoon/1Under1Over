@@ -576,10 +576,10 @@ if (offlineSummary) {
 const computerSystem = new ComputerSystem(inventorySystem);
 computerSystem.getAscensionCount = () => ascension.ascensionCount; // recompiles, NOT pp.prestigeCount
 computerSystem.isCellValid = (cx, cz) =>
-  env.currentZone === 'landingSite' && isChunkCellValid(cx, cz,
-    // The shell's own wall circles sit ON the boundary of every adjacent
-    // candidate chunk — exclude them or no second chunk could ever attach.
-    env.getCollisionCircles().filter(c => !env._computerCircles.includes(c)));
+  // The shell's own wall circles carry `computer: true` and are flag-skipped
+  // inside the mask — exclude them or no second chunk could ever attach.
+  // (No pre-filtering: this runs per frame in add mode, keep it allocation-free.)
+  env.currentZone === 'landingSite' && isChunkCellValid(cx, cz, env.getCollisionCircles());
 computerSystem._shellFns = { wallRuns, shellCollisionCircles };     // Environment reads via system ref
 computerSystem._gridFns = { CHUNK, chunkKey, chunkToWorld, worldToChunk };
 env._computerSystemRef = computerSystem;
@@ -597,14 +597,8 @@ function refreshComputerDoor() {
   env.buildComputerPath(computerSystem); // self-clearing — also erases a stale ribbon off-zone
   if (env.currentZone !== 'landingSite' || !computerSystem.hasFounded()) return;
   // drop any previous computer door record (plan-edit rebuild) before re-adding
-  const portals = env._zonePortals;
-  for (let i = portals.length - 1; i >= 0; i--) {
-    if (portals[i].targetZone === 'computerCore') {
-      if (portals[i].mesh) env.group.remove(portals[i].mesh);
-      portals.splice(i, 1);
-    }
-  }
-  env._navLandmarks = env._navLandmarks.filter(l => l.label !== 'Computer');
+  env.removePortalsTo('computerCore');
+  env.removeNavLandmark('Computer');
   const [dx, dz] = computerSystem.doorOutside();
   env._addCaveEntrance(dx, dz, 'computerCore', 'The Computer',
     { walkIn: true, triggerR: 1.6, spawnOverride: computerSystem.doorInside() });

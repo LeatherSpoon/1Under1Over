@@ -725,6 +725,21 @@ export class Environment {
 
   getNavLandmarks() { return this._navLandmarks; }
 
+  /** Drop a landmark by label (dynamic landmarks that move, e.g. the computer door). */
+  removeNavLandmark(label) {
+    this._navLandmarks = this._navLandmarks.filter(l => l.label !== label);
+  }
+
+  /** Drop portal records targeting a zone (and their anchor meshes). Used when a
+   *  dynamic door re-registers at a new position within the same zone visit. */
+  removePortalsTo(targetZone) {
+    for (let i = this._zonePortals.length - 1; i >= 0; i--) {
+      if (this._zonePortals[i].targetZone !== targetZone) continue;
+      if (this._zonePortals[i].mesh) this.group.remove(this._zonePortals[i].mesh);
+      this._zonePortals.splice(i, 1);
+    }
+  }
+
   /** Show or hide all floor grid helpers (called when construction panel opens/closes). */
   setGridVisible(v) {
     for (const g of this._grids) g.visible = v;
@@ -810,7 +825,9 @@ export class Environment {
       this._computerGroup.add(strip);
     }
     for (const c of shellCollisionCircles(computer.plan, computer.door)) {
-      const circle = { ...c };
+      // `computer: true` marks these as the building's own shell — the chunk
+      // validity mask flag-skips them (siteMask.js) so growth is never vetoed.
+      const circle = { ...c, computer: true };
       this._collisionCircles.push(circle);
       this._computerCircles.push(circle);
     }

@@ -42,6 +42,10 @@ export function isChunkCellValid(cx, cz, liveCircles = []) {
   if (Math.abs(wx) > BOUND || Math.abs(wz) > BOUND) return false;
   if (segDist(wx, wz, CORRIDOR.ax, CORRIDOR.az, CORRIDOR.bx, CORRIDOR.bz) < CORRIDOR.r + HALF) return false;
   for (const c of [...LANDING_KEEPOUT, ...EXTRA]) if (circleHitsSquare(c, wx, wz)) return false;
-  for (const c of liveCircles) if (circleHitsSquare(c, wx, wz)) return false;
+  // Circles flagged `computer: true` are the building's own shell — they sit ON
+  // the boundary of every adjacent candidate chunk and must not veto growth.
+  // Flag-skip instead of pre-filtering keeps the per-frame add-mode check
+  // allocation-free (phone perf budget).
+  for (const c of liveCircles) if (!c.computer && circleHitsSquare(c, wx, wz)) return false;
   return true;
 }
