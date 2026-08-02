@@ -11,6 +11,7 @@ import {
   buildHomeSylva, buildHomeBram, buildHomeSprig,
 } from './zones/index.js';
 import { mineWorldToCell, mineCellToWorld, isMineFloorCell } from './zones/Mine/layout.js';
+import { buildComputerCore } from './zones/ComputerBuilding/interior.js';
 import { cloneSkinned } from '../entities/Enemy.js';
 
 // Shared GLB model cache — loads each model once then reuses cloned scenes.
@@ -376,6 +377,13 @@ export class Environment {
       case 'homeSylva':    buildHomeSylva(this);    break;
       case 'homeBram':     buildHomeBram(this);     break;
       case 'homeSprig':    buildHomeSprig(this);    break;
+      case 'computerCore':
+        // Ref is injected by main.js (Task 7); unfounded/missing ⇒ bare room skip
+        // (only reachable pre-founding via debug teleport).
+        if (this._computerSystemRef && this._computerSystemRef.hasFounded()) {
+          buildComputerCore(this, this._computerSystemRef);
+        }
+        break;
       default: buildLandingSite(this);
     }
 
@@ -860,6 +868,7 @@ export class Environment {
       homeSylva: "Sylva's Den",
       homeBram: "Bram's Lodge",
       homeSprig: "Sprig's Burrow",
+      computerCore: 'The Computer',
     };
     return labels[this.currentZone] || 'Unknown';
   }
@@ -997,6 +1006,7 @@ export class Environment {
       case 'workspace': return []; // no gatherables in the workspace
       case 'depths': return [];   // pure mining zone — no resource nodes
       case 'homeSylva': case 'homeBram': case 'homeSprig': return []; // furnished rooms only
+      case 'computerCore': return []; // machine room — no resource nodes
       default: return [];
     }
   }
@@ -1176,6 +1186,7 @@ export class Environment {
         { x: 0,  z: 0,  archetype: 'boss_depths', boss: true },
       ];
       case 'homeSylva': case 'homeBram': case 'homeSprig': return []; // safe rooms
+      case 'computerCore': return []; // machine room — no enemies
       default: return [];
     }
   }

@@ -558,6 +558,7 @@ const ZONE_LORE = {
   cinderforge: 'theCinderforge',
   spaceship: 'theShip',
   homeSylva: 'denSylva', homeBram: 'lodgeBram', homeSprig: 'burrowSprig',
+  computerCore: 'computerCore',
 };
 codexSystem.discover(ZONE_LORE.landingSite);
 

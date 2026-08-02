@@ -18,6 +18,7 @@ export const ZONE_TERRAIN = {
   homeSylva: 'rock',
   homeBram: 'rock',
   homeSprig: 'rock',
+  computerCore: 'rock',
 };
 
 // Per-zone player spawn positions — places player near the entry/exit portal
@@ -38,6 +39,7 @@ export const ZONE_SPAWN_POS = {
   homeSylva:    [0, 2.6],
   homeBram:     [0, 2.6],
   homeSprig:    [0, 2.6],
+  computerCore: [0, 0], // never-hit fallback — real entry arrives via the door's spawnOverride
 };
 
 export function createSwitchZone({

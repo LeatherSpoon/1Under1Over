@@ -88,6 +88,7 @@ const CODEX_ENTRIES = {
   lodgeBram:  { category: 'Lore', icon: '🪵', label: "Bram's Lodge",     flavor: 'Half-carved staves and a well-worn whetstone. The grovekeeper builds slowly and repairs everything.' },
   burrowSprig: { category: 'Lore', icon: '⚙', label: "Sprig's Burrow",   flavor: 'Brass gadgets in various states of disassembly. The little tinker is convinced your drones are cousins.' },
   theBreach:  { category: 'Lore', icon: '🌀', label: 'The Breach',       flavor: 'The miners were digging for gold. They found a door. A chamber of standing stones, deep beneath the rock, whose gates open onto other worlds entirely.' },
+  computerCore: { category: 'Lore', icon: '🖥', label: 'The Machine',    flavor: 'Every backup Al holds lives in this room. The expedition did not come to explore — it came to build the machine that remembers you. Feed it the worlds, and it will reach further.' },
   // ── Crafted ────────────────────────────────────────────────────────────────
   terrainCutter:    { category: 'Crafted', label: 'Terrain Cutter',    flavor: 'A powered cutting blade. Clears terrain efficiently. Mind the durability.' },
   rockDrill:        { category: 'Crafted', label: 'Rock Drill',        flavor: 'Percussion bore for ore veins. The mine gives nothing up without it.' },

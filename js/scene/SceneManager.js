@@ -163,6 +163,14 @@ const ZONE_AMBIENCE = {
     sun: { color: 0xffeab8, intensity: 0.64 },
     fill: { color: 0xa8d870, intensity: 0.3 },
   },
+  // The computer's machine room — dim interior, lamp-lit (homeSylva's preset).
+  computerCore: {
+    clear: 0x121a12,
+    fog: { color: 0x121a12, near: 9, far: 24 },
+    ambient: { color: 0xd8f2e0, intensity: 0.62 },
+    sun: { color: 0xcfeedd, intensity: 0.62 },
+    fill: { color: 0x6fd8c0, intensity: 0.32 },
+  },
 };
 
 export class SceneManager {

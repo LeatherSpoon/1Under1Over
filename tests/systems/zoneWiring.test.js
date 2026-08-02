@@ -50,7 +50,7 @@ test('every zone has ZONE_TERRAIN and ZONE_SPAWN_POS entries in js/zoneManager.j
 
 test('every portal-reachable zone has an ENV_UNLOCK PP threshold in js/config.js', () => {
   // Zones entered through a door interaction instead of a PP-gated portal.
-  const NO_PP_GATE = new Set(['spaceship', 'workspace', 'homeSylva', 'homeBram', 'homeSprig']);
+  const NO_PP_GATE = new Set(['spaceship', 'workspace', 'homeSylva', 'homeBram', 'homeSprig', 'computerCore']);
   const expected = zones.filter(z => !NO_PP_GATE.has(z)).sort();
   assert.deepEqual(Object.keys(CONFIG.ENV_UNLOCK).sort(), expected,
     'ENV_UNLOCK keys must cover every portal-reachable zone (see NO_PP_GATE exceptions in this test)');
