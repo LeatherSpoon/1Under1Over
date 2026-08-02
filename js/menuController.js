@@ -100,10 +100,16 @@ export function initMenuController({ hud, telemetry, env }) {
 
   // Clear the CORE panel's build mode whenever the panel closes (handles all
   // code paths: tab switch, close button, menu close, _closeCommandPanels).
+  // While the CORE panel is open, release the menu backdrop's pointer capture:
+  // build mode needs pointermove + click on the canvas (chunk cursor follows
+  // the pointer, click places), and the full-screen backdrop would swallow
+  // both. Backdrop click-to-close is already suppressed while any
+  // panel-overlay is open, so nothing is lost.
   const computerPanel = document.getElementById('computer-panel');
   if (computerPanel && hud) {
     new MutationObserver(() => {
       if (computerPanel.hidden) hud._computerBuildMode = null;
+      if (menuBackdrop) menuBackdrop.style.pointerEvents = computerPanel.hidden ? '' : 'none';
     }).observe(computerPanel, { attributeFilter: ['hidden'] });
   }
 
