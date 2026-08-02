@@ -141,3 +141,10 @@ Made in `Plans/Integration-Design.md` §1, each vetoable with one line:
 - **Evolution beat:** zone-fade flash + toast. Drone-swarm beat deferred.
 - **Scatter under chunks:** collisionless ground cover inside the plan is removed at shell build; trees/collision circles make a cell invalid instead.
 - **Schematic material keys:** reuse keys proven in TrainingAreaSystem.UPGRADE_COSTS (iron, stone, fiber, quartz, steel_ingot, mechanical_servo) — guarded by test.
+
+## 2026-08-02 — Generation Engine Round 1: rig findings for the owner
+
+- **Buildable ground is scarce**: every small tree/rock collision circle vetoes a full 7x7 chunk square, so valid founding cells cluster at the meadow rim and some valid cells have no valid neighbors. Options for Round 2: chunk placement clears small flora (like it already clears ground cover), or shrink the mask margin. Owner call.
+- Placement validity can flip for a moment right after boot (prop collision circles register as GLBs finish loading) - cosmetic.
+- models/Scrapper.glb is referenced but absent (pre-existing 404 on every boot, guarded).
+- CORE tab ships ungated (per the round-1 decision); gate behind a chapter later if wanted.
