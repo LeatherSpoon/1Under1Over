@@ -248,7 +248,7 @@ export class OfflineSystem {
         if (cheapest) highlights.push(`✦ ${cheapest.name} upgrade affordable (${cheapest.cost} PP)`);
       }
       if (ascension && ascension.canAscend()) {
-        highlights.push('✦ Ascension threshold reached');
+        highlights.push('✦ Offload threshold reached');
       }
       // Award a Quantum Crystal for sessions over 4 hours away (return reward).
       if (timeWarp && result.seconds >= 14400) {

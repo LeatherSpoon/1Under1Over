@@ -1310,7 +1310,7 @@ function handleSpaceshipInteractions() {
     if (_actionCooldown <= 0) { togglePanel('drone-panel'); _actionCooldown = 0.5; }
   });
 
-  reg(env.getAscensionTerminalPos(), '[E/ACT] Recompile Terminal', () => {
+  reg(env.getAscensionTerminalPos(), '[E/ACT] Offload Terminal', () => {
     if (_actionCooldown <= 0) {
       togglePanel('ascension-panel');
       _actionCooldown = 0.5;

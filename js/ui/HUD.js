@@ -631,7 +631,7 @@ export class HUD {
         sch.appendChild(line);
       }
       const evolveBtn = document.createElement('button');
-      evolveBtn.textContent = c.eligible() ? 'EVOLVE' : 'EVOLVE (needs recompile)';
+      evolveBtn.textContent = c.eligible() ? 'EVOLVE' : 'EVOLVE (needs offload)';
       evolveBtn.disabled = !c.canEvolve();
       evolveBtn.addEventListener('click', () => {
         // Toast fires via computerSystem.onEvolved (wired in main.js) — not here.
@@ -1398,7 +1398,7 @@ export class HUD {
       <div class="fieldops-row"><span>Frame DPS</span><span>${abbrevNum(Math.floor(exp.playerDPS))}</span></div>
       <div class="fieldops-row"><span>Kill rate</span><span>${danger ? '<span style="color:#ff5555">STALLED</span>' : (rate * 60).toFixed(1) + ' /min · ' + abbrevNum(exp.ppPerKill(tier)) + ' PP/kill'}</span></div>
       <div class="fieldops-row"><span>Lifetime</span><span>${abbrevNum(exp.totalKills)} kills · +${abbrevNum(exp.totalPP)} PP</span></div>
-      <div class="fieldops-row"><span>Archive Fragments</span><span style="color:#c9a2ff">◈ ${abbrevNum(exp.archiveShards)} <span style="color:#666">(banked for Recompile)</span></span></div>
+      <div class="fieldops-row"><span>Archive Fragments</span><span style="color:#c9a2ff">◈ ${abbrevNum(exp.archiveShards)} <span style="color:#666">(banked for Offload)</span></span></div>
       ${danger ? '<div class="fieldops-warn">⚠ Tier threat exceeds frame survivability — upgrade Health / Defense or drop tiers</div>' : ''}
       ${computeStarved ? '<div class="fieldops-warn">⚠ No compute assigned to SIM LADDER — allocate a unit on the ALLOC board</div>' : ''}
     `;
@@ -3554,7 +3554,8 @@ export class HUD {
   _wireCodexButton()      {}
   _wireAscensionButton()  {}
 
-  // ── Recompile terminal (Spaceship) — the rebirth + Archive shop ─────────
+  // ── Offload terminal (Spaceship) — the rebirth + Archive shop ──────────
+  // (M0 vocabulary: player sees Offload/Data; code keeps ascension/recompile/archive names)
   _refreshAscension() {
     const el = document.getElementById('ascension-contents');
     const asc = this.ascension;
@@ -3570,9 +3571,9 @@ export class HUD {
     card.className = 'fieldops-status';
     card.style.borderColor = '#cc88ff55';
     card.innerHTML = `
-      <div class="fieldops-title" style="color:#cc88ff">RECOMPILE — RUN ${asc.ascensionCount + 1}</div>
+      <div class="fieldops-title" style="color:#cc88ff">OFFLOAD — RUN ${asc.ascensionCount + 1}</div>
       <div style="text-align:center;font-size:28px;padding:6px 0;color:${mActive ? '#ffd700' : '#cc88ff'};text-shadow:0 0 12px ${mActive ? '#ffd70066' : '#cc88ff44'};">◈ ${abbrevNum(gain)}</div>
-      <div style="text-align:center;font-size:10px;color:#888;margin-bottom:6px;">ARCHIVE DATA ON RECOMPILE</div>
+      <div style="text-align:center;font-size:10px;color:#888;margin-bottom:6px;">DATA ON OFFLOAD</div>
       <div class="fieldops-row"><span>Base — peak T${asc.peakTierThisRun + 1} × ${1 + asc.wardensThisRun} wardens</span><span>◈ ${abbrevNum(asc.archiveNext)}</span></div>
       <div class="fieldops-row"><span>Momentum</span><span style="color:${mActive ? '#ffd700' : '#666'}">${mActive ? '×' + asc.momentum.toFixed(2) + ' ACTIVE' : 'DORMANT — 2h online or beat a warden'}</span></div>
       <div class="fieldops-row"><span>Watermark bonus</span><span>${asc.watermarkBonus > 0 ? `◈ ${abbrevNum(asc.watermarkBonus)} — new best tier!` : `— (best ever T${asc.bestTierEver + 1})`}</span></div>
@@ -3589,14 +3590,14 @@ export class HUD {
       btn.textContent = '🔒 BEAT A SECTOR WARDEN TO UNLOCK';
       btn.disabled = true;
     } else if (gain < 1) {
-      btn.textContent = 'NOTHING TO ARCHIVE — CLIMB THE LADDER';
+      btn.textContent = 'NOTHING TO OFFLOAD — CLIMB THE LADDER';
       btn.disabled = true;
     } else if (this._recompileArmed) {
       btn.textContent = `⚠ CONFIRM — RESETS PP, CAP & LADDER (+◈ ${abbrevNum(gain)})`;
       btn.style.borderColor = '#ffd700';
       btn.style.color = '#ffd700';
     } else {
-      btn.textContent = `◈ RECOMPILE (+${abbrevNum(gain)} ARCHIVE)`;
+      btn.textContent = `◈ OFFLOAD (+${abbrevNum(gain)} DATA)`;
     }
     btn.addEventListener('click', () => {
       if (!this._recompileArmed) { this._recompileArmed = true; this._refreshAscension(); return; }
@@ -3608,7 +3609,7 @@ export class HUD {
 
     const note = document.createElement('div');
     note.style.cssText = 'font-size:9px;color:#777;margin:6px 0;line-height:1.5;';
-    note.textContent = 'Resets: PP pool · base cap · ladder tiers, wardens, keys. Keeps: stats · gear · materials · story bosses · tripartite · Archive & shop levels.';
+    note.textContent = 'Resets: PP pool · base cap · ladder tiers, wardens, keys. Keeps: stats · gear · materials · story bosses · tripartite · banked Data & shop levels.';
     el.appendChild(note);
 
     // Archive shop — levels persist forever (watermarked; never lost)

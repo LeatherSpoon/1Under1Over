@@ -82,7 +82,7 @@ const SEQUENCES = [
     id: 'spaceshipStation',
     label: 'Spaceship: Core Systems',
     steps: [
-      { id: 'useAscension', desc: 'Access the Ascension Terminal in the Spaceship' },
+      { id: 'useAscension', desc: 'Access the Offload Terminal in the Spaceship' },
     ],
   },
 ];

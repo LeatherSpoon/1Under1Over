@@ -350,13 +350,13 @@ const CHAINS = [
       },
       {
         id: 'firstAscension',
-        title: 'First Ascension',
-        desc: 'The Ascension Terminal lets you restart with permanent multipliers. Do it.',
-        reward: { pp: 0, label: 'Ascension Bonus', special: true },
+        title: 'First Offload',
+        desc: 'The Offload Terminal lets you restart with permanent multipliers. Do it.',
+        reward: { pp: 0, label: 'Offload Bonus', special: true },
         requires: 'shipAccess',
         steps: [
-          { id: 'openTerminal', desc: 'Open the Ascension Terminal' },
-          { id: 'ascend',       desc: 'Complete your first Ascension' },
+          { id: 'openTerminal', desc: 'Open the Offload Terminal' },
+          { id: 'ascend',       desc: 'Complete your first Offload' },
         ],
       },
     ],

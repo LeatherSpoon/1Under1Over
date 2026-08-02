@@ -332,7 +332,7 @@ export class ExpeditionSystem {
     this._killCounters = {};
     this.archiveShards = 0;
     this._killProgress = 0;
-    this._pushLog('◈ RECOMPILE — ladder re-armed from tier 1; farm sectors reset.');
+    this._pushLog('◈ OFFLOAD — ladder re-armed from tier 1; farm sectors reset.');
     if (this.onEvent) this.onEvent();
   }
 

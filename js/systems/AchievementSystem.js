@@ -47,8 +47,8 @@ const ACHIEVEMENTS = [
   { id: 'perfect_hit',  label: 'Bullseye',            desc: 'Get a PERFECT in the minigame', check: s => s._perfectHits > 0,                  reward: 75,   icon: '🎯' },
 
   // Ascension
-  { id: 'ascend_1',     label: 'Transcendence',       desc: 'Ascend for the first time',   check: s => s.ascension && s.ascension.ascensionCount >= 1, reward: 0,    icon: '✦' },
-  { id: 'ascend_3',     label: 'Reborn',              desc: 'Ascend 3 times',              check: s => s.ascension && s.ascension.ascensionCount >= 3, reward: 0,    icon: '✦' },
+  { id: 'ascend_1',     label: 'Transcendence',       desc: 'Offload for the first time',  check: s => s.ascension && s.ascension.ascensionCount >= 1, reward: 0,    icon: '✦' },
+  { id: 'ascend_3',     label: 'Reborn',              desc: 'Offload 3 times',             check: s => s.ascension && s.ascension.ascensionCount >= 3, reward: 0,    icon: '✦' },
 
   // Extended PP milestones
   { id: 'pp_1m',        label: 'Supercomputer',       desc: 'Earn 1,000,000 PP',           check: s => s.pp.ppTotal >= 1000000,                        reward: 10000, icon: '⚡' },
