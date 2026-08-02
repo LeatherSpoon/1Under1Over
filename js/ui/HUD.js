@@ -201,6 +201,7 @@ export class HUD {
     this._refreshTabUnlocks({ silent: true });
     this._wirePanelToggles();
     this._wireAllocationSliders();
+    this._wireComputerModeButtons();
     this._wireStatsSidebar();
     this._wireStatisticsButton();
     this._wireMinigameButton();
@@ -546,6 +547,8 @@ export class HUD {
       const panel = document.getElementById(id);
       if (panel) panel.hidden = true;
     }
+    // Belt-and-braces with menuController's hidden-attribute observer: this
+    // covers callers that bypass the DOM mutation path within the same frame.
     if (exceptId !== 'computer-panel') this._computerBuildMode = null;
   }
 
@@ -637,15 +640,22 @@ export class HUD {
       sch.appendChild(evolveBtn);
     }
 
-    // mode buttons reflect + toggle _computerBuildMode
+    // mode buttons reflect the current mode (wired once in _wireComputerModeButtons —
+    // they're static DOM, so per-refresh addEventListener would stack handlers)
+    for (const [id, mode] of [['computer-mode-add', 'add'], ['computer-mode-remove', 'remove'], ['computer-mode-door', 'door']]) {
+      const b = document.getElementById(id);
+      if (b) b.classList.toggle('active', this._computerBuildMode === mode);
+    }
+  }
+
+  _wireComputerModeButtons() {
     for (const [id, mode] of [['computer-mode-add', 'add'], ['computer-mode-remove', 'remove'], ['computer-mode-door', 'door']]) {
       const b = document.getElementById(id);
       if (!b) continue;
-      b.classList.toggle('active', this._computerBuildMode === mode);
-      b.onclick = () => {
+      b.addEventListener('click', () => {
         this._computerBuildMode = this._computerBuildMode === mode ? null : mode;
         this._refreshComputer();
-      };
+      });
     }
   }
 
