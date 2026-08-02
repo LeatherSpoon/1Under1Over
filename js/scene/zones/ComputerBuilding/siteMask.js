@@ -12,7 +12,9 @@ import { LANDING_KEEPOUT } from '../../ZoneAssets.js';
 const MARGIN = 0.5;
 const HALF = CHUNK / 2 + MARGIN;
 // Starwing planform + boss arena + knoll from LandingSite/index.js outer-woods
-// keepClear (not all of those are in LANDING_KEEPOUT at full radius):
+// keepClear (not all of those are in LANDING_KEEPOUT at full radius).
+// MUST stay in sync with _addOuterWoods keepClear in zones/LandingSite/index.js —
+// if a feature there moves or resizes, update this list too:
 const EXTRA = [
   { x: 9.0, z: -10.5, r: 15 },   // the Starwing, 26-unit dart planform
   { x: 18, z: 18, r: 7 },        // Scrap Tyrant arena

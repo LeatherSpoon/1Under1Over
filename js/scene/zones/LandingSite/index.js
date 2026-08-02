@@ -261,6 +261,8 @@ function _addForest(env) {
 function _addOuterWoods(env) {
   const rng = seededRandom(770425);
 
+  // NOTE: the chunk-placement mask (zones/ComputerBuilding/siteMask.js EXTRA)
+  // mirrors several of these radii — keep the two lists in sync.
   const keepClear = [
     { x: -18, z: -18, r: 12 },   // mountain
     { x: 18, z: 18, r: 7 },      // Scrap Tyrant arena
