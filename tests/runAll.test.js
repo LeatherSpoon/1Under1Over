@@ -34,6 +34,7 @@ import './systems/phaseAWiring.test.js';
 import './systems/chapterSystem.test.js';
 import './systems/computerGenerations.test.js';
 import './systems/computerSystem.test.js';
+import './systems/computerShell.test.js';
 import './systems/computeSystem.test.js';
 import './systems/factoryHoppers.test.js';
 import './systems/zoneWiring.test.js';
