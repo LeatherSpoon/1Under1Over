@@ -165,8 +165,11 @@ const ZONE_AMBIENCE = {
   },
   // The computer's machine room — dim interior, lamp-lit (homeSylva's preset).
   computerCore: {
+    // homeSylva's palette, but fog pushed out for the room scale: homes are
+    // r 4.3, the machine room spans up to ~18 units and the fixed camera sits
+    // ~19 out — near 9/far 24 fogged the whole interior to black.
     clear: 0x121a12,
-    fog: { color: 0x121a12, near: 9, far: 24 },
+    fog: { color: 0x121a12, near: 14, far: 42 },
     ambient: { color: 0xd8f2e0, intensity: 0.62 },
     sun: { color: 0xcfeedd, intensity: 0.62 },
     fill: { color: 0x6fd8c0, intensity: 0.32 },
