@@ -37,7 +37,8 @@ function hexToLinear(hex) {
 /**
  * Build a path mesh and add it to the environment.
  * opts colors are hex ints: { color, groundColor, stoneColor? } + the pure
- * builder's tuning knobs.
+ * builder's tuning knobs. `opts.parent` (default env.group) picks the group
+ * the mesh joins — rebuildable ribbons (the computer path) use their own.
  */
 export function addPathRibbon(env, points, opts) {
   const data = buildPathStripData(points, {
@@ -66,6 +67,6 @@ export function addPathRibbon(env, points, opts) {
   geo.setIndex(data.indices);
   const mesh = new THREE.Mesh(geo, createToonMaterial(0xffffff, { vertexColors: true }));
   mesh.receiveShadow = true;
-  env.group.add(mesh);
+  (opts.parent || env.group).add(mesh);
   return mesh;
 }

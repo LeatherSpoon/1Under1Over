@@ -45,6 +45,10 @@ import { ModifiersSystem } from './systems/ModifiersSystem.js';
 import { TripartiteSystem } from './systems/TripartiteSystem.js';
 import { WorldEffects } from './fx/WorldEffects.js';
 import { createSwitchZone } from './zoneManager.js';
+import { ComputerSystem } from './systems/ComputerSystem.js';
+import { CHUNK, chunkKey, chunkToWorld, worldToChunk } from './systems/computerGenerations.js';
+import { wallRuns, shellCollisionCircles } from './scene/zones/ComputerBuilding/shell.js';
+import { isChunkCellValid } from './scene/zones/ComputerBuilding/siteMask.js';
 import { MINE_BREACH_Z, mineWorldToCell } from './scene/zones/Mine/layout.js';
 import { MineDelveSystem } from './systems/MineDelveSystem.js';
 import { initMenuController } from './menuController.js';
@@ -568,6 +572,45 @@ if (offlineSummary) {
   hud.showOfflineBanner(offlineSummary);
 }
 
+// ── Generation Engine — the computer's building (save v15) ───────────────────
+const computerSystem = new ComputerSystem(inventorySystem);
+computerSystem.getAscensionCount = () => ascension.ascensionCount; // recompiles, NOT pp.prestigeCount
+computerSystem.isCellValid = (cx, cz) =>
+  env.currentZone === 'landingSite' && isChunkCellValid(cx, cz,
+    // The shell's own wall circles sit ON the boundary of every adjacent
+    // candidate chunk — exclude them or no second chunk could ever attach.
+    env.getCollisionCircles().filter(c => !env._computerCircles.includes(c)));
+computerSystem._shellFns = { wallRuns, shellCollisionCircles };     // Environment reads via system ref
+computerSystem._gridFns = { CHUNK, chunkKey, chunkToWorld, worldToChunk };
+env._computerSystemRef = computerSystem;
+computerSystem.onPlanChanged = () => {
+  env.buildComputerShell(computerSystem);
+  refreshComputerDoor();
+  hud._refreshPanel('computer-panel');
+};
+hud.computer = computerSystem;
+
+// The building's walk-in door, nav chip, and pad→door path all track the plan.
+// Rebuilt on plan edits and on every zone switch (portals/landmarks are
+// cleared per switch, so re-registering is the normal grammar).
+function refreshComputerDoor() {
+  env.buildComputerPath(computerSystem); // self-clearing — also erases a stale ribbon off-zone
+  if (env.currentZone !== 'landingSite' || !computerSystem.hasFounded()) return;
+  // drop any previous computer door record (plan-edit rebuild) before re-adding
+  const portals = env._zonePortals;
+  for (let i = portals.length - 1; i >= 0; i--) {
+    if (portals[i].targetZone === 'computerCore') {
+      if (portals[i].mesh) env.group.remove(portals[i].mesh);
+      portals.splice(i, 1);
+    }
+  }
+  env._navLandmarks = env._navLandmarks.filter(l => l.label !== 'Computer');
+  const [dx, dz] = computerSystem.doorOutside();
+  env._addCaveEntrance(dx, dz, 'computerCore', 'The Computer',
+    { walkIn: true, triggerR: 1.6, spawnOverride: computerSystem.doorInside() });
+  env._addNavLandmark(dx, 2.0, dz, 'Computer');
+}
+
 // ── Save System ──────────────────────────────────────────────────────────────
 
 const missionTracker = initMissionTracker({ codexSystem });
@@ -612,6 +655,7 @@ const saveSystem = new SaveSystem({
   mineDelve,
   trainingAreas,
   compute: computeSystem,
+  computer: computerSystem,
 });
 
 // World-space effects (offload burst, etc.)
@@ -670,6 +714,11 @@ const switchZone = createSwitchZone({
     _gatherType = null;
     questSystem.recordZoneVisit(env.currentZone);
     if (ZONE_LORE[env.currentZone]) codexSystem.discover(ZONE_LORE[env.currentZone]);
+
+    // Generation Engine: the shell, door, nav chip and path re-register per
+    // zone entry (both self-clear and no-op outside landingSite).
+    env.buildComputerShell(computerSystem);
+    refreshComputerDoor();
 
     // Presence rotation: being in a zone cross-amplifies a different tripartite leg.
     // Reset all multipliers, then apply the configured zone bonus (if any). No UI exposure.
@@ -1023,14 +1072,25 @@ window.doConstructAction = _doConstructAction;
 
 // Tap/click on canvas — immediate, no cooldown.
 canvas.addEventListener('pointerdown', e => {
-  const panel = document.getElementById('construct-panel');
-  if (!panel || panel.hidden) return;
   if (typeof hud === 'undefined' || typeof pedometer === 'undefined') return;
+  const panel = document.getElementById('construct-panel');
+  const constructOpen = panel && !panel.hidden;
+  const computerPanel = document.getElementById('computer-panel');
+  const computerOpen = computerPanel && !computerPanel.hidden && hud._computerBuildMode
+    && env.currentZone === 'landingSite';
+  if (!constructOpen && !computerOpen) return;
   const r = canvas.getBoundingClientRect();
   _constructPointer.x = ((e.clientX - r.left) / r.width)  *  2 - 1;
   _constructPointer.y = ((e.clientY - r.top)  / r.height) * -2 + 1;
   _constructPointer.valid = true;
-  _applyConstructAt(_constructGroundSnap());
+  if (constructOpen) { _applyConstructAt(_constructGroundSnap()); return; }
+  // Computer build mode: route the tap to the hovered chunk (same snap helper)
+  const snap = _constructGroundSnap();
+  const px = snap ? snap.x : player.position.x;
+  const pz = snap ? snap.z : player.position.z;
+  const [cx, cz] = worldToChunk(px, pz);
+  const [wx, wz] = chunkToWorld(cx, cz);
+  _doComputerAction(cx, cz, _nearestSide(px - wx, pz - wz));
 });
 
 function handleConstructMode(delta) {
@@ -1069,6 +1129,59 @@ function handleConstructMode(delta) {
     }
   }
   return true;
+}
+
+// ── Computer Build Mode (Generation Engine) ──────────────────────────────────
+// Mirrors handleConstructMode at chunk scale. Inert until Task 8 ships the
+// CORE panel: no #computer-panel element / no hud._computerBuildMode → no-op.
+
+function handleComputerBuildMode(delta) {
+  const mode = hud._computerBuildMode;
+  const panel = document.getElementById('computer-panel');
+  if (!panel || panel.hidden || !mode || player.isInCombat || env.currentZone !== 'landingSite') {
+    env.hideChunkCursor();
+    return false;
+  }
+  const snap = _constructGroundSnap();   // pointer→ground raycast (2-unit snap is fine at chunk scale)
+  const px = snap ? snap.x : player.position.x;
+  const pz = snap ? snap.z : player.position.z;
+  const [cx, cz] = worldToChunk(px, pz);
+  const [wx, wz] = chunkToWorld(cx, cz);
+  if (mode === 'add') {
+    const ok = computerSystem.canPlace(cx, cz);
+    env.updateChunkCursor(wx, wz, ok, delta);
+    hud.showInteractHint(ok
+      ? `Click / [E] to build  (${computerSystem.pendingChunks} chunk${computerSystem.pendingChunks === 1 ? '' : 's'} ready)`
+      : computerSystem.pendingChunks <= 0 ? 'No chunks pending — evolve the machine'
+        : computerSystem.hasFounded() ? 'Must touch the building, on clear ground' : 'Ground occupied');
+    if (keysDown.has('KeyE') && _actionCooldown <= 0) _doComputerAction(cx, cz);
+  } else if (mode === 'remove') {
+    const ok = computerSystem.canRemove(cx, cz);
+    env.updateChunkCursor(wx, wz, ok, delta);
+    hud.showInteractHint(ok ? 'Click / [E] to reclaim this chunk'
+      : 'Keep the plan connected — door and last chunk stay');
+    if (keysDown.has('KeyE') && _actionCooldown <= 0) _doComputerAction(cx, cz);
+  } else { // 'door'
+    // nearest exterior side of the hovered chunk to the pointer
+    const side = _nearestSide(px - wx, pz - wz);
+    const ok = computerSystem.canSetDoor(cx, cz, side);
+    env.updateChunkCursor(wx, wz, ok, delta);
+    hud.showInteractHint(ok ? `Click / [E] to move the door (${side} face)` : 'Pick an exterior face of the building');
+    if (keysDown.has('KeyE') && _actionCooldown <= 0) _doComputerAction(cx, cz, side);
+  }
+  return true;
+}
+
+function _nearestSide(lx, lz) {
+  return Math.abs(lx) > Math.abs(lz) ? (lx > 0 ? 'E' : 'W') : (lz > 0 ? 'S' : 'N');
+}
+
+function _doComputerAction(cx, cz, side) {
+  const mode = hud._computerBuildMode;
+  if (mode === 'add') computerSystem.place(cx, cz);
+  else if (mode === 'remove') computerSystem.remove(cx, cz);
+  else if (mode === 'door' && side) computerSystem.setDoor(cx, cz, side);
+  _actionCooldown = 0.3;
 }
 
 // ── Drill Interaction ─────────────────────────────────────────────────────────
@@ -1329,7 +1442,7 @@ let _actionCooldown = 0; // prevents instant re-trigger of [E] across interactio
 let _energyWasEmpty = false; // latch for the energy_empty achievement counter
 let _farmDirectorAt = 0;     // Farm Director module's 5s advance timer
 let _portalRefreshTimer = 0;
-window.__debugSystems = { inventorySystem, codexSystem, questSystem, hud, ppSystem, combatSim, trainingAreas, tripartite, statsSystem, modifiers, ascension, factorySystem, gameStats, pedometer, craftingSystem, chapters: chapterSystem, bossSystem, compute: computeSystem, offlineSystem, expedition, droneSystem, extractorSystem, sceneManager, entityManager };
+window.__debugSystems = { inventorySystem, codexSystem, questSystem, hud, ppSystem, combatSim, trainingAreas, tripartite, statsSystem, modifiers, ascension, factorySystem, gameStats, pedometer, craftingSystem, chapters: chapterSystem, bossSystem, compute: computeSystem, offlineSystem, expedition, droneSystem, extractorSystem, sceneManager, entityManager, computer: computerSystem };
 window.__debugSnapshot = () => {
   const hint = document.getElementById('interact-hint');
   const nearestNode = entityManager.findNearestNode(player.position);
@@ -1719,6 +1832,13 @@ function gameLoop(now) {
     if (handleConstructMode(delta)) showingHint = true;
   }
 
+  // Computer build mode (Generation Engine) — same override tier
+  if (!showingHint && !player.isInCombat) {
+    if (handleComputerBuildMode(delta)) showingHint = true;
+  } else {
+    env.hideChunkCursor();
+  }
+
   // Extended gather (tree clear / rock drill) — takes priority over portals
   // Always call handleExtendedGather so the gather timer advances when active.
   if (!player.isInCombat) {
@@ -1900,6 +2020,11 @@ sceneManager.renderer.setAnimationLoop(gameLoop);
     // to the GPU in one hidden render, then kick the shader-program matrix
     // (material families × light buckets) compiling on the driver's parallel
     // threads. First zone visits stop paying upload + compile stalls.
+    // Generation Engine: build the shell + door once for the boot zone (zone
+    // switches — including save/cloud restores, which go through switchZone —
+    // rebuild via onAfterSwitch; both calls no-op on an unfounded plan).
+    env.buildComputerShell(computerSystem);
+    refreshComputerDoor();
     if (env._glb) uploadGlbBuffers(sceneManager.renderer, env._glb);
     sceneManager.queueTexturePreload(env._glb || {});
     warmShaderCache(sceneManager.renderer, sceneManager.camera);

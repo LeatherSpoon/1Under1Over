@@ -12,6 +12,7 @@ import {
 } from './zones/index.js';
 import { mineWorldToCell, mineCellToWorld, isMineFloorCell } from './zones/Mine/layout.js';
 import { buildComputerCore } from './zones/ComputerBuilding/interior.js';
+import { addPathRibbon } from './PathRibbon.js';
 import { cloneSkinned } from '../entities/Enemy.js';
 
 // Shared GLB model cache — loads each model once then reuses cloned scenes.
@@ -830,6 +831,27 @@ export class Environment {
     for (const o of doomed) o.parent?.remove(o);
   }
 
+  /**
+   * Worn trail from the landing pad to the computer's door. Lives in its own
+   * scene-level group (not env.group) so a plan edit can rebuild it without a
+   * zone rebuild; cleared/rebuilt alongside buildComputerShell.
+   */
+  buildComputerPath(computer) {
+    if (!this._computerPathGroup) {
+      this._computerPathGroup = new THREE.Group();
+      this.scene.add(this._computerPathGroup);
+    }
+    while (this._computerPathGroup.children.length > 0) {
+      this._computerPathGroup.remove(this._computerPathGroup.children[0]);
+    }
+    if (this.currentZone !== 'landingSite' || !computer.hasFounded()) return;
+    const [dx, dz] = computer.doorOutside();
+    addPathRibbon(this, [[1.5, 1.5], [(1.5 + dx) / 2, (1.5 + dz) / 2], [dx, dz]], {
+      width: 1.6, color: 0x8a7d6b, groundColor: 0x5a8c3c, strength: 1.0, // 0x5a8c3c = GROUND_HEX (LandingSite/index.js)
+      seed: 90815, parent: this._computerPathGroup,
+    });
+  }
+
   _addTrackMarker(x, z) {
     // Single tile matching one background grid cell (GridHelper: GROUND_SIZE / (GROUND_SIZE/2) = 2 units per cell)
     const tileMat = createToonMaterial(0x00ddaa);
@@ -1442,6 +1464,9 @@ export class Environment {
       // seen outside the radius, so a spawn inside it can never insta-fire.
       walkIn: !!opts.walkIn,
       triggerR: opts.triggerR || 2.5,
+      // Optional [x, z] landing point in the TARGET zone (the computer's door
+      // uses it so entering lands just inside the doorway).
+      spawnOverride: opts.spawnOverride || null,
     });
   }
 
@@ -2408,6 +2433,28 @@ export class Environment {
   hideConstructCursor() {
     this._cursorGroup.visible = false;
   }
+
+  /** 6×6 chunk-placement cursor for the computer build mode (construct-cursor
+   *  pattern at chunk scale). Teal = valid, red = invalid. */
+  updateChunkCursor(x, z, ok, delta) {
+    if (!this._chunkCursor) {
+      const mat = createToonMaterial(0x00ffcc);
+      mat.transparent = true; mat.opacity = 0.3;
+      const tile = new THREE.Mesh(new THREE.PlaneGeometry(6, 6), mat);
+      tile.rotation.x = -Math.PI / 2; tile.position.y = 0.05;
+      this._chunkCursor = new THREE.Group();
+      this._chunkCursor.add(tile);
+      this._chunkCursorMat = mat;
+      this.scene.add(this._chunkCursor);
+    }
+    this._chunkCursor.visible = true;
+    this._chunkCursor.position.set(x, 0, z);
+    this._chunkCursorMat.color.setHex(ok ? 0x00ffcc : 0xff4422);
+    this._chunkCursorPulseT = ((this._chunkCursorPulseT || 0) + delta * 3.0) % (Math.PI * 2);
+    this._chunkCursorMat.opacity = 0.28 + 0.22 * Math.sin(this._chunkCursorPulseT);
+  }
+
+  hideChunkCursor() { if (this._chunkCursor) this._chunkCursor.visible = false; }
 
   getOffloadStationPos() { return this._offloadStationPos || null; }
   getFabricatorPos() { return this._fabricatorPos || null; }
