@@ -147,9 +147,10 @@ export const LANDING_KEEPOUT = [
   { x: 24, z: 6, r: 1.4 },
 ];
 const _LANDING_KEEPOUT = LANDING_KEEPOUT; // internal scatter reference stands
-const _LANDING_KEEPOUT_SEGS = [
+export const LANDING_KEEPOUT_SEGS = [
   { ax: 0, az: 0, bx: -11.5, bz: -11.5, r: 1.6 },  // pad → mine gate → adit mouth
 ];
+const _LANDING_KEEPOUT_SEGS = LANDING_KEEPOUT_SEGS; // internal scatter reference stands
 
 // The Verdant Maw's canopy structure comes from the same constants the
 // walkable surfaces and the Blender export use — one source of truth.

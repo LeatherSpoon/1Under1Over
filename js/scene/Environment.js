@@ -812,15 +812,18 @@ export class Environment {
     // (skip on gen 1: the shed is dark until the machine grows)
     for (let g = 2; g <= computer.generation; g++) {
       const [dwx, dwz] = computer.doorWorld();
+      // spread strips across the door face, alternating sides of the door —
+      // every offset keeps the 0.9-wide strip inside the chunk's ±3 half-face
+      // so no strip can float past a wall corner (era-1 caps at 3 strips)
+      const off = [-1.6, 1.6, -2.55][(g - 2) % 3];
       const strip = new THREE.Mesh(
         new THREE.BoxGeometry(0.9, 0.5, 0.06),
         new THREE.MeshBasicMaterial({ color: 0x8fe8cc })
       );
-      // spread strips along the door face, left of the door
-      strip.position.set(dwx - 1.6 - (g - 2) * 1.2, H * 0.6, dwz + (computer.door.side === 'S' ? 0.18 : -0.18));
+      strip.position.set(dwx + off, H * 0.6, dwz + (computer.door.side === 'S' ? 0.18 : -0.18));
       if (computer.door.side === 'E' || computer.door.side === 'W') {
         strip.rotation.y = Math.PI / 2;
-        strip.position.set(dwx + (computer.door.side === 'E' ? 0.18 : -0.18), H * 0.6, dwz - 1.6 - (g - 2) * 1.2);
+        strip.position.set(dwx + (computer.door.side === 'E' ? 0.18 : -0.18), H * 0.6, dwz + off);
       }
       this._computerGroup.add(strip);
     }

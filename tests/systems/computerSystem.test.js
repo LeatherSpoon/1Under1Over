@@ -81,13 +81,18 @@ test('eligibility gate reads the recompile count callback', () => {
   c.deliver('iron', 20); c.deliver('stone', 15);
   c.getAscensionCount = () => 0;
   // thresholds are 0 this round, so still eligible; force one to prove the gate
+  // (finally-restore: GENERATIONS is shared module state — a mid-test failure
+  // must not leak the mutated threshold into later tests)
   const row = c.nextRow();
   const saved = row.eligibility;
-  row.eligibility = 3;
-  assert.ok(!c.canEvolve(), 'recompiles below threshold block evolve');
-  c.getAscensionCount = () => 3;
-  assert.ok(c.canEvolve());
-  row.eligibility = saved;
+  try {
+    row.eligibility = 3;
+    assert.ok(!c.canEvolve(), 'recompiles below threshold block evolve');
+    c.getAscensionCount = () => 3;
+    assert.ok(c.canEvolve());
+  } finally {
+    row.eligibility = saved;
+  }
 });
 
 test('serialize/deserialize round-trips; deserialize(null) is the fresh state', () => {

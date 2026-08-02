@@ -1,5 +1,5 @@
 import { CHUNK, chunkToWorld } from '../../../systems/computerGenerations.js';
-import { LANDING_KEEPOUT } from '../../ZoneAssets.js';
+import { LANDING_KEEPOUT, LANDING_KEEPOUT_SEGS } from '../../ZoneAssets.js';
 
 /**
  * Landing-Site validity mask for chunk placement. A chunk cell is valid when
@@ -22,7 +22,6 @@ const EXTRA = [
   { x: -18, z: -18, r: 12 },     // mountain
   { x: 9.4, z: 8.6, r: 5 },      // survivor camp
 ];
-const CORRIDOR = { ax: 0, az: 0, bx: -11.5, bz: -11.5, r: 1.6 }; // pad → adit ribbon
 const BOUND = 40 - HALF;         // landingSite ground is ±40
 
 function circleHitsSquare(c, wx, wz) {
@@ -40,7 +39,10 @@ function segDist(px, pz, ax, az, bx, bz) {
 export function isChunkCellValid(cx, cz, liveCircles = []) {
   const [wx, wz] = chunkToWorld(cx, cz);
   if (Math.abs(wx) > BOUND || Math.abs(wz) > BOUND) return false;
-  if (segDist(wx, wz, CORRIDOR.ax, CORRIDOR.az, CORRIDOR.bx, CORRIDOR.bz) < CORRIDOR.r + HALF) return false;
+  // pad→adit corridor (and any future segs) — shared with the scatter keep-outs
+  for (const s of LANDING_KEEPOUT_SEGS) {
+    if (segDist(wx, wz, s.ax, s.az, s.bx, s.bz) < s.r + HALF) return false;
+  }
   for (const c of [...LANDING_KEEPOUT, ...EXTRA]) if (circleHitsSquare(c, wx, wz)) return false;
   // Circles flagged `computer: true` are the building's own shell — they sit ON
   // the boundary of every adjacent candidate chunk and must not veto growth.
