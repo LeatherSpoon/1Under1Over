@@ -22,7 +22,8 @@ test('table covers gens 1-4 contiguously with era-1 invariants', () => {
 });
 
 test('schematic material keys are proven inventory keys', () => {
-  // Keys proven in TrainingAreaSystem.UPGRADE_COSTS — the recipe economy donors.
+  // The approved schematic key set (Plans/DESIGN-DECISIONS.md 2026-08-02) —
+  // all valid recipe-economy materials (most also appear in TrainingAreaSystem.UPGRADE_COSTS).
   const KNOWN = new Set(['iron', 'stone', 'fiber', 'quartz', 'steel_ingot', 'mechanical_servo']);
   for (const r of GENERATIONS.slice(1)) {
     for (const k of Object.keys(r.schematic)) assert.ok(KNOWN.has(k), `unknown material ${k}`);
