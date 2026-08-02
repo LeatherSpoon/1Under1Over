@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { createToonMaterial } from '../../ToonMaterials.js';
 import { CHUNK, chunkToWorld } from '../../../systems/computerGenerations.js';
-import { wallRuns } from './shell.js';
+import { wallRuns, shellCollisionCircles } from './shell.js';
 
 /**
  * Inside the computer's building — one room whose footprint IS the player's
@@ -45,15 +45,17 @@ export function buildComputerCore(env, computer) {
   for (const r of wallRuns(computer.plan, computer.door)) {
     const horiz = r.z1 === r.z2;
     const len = horiz ? Math.abs(r.x2 - r.x1) : Math.abs(r.z2 - r.z1);
-    // Camera-side (max-z horizontal) walls become low rims so the room reads
+    // Horizontal walls on the plan's southmost line (max z = camera side) become
+    // low rims so the room reads at the fixed +z camera; −0.1 absorbs FP error.
+    // An L-plan can have two such runs — both rim, which is the right read.
     const isCameraSide = horiz && r.z1 >= maxPlanZ(computer.plan) - 0.1;
     const h = isCameraSide ? 0.5 : H;
     const wall = new THREE.Mesh(new THREE.BoxGeometry(horiz ? len : 0.25, h, horiz ? 0.25 : len), wallMat);
     wall.position.set((r.x1 + r.x2) / 2, h / 2, (r.z1 + r.z2) / 2);
     env.group.add(wall);
   }
-  // collision mirrors the exterior exactly (same chains, same door gap)
-  const { shellCollisionCircles } = computer._shellFns;
+  // collision mirrors the exterior exactly (same chains, same door gap —
+  // NB the collision cut is wider than the visual gap, see shell.js)
   for (const c of shellCollisionCircles(computer.plan, computer.door)) {
     env._collisionCircles.push({ ...c });
   }
@@ -68,6 +70,9 @@ export function buildComputerCore(env, computer) {
   const placed = [];
   const chunks = [...computer.plan].sort();
   let attempts = 0;
+  // Rejection sampling with a hard attempt cap: at gen-4 density (95% fill)
+  // the room is MEANT to read crowded, so under-packing on an unlucky seed is
+  // acceptable — never loop unbounded on a plan too tight for the target count.
   while (placed.length < count && attempts++ < count * 40) {
     const key = chunks[Math.floor(rng() * chunks.length)];
     const [cx, cz] = key.split(',').map(Number);
