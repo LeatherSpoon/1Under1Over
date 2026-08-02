@@ -118,7 +118,8 @@ Root oddballs: `combine-js-to-md.ps1` regenerates the `*_compact.txt` / `all-in-
 **Live — trust these**
 - `CLAUDE.md` — architecture, wiring checklists, gotchas (auto-loaded every session)
 - `Plans/Integration-Design.md` — **build order of record**: 7 phases + formulas
-- `Plans/DESIGN-DECISIONS.md` — every design decision and veto, logged
+- `Plans/Design-plan-8.1_1.md` — **the design log of record** (owner, 2026-08-01): Locked / Leaning / Session-notes buckets; nothing is doctrine unless the owner locked it
+- `Plans/Design-8.1-Vision-Handoff_3.md` — the synthesized vision for code-side sessions (pairs with the 8.1 log)
 - `Plans/Game-Brief.md` — design-language snapshot of the whole game for ideation/chat sessions (no code); pairs with DESIGN-DECISIONS
 - `Plans/Expanded-Biome-Worlds-Design.md` — approved design: four 100×100 biomes, route grammar, authored layout data (**not on `main`** — lives only in the archived `backup/machine-phase1-2` branch; the owner shelved that direction 2026-07-31)
 - `Plans/Expanded-Biome-Worlds-Implementation.md` — its build order + code findings (**same archived branch**)
@@ -131,4 +132,5 @@ Root oddballs: `combine-js-to-md.ps1` regenerates the `*_compact.txt` / `all-in-
 - `docs/for-future-claude.md` — April 2026; gotcha and working-style sections still good, state sections stale
 
 **Historical — do NOT trust for current state**
+`Plans/DESIGN-DECISIONS.md` (**retired by the owner 2026-08-01** — session calls got recorded as doctrine, some backwards; superseded by Design-plan-8.1) ·
 `Plans/7-21-to-do` (the Phase E kickoff prompt — executed and shipped 2026-07-20) · `Plans/NEXT-SESSION-KICKOFF.md` (mission complete) · `Plans/game_analysis.md` (superseded by Systems-Inventory) · `Direction.md` · `implementation_plan.md` · `TRIPARTITE_SESSION_WRITEUP.md` · `docs/superpowers/specs/2026-07-07-ngu-feel-roadmap-design.md` (superseded by Integration-Design) · `Plans/*.txt` brainstorms · `July3Plan.docx`
