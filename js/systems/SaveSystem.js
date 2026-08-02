@@ -1,6 +1,6 @@
 import { CONFIG } from '../config.js';
 
-const SAVE_VERSION = 14;
+const SAVE_VERSION = 15;
 
 export class SaveSystem {
   constructor(systems) {
@@ -18,7 +18,7 @@ export class SaveSystem {
       mathematician, timeWarp, modifiers, missionTracker, questSystem, assembly,
       extractor, processingNodes, tripartite, bosses, expedition, challenges,
       neuralImplant, combatSim, mineDelve, trainingAreas, crafting, chapters,
-      compute,
+      compute, computer,
     } = this.systems;
 
     const data = {
@@ -134,6 +134,7 @@ export class SaveSystem {
       mineDelve:     mineDelve     ? mineDelve.serialize()     : null,
       trainingAreas: trainingAreas ? trainingAreas.serialize() : null,
       compute:       compute       ? compute.serialize()       : null,
+      computer:      computer      ? computer.serialize()      : null,
     };
 
     for (const name of stats.statNames) {
@@ -220,7 +221,7 @@ export class SaveSystem {
       mathematician, timeWarp, modifiers, missionTracker, questSystem, assembly,
       extractor, processingNodes, tripartite, bosses, expedition, challenges,
       neuralImplant, combatSim, mineDelve, trainingAreas, crafting, chapters,
-      compute,
+      compute, computer,
     } = this.systems;
 
     // Drill System
@@ -368,6 +369,9 @@ export class SaveSystem {
     // leaves the pool unseeded and ComputeSystem.maybeSeed() auto-assigns on the
     // first frame the board is unlocked (migration + fresh saves share one path).
     if (compute) compute.deserialize(data.compute ?? null);
+    // Generation Engine (v15). Pre-v15 saves have no computer blob —
+    // deserialize(null) keeps the fresh unfounded state (gen 1, 1 pending chunk).
+    if (computer) computer.deserialize(data.computer ?? null);
     // Legacy: migrate old taskSystem saves (no-op if not present)
 
 
