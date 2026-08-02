@@ -37,6 +37,7 @@ export class ComputerSystem {
     this.slotChoices = {};          // reserved: module-slot variants (later round)
     this.colorId = 0;               // reserved: color variants (later round)
     this.onPlanChanged = null;      // wired in main.js → shell rebuild + HUD refresh
+    this.onEvolved = null;          // wired in main.js → generation-online toast
     this.getAscensionCount = () => 0; // ascension.ascensionCount (NOT pp.prestigeCount)
     this.isCellValid = () => true;  // world keep-out mask, injected in main.js
   }
@@ -165,6 +166,7 @@ export class ComputerSystem {
     this.pendingChunks += this.row().chunkGrant;
     this.delivered = {};
     this.onPlanChanged?.();
+    this.onEvolved?.();
     return true;
   }
 

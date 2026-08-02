@@ -220,6 +220,7 @@
         <button class="menu-tab" data-tab="challenges-panel" role="tab">TRIALS</button>
         <button class="menu-tab" data-tab="implant-panel" role="tab">IMPLANT</button>
         <button class="menu-tab" data-tab="data-panel" role="tab">DATA</button>
+        <button class="menu-tab" data-tab="computer-panel" role="tab">CORE</button>
         <button class="menu-tab" data-tab="settings-panel" role="tab">⚙</button>
       </nav>
     </div>
@@ -278,6 +279,25 @@
           <button class="panel-close" style="border-color:#ff664444;color:#ff6644;" onclick="document.getElementById('expedition-panel').hidden=true">X</button>
         </div>
         <div class="panel-body" id="expedition-contents"></div>
+      </div>
+    </div>
+
+    <!-- The Computer — Generation Engine core: status, build modes, schematic (CORE tab) -->
+    <div id="computer-panel" class="panel-overlay" hidden>
+      <div class="panel-window" style="border-color:#66ddff55;">
+        <div class="panel-header" style="color:#66ddff;border-color:#66ddff44;background:rgba(4,14,22,0.88);">
+          THE COMPUTER
+          <button class="panel-close" style="border-color:#66ddff44;color:#66ddff;" onclick="document.getElementById('computer-panel').hidden=true">X</button>
+        </div>
+        <div class="panel-body" id="computer-contents">
+          <div id="computer-status"></div>
+          <div id="computer-build-modes">
+            <button id="computer-mode-add">BUILD CHUNK</button>
+            <button id="computer-mode-remove">RECLAIM</button>
+            <button id="computer-mode-door">MOVE DOOR</button>
+          </div>
+          <div id="computer-schematic"></div>
+        </div>
       </div>
     </div>
 

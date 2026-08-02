@@ -195,6 +195,7 @@ export class HUD {
     this._peakRate = 0;
 
     this._constructAddMode = true;
+    this._computerBuildMode = null; // 'add' | 'remove' | 'door' | null (CORE panel)
 
     this._buildStatList();
     this._refreshTabUnlocks({ silent: true });
@@ -538,13 +539,14 @@ export class HUD {
       'workshop-panel', 'constructor-panel', 'fabrication-panel', 'assembly-matrix-panel',
       'refinery-panel',
       'expedition-panel', 'challenges-panel', 'implant-panel', 'data-panel',
-      'training-panel',
+      'training-panel', 'computer-panel',
     ];
     for (const id of ids) {
       if (id === exceptId) continue;
       const panel = document.getElementById(id);
       if (panel) panel.hidden = true;
     }
+    if (exceptId !== 'computer-panel') this._computerBuildMode = null;
   }
 
   _refreshPanel(panelId) {
@@ -573,6 +575,77 @@ export class HUD {
       case 'implant-panel': this._refreshImplant(); break;
       case 'data-panel': this._refreshDataCore(); break;
       case 'training-panel': this._refreshTraining(); break;
+      case 'computer-panel': this._refreshComputer(); break;
+    }
+  }
+
+  // ── CORE panel (The Computer — Generation Engine) ────────────────────────
+  _refreshComputer() {
+    const c = this.computer;
+    if (!c) return;
+    const status = document.getElementById('computer-status');
+    if (!status) return;
+    const row = c.row();
+    status.innerHTML = '';
+    const lines = [
+      `Generation ${c.generation} — ${row.interiorSet.replace(/([A-Z])/g, ' $1').toLowerCase()}`,
+      c.hasFounded()
+        ? `Plan: ${c.plan.size} chunk${c.plan.size === 1 ? '' : 's'} · machine fill ${(row.fillFraction * 100) | 0}%`
+        : 'Not yet founded — BUILD CHUNK, then walk the meadow and place the first block.',
+      `Pending chunks: ${c.pendingChunks}`,
+    ];
+    for (const t of lines) {
+      const div = document.createElement('div');
+      div.textContent = t;
+      status.appendChild(div);
+    }
+
+    const sch = document.getElementById('computer-schematic');
+    sch.innerHTML = '';
+    const rem = c.remaining();
+    if (rem === null) {
+      sch.textContent = 'Era 1 complete. The machine waits for the next era.';
+    } else {
+      const h = document.createElement('h3');
+      h.textContent = `GENERATION ${c.generation + 1} SCHEMATIC`;
+      sch.appendChild(h);
+      const schematic = c.schematic();
+      for (const [mat, total] of Object.entries(schematic)) {
+        const have = c.delivered[mat] || 0;
+        const line = document.createElement('div');
+        line.textContent = `${mat}: ${have}/${total}`;
+        if (rem[mat]) {
+          const btn = document.createElement('button');
+          const held = c.inventory.materials[mat] || 0;
+          btn.textContent = `DELIVER (${Math.min(held, rem[mat])})`;
+          btn.disabled = held <= 0;
+          btn.addEventListener('click', () => {
+            c.deliver(mat, rem[mat]);
+            this._refreshComputer();
+          });
+          line.appendChild(btn);
+        }
+        sch.appendChild(line);
+      }
+      const evolveBtn = document.createElement('button');
+      evolveBtn.textContent = c.eligible() ? 'EVOLVE' : 'EVOLVE (needs recompile)';
+      evolveBtn.disabled = !c.canEvolve();
+      evolveBtn.addEventListener('click', () => {
+        // Toast fires via computerSystem.onEvolved (wired in main.js) — not here.
+        if (this.computer.evolve()) this._refreshComputer();
+      });
+      sch.appendChild(evolveBtn);
+    }
+
+    // mode buttons reflect + toggle _computerBuildMode
+    for (const [id, mode] of [['computer-mode-add', 'add'], ['computer-mode-remove', 'remove'], ['computer-mode-door', 'door']]) {
+      const b = document.getElementById(id);
+      if (!b) continue;
+      b.classList.toggle('active', this._computerBuildMode === mode);
+      b.onclick = () => {
+        this._computerBuildMode = this._computerBuildMode === mode ? null : mode;
+        this._refreshComputer();
+      };
     }
   }
 

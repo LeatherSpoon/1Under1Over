@@ -14,7 +14,7 @@ export const MENU_PANEL_IDS = [
   'workshop-panel', 'constructor-panel', 'fabrication-panel', 'assembly-matrix-panel',
   'refinery-panel',
   'expedition-panel', 'challenges-panel', 'implant-panel', 'data-panel',
-  'training-panel',
+  'training-panel', 'computer-panel',
 ];
 
 export function initMenuController({ hud, telemetry, env }) {
@@ -96,6 +96,15 @@ export function initMenuController({ hud, telemetry, env }) {
       constructBtn.classList.toggle('active', opening);
       if (opening) hud._refreshConstructPanel();
     });
+  }
+
+  // Clear the CORE panel's build mode whenever the panel closes (handles all
+  // code paths: tab switch, close button, menu close, _closeCommandPanels).
+  const computerPanel = document.getElementById('computer-panel');
+  if (computerPanel && hud) {
+    new MutationObserver(() => {
+      if (computerPanel.hidden) hud._computerBuildMode = null;
+    }).observe(computerPanel, { attributeFilter: ['hidden'] });
   }
 
   // Sync grid visibility with construct panel open/closed state (handles all

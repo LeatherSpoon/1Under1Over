@@ -310,6 +310,43 @@ body {
   color: #ffcc66;
 }
 
+/* ── CORE panel (The Computer) build-mode buttons ────────────────── */
+/* .active convention mirrors #btn-construct.active: lit border + glow */
+#computer-build-modes {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+}
+#computer-build-modes button {
+  flex: 1;
+  background: rgba(0, 12, 20, 0.88);
+  border: 1px solid #66ddff44;
+  border-radius: 6px;
+  color: #66ddff;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  padding: 8px 6px;
+  min-height: 40px;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+#computer-build-modes button:hover { background: rgba(0, 24, 38, 0.95); color: #aaeeff; }
+#computer-build-modes button.active {
+  background: rgba(0, 24, 38, 0.95);
+  border-color: #66ddff;
+  box-shadow: 0 0 10px rgba(102, 221, 255, 0.45);
+  color: #aaeeff;
+}
+#computer-schematic h3 {
+  margin: 12px 0 6px;
+  color: #66ddff;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+}
+#computer-schematic button { margin: 4px 0 0 8px; }
+
 /* ── Construct panel ─────────────────────────────────────────────── */
 #construct-panel {
   position: fixed;

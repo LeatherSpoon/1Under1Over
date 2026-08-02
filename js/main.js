@@ -588,6 +588,15 @@ computerSystem.onPlanChanged = () => {
   refreshComputerDoor();
   hud._refreshPanel('computer-panel');
 };
+computerSystem.onEvolved = () => {
+  // The one place the generation beat fires (EVOLVE button handler doesn't toast).
+  hud.showAchievementToast({
+    icon: '🖥',
+    label: `GENERATION ${computerSystem.generation} ONLINE`,
+    desc: 'The machine grows — new chunks pending.',
+    reward: 0,
+  });
+};
 hud.computer = computerSystem;
 
 // The building's walk-in door, nav chip, and pad→door path all track the plan.
