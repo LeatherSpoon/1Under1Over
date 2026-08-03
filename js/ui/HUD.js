@@ -195,7 +195,8 @@ export class HUD {
     this._peakRate = 0;
 
     this._constructAddMode = true;
-    this._computerBuildMode = null; // 'add' | 'remove' | 'door' | null (CORE panel)
+    this._computerBuildMode = null; // 'add' | 'remove' | 'door' | null (CORE panel + BUILD dock)
+    this._constructCategory = 'tracks'; // BUILD dock sub-menu: 'tracks' | 'computer'
 
     this._buildStatList();
     this._refreshTabUnlocks({ silent: true });
@@ -296,6 +297,22 @@ export class HUD {
       });
     }
 
+    // BUILD dock sub-menu: SPEED TRACKS ↔ THE COMPUTER. Switching to tracks
+    // disarms any computer mode (the two placement cursors never coexist);
+    // switching to computer arms BUILD CHUNK by default so one click works.
+    const catTracks = document.getElementById('btn-construct-cat-tracks');
+    const catComputer = document.getElementById('btn-construct-cat-computer');
+    if (catTracks) catTracks.addEventListener('click', () => {
+      this._constructCategory = 'tracks';
+      this._computerBuildMode = null;
+      this._refreshConstructPanel();
+    });
+    if (catComputer) catComputer.addEventListener('click', () => {
+      this._constructCategory = 'computer';
+      this._computerBuildMode = this._computerBuildMode || 'add';
+      this._refreshConstructPanel();
+    });
+
     const returnBtn = document.getElementById('btn-construct-return');
     if (returnBtn) {
       returnBtn.addEventListener('click', () => {
@@ -310,13 +327,23 @@ export class HUD {
     const el = document.getElementById('construct-contents');
     if (!el || !this.pedometer) return;
 
-    // Sync mode toggle button appearance
+    // Category sub-menu state
+    const catTracks = document.getElementById('btn-construct-cat-tracks');
+    const catComputer = document.getElementById('btn-construct-cat-computer');
+    const isComputer = this._constructCategory === 'computer';
+    if (catTracks) catTracks.className = `construct-mode-toggle${isComputer ? '' : ' mode-add'}`;
+    if (catComputer) catComputer.className = `construct-mode-toggle${isComputer ? ' mode-add' : ''}`;
+
+    // Sync mode toggle button appearance (tracks category only)
     const modeBtn = document.getElementById('btn-construct-mode');
     if (modeBtn) {
+      modeBtn.hidden = isComputer;
       const isAdd = this._constructAddMode;
       modeBtn.textContent = isAdd ? '＋ PLACING' : '－ REMOVING';
       modeBtn.className = `construct-mode-toggle ${isAdd ? 'mode-add' : 'mode-remove'}`;
     }
+
+    if (isComputer) { this._renderConstructComputer(el); return; }
 
     el.innerHTML = '';
     const ped = this.pedometer;
@@ -371,6 +398,72 @@ export class HUD {
     hint.textContent = isAdd
       ? `Navigate to tile · tap button or press [E]`
       : `Navigate near a track · tap button or press [E]`;
+    el.appendChild(hint);
+  }
+
+  /** The BUILD dock's COMPUTER sub-menu (Generation Engine chunk placement). */
+  _renderConstructComputer(el) {
+    el.innerHTML = '';
+    const c = this.computer;
+    if (!c) return;
+    const zone = this.getZone ? this.getZone() : 'landingSite';
+    const onSite = zone === 'landingSite';
+
+    const item = document.createElement('div');
+    item.className = 'construct-item';
+    const title = document.createElement('div');
+    title.className = 'construct-item-title';
+    title.textContent = 'The Computer';
+    item.appendChild(title);
+    const stats = document.createElement('div');
+    stats.className = 'construct-item-stats';
+    stats.innerHTML = `<span class="ci-pending">Chunks pending: ${c.pendingChunks}</span><span class="ci-placed">Placed: ${c.plan.size}</span>`;
+    item.appendChild(stats);
+    const cost = document.createElement('div');
+    cost.className = 'construct-item-cost';
+    cost.textContent = c.hasFounded()
+      ? `Generation ${c.generation} — feed its schematic in CORE to earn chunks`
+      : 'Place the first foundation chunk anywhere clear';
+    item.appendChild(cost);
+    el.appendChild(item);
+
+    if (!onSite) {
+      const note = document.createElement('div');
+      note.className = 'construct-hint';
+      note.textContent = 'The computer stands at the Landing Site — travel there to build.';
+      el.appendChild(note);
+      return;
+    }
+
+    // Mode buttons — shared state with the CORE panel's build modes
+    for (const [mode, label] of [['add', '＋ BUILD CHUNK'], ['remove', '－ RECLAIM'], ['door', '◫ MOVE DOOR']]) {
+      const b = document.createElement('button');
+      b.className = 'construct-buy-btn';
+      b.textContent = label;
+      b.classList.toggle('construct-action-btn', this._computerBuildMode === mode);
+      b.addEventListener('click', () => {
+        this._computerBuildMode = this._computerBuildMode === mode ? null : mode;
+        this._refreshConstructPanel();
+      });
+      el.appendChild(b);
+    }
+
+    // Large action button — primary input on mobile (acts at the player's feet)
+    const actionBtn = document.createElement('button');
+    actionBtn.className = 'construct-buy-btn construct-action-btn';
+    actionBtn.textContent = '⌂ ACT HERE';
+    actionBtn.disabled = !this._computerBuildMode;
+    actionBtn.addEventListener('click', () => {
+      if (typeof window.doComputerAction === 'function') window.doComputerAction();
+      this._refreshConstructPanel();
+    });
+    el.appendChild(actionBtn);
+
+    const hint = document.createElement('div');
+    hint.className = 'construct-hint';
+    hint.textContent = this._computerBuildMode
+      ? 'Aim the 6×6 cursor · click / [E] to confirm · [ESC] exits'
+      : 'Pick a mode above to start building';
     el.appendChild(hint);
   }
 
@@ -547,8 +640,8 @@ export class HUD {
       const panel = document.getElementById(id);
       if (panel) panel.hidden = true;
     }
-    // Belt-and-braces with menuController's hidden-attribute observer: this
-    // covers callers that bypass the DOM mutation path within the same frame.
+    // Armed build modes outlive the CORE panel by design ([ESC] exits), but
+    // opening any OTHER command panel means the player moved on — disarm.
     if (exceptId !== 'computer-panel') this._computerBuildMode = null;
   }
 
@@ -655,6 +748,9 @@ export class HUD {
       b.addEventListener('click', () => {
         this._computerBuildMode = this._computerBuildMode === mode ? null : mode;
         this._refreshComputer();
+        // Arming a mode CLOSES the menu so the player can see (and click) the
+        // ground — the chunk cursor + interact hint take over; [ESC] exits.
+        if (this._computerBuildMode) window.togglePanel?.('computer-panel');
       });
     }
   }

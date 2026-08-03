@@ -83,6 +83,12 @@ export function initMenuController({ hud, telemetry, env }) {
         cp.hidden = true;
         document.getElementById('btn-construct')?.classList.remove('active');
       }
+      // Exit computer build mode (armed modes outlive the CORE panel/BUILD dock)
+      if (hud && hud._computerBuildMode) {
+        hud._computerBuildMode = null;
+        const dock = document.getElementById('construct-panel');
+        if (dock && !dock.hidden) hud._refreshConstructPanel();
+      }
     }
   });
 
@@ -98,17 +104,15 @@ export function initMenuController({ hud, telemetry, env }) {
     });
   }
 
-  // Clear the CORE panel's build mode whenever the panel closes (handles all
-  // code paths: tab switch, close button, menu close, _closeCommandPanels).
-  // While the CORE panel is open, release the menu backdrop's pointer capture:
-  // build mode needs pointermove + click on the canvas (chunk cursor follows
-  // the pointer, click places), and the full-screen backdrop would swallow
-  // both. Backdrop click-to-close is already suppressed while any
-  // panel-overlay is open, so nothing is lost.
+  // Build mode SURVIVES the CORE panel closing — arming a mode deliberately
+  // closes the menu so the player can see the ground (the chunk cursor +
+  // interact hint take over; [ESC] exits, see the Escape handler above).
+  // While the panel IS open, release the menu backdrop's pointer capture so
+  // pointermove/click reach the canvas. Backdrop click-to-close is already
+  // suppressed while any panel-overlay is open, so nothing is lost.
   const computerPanel = document.getElementById('computer-panel');
   if (computerPanel && hud) {
     new MutationObserver(() => {
-      if (computerPanel.hidden) hud._computerBuildMode = null;
       if (menuBackdrop) menuBackdrop.style.pointerEvents = computerPanel.hidden ? '' : 'none';
     }).observe(computerPanel, { attributeFilter: ['hidden'] });
   }

@@ -583,10 +583,13 @@ computerSystem.isCellValid = (cx, cz) =>
 computerSystem._shellFns = { wallRuns, shellCollisionCircles };     // Environment reads via system ref
 computerSystem._gridFns = { CHUNK, chunkKey, chunkToWorld, worldToChunk };
 env._computerSystemRef = computerSystem;
+hud.getZone = () => env.currentZone; // BUILD dock's COMPUTER sub-menu gates on the zone
 computerSystem.onPlanChanged = () => {
   env.buildComputerShell(computerSystem);
   refreshComputerDoor();
   hud._refreshPanel('computer-panel');
+  const dock = document.getElementById('construct-panel');
+  if (dock && !dock.hidden) hud._refreshConstructPanel();
 };
 computerSystem.onEvolved = () => {
   // The one place the generation beat fires (EVOLVE button handler doesn't toast).
@@ -1078,15 +1081,13 @@ canvas.addEventListener('pointerdown', e => {
   if (typeof hud === 'undefined' || typeof pedometer === 'undefined') return;
   const panel = document.getElementById('construct-panel');
   const constructOpen = panel && !panel.hidden;
-  const computerPanel = document.getElementById('computer-panel');
-  const computerOpen = computerPanel && !computerPanel.hidden && hud._computerBuildMode
-    && env.currentZone === 'landingSite';
-  if (!constructOpen && !computerOpen) return;
+  const computerArmed = hud._computerBuildMode && env.currentZone === 'landingSite';
+  if (!constructOpen && !computerArmed) return;
   const r = canvas.getBoundingClientRect();
   _constructPointer.x = ((e.clientX - r.left) / r.width)  *  2 - 1;
   _constructPointer.y = ((e.clientY - r.top)  / r.height) * -2 + 1;
   _constructPointer.valid = true;
-  if (constructOpen) { _applyConstructAt(_constructGroundSnap()); return; }
+  if (constructOpen && !computerArmed) { _applyConstructAt(_constructGroundSnap()); return; }
   // Computer build mode: route the tap to the hovered chunk (same snap helper)
   const snap = _constructGroundSnap();
   const px = snap ? snap.x : player.position.x;
@@ -1139,9 +1140,10 @@ function handleConstructMode(delta) {
 // CORE panel: no #computer-panel element / no hud._computerBuildMode → no-op.
 
 function handleComputerBuildMode(delta) {
+  // Armed mode is enough — the CORE panel CLOSES itself when a mode button is
+  // clicked so the player can see the ground they're building on. [ESC] exits.
   const mode = hud._computerBuildMode;
-  const panel = document.getElementById('computer-panel');
-  if (!panel || panel.hidden || !mode || player.isInCombat || env.currentZone !== 'landingSite') {
+  if (!mode || player.isInCombat || env.currentZone !== 'landingSite') {
     env.hideChunkCursor();
     return false;
   }
@@ -1154,22 +1156,23 @@ function handleComputerBuildMode(delta) {
     const ok = computerSystem.canPlace(cx, cz);
     env.updateChunkCursor(wx, wz, ok, delta);
     hud.showInteractHint(ok
-      ? `Click / [E] to build  (${computerSystem.pendingChunks} chunk${computerSystem.pendingChunks === 1 ? '' : 's'} ready)`
-      : computerSystem.pendingChunks <= 0 ? 'No chunks pending — evolve the machine'
-        : computerSystem.hasFounded() ? 'Must touch the building, on clear ground' : 'Ground occupied');
+      ? `Click / [E] to build  (${computerSystem.pendingChunks} chunk${computerSystem.pendingChunks === 1 ? '' : 's'} ready) · [ESC] exits`
+      : computerSystem.pendingChunks <= 0 ? 'No chunks pending — evolve the machine · [ESC] exits'
+        : computerSystem.hasFounded() ? 'Must touch the building, on clear ground · [ESC] exits' : 'Ground occupied · [ESC] exits');
     if (keysDown.has('KeyE') && _actionCooldown <= 0) _doComputerAction(cx, cz);
   } else if (mode === 'remove') {
     const ok = computerSystem.canRemove(cx, cz);
     env.updateChunkCursor(wx, wz, ok, delta);
-    hud.showInteractHint(ok ? 'Click / [E] to reclaim this chunk'
-      : 'Keep the plan connected — door and last chunk stay');
+    hud.showInteractHint(ok ? 'Click / [E] to reclaim this chunk · [ESC] exits'
+      : 'Keep the plan connected — door and last chunk stay · [ESC] exits');
     if (keysDown.has('KeyE') && _actionCooldown <= 0) _doComputerAction(cx, cz);
   } else { // 'door'
     // nearest exterior side of the hovered chunk to the pointer
     const side = _nearestSide(px - wx, pz - wz);
     const ok = computerSystem.canSetDoor(cx, cz, side);
     env.updateChunkCursor(wx, wz, ok, delta);
-    hud.showInteractHint(ok ? `Click / [E] to move the door (${side} face)` : 'Pick an exterior face of the building');
+    hud.showInteractHint(ok ? `Click / [E] to move the door (${side} face) · [ESC] exits`
+      : 'Pick an exterior face of the building · [ESC] exits');
     if (keysDown.has('KeyE') && _actionCooldown <= 0) _doComputerAction(cx, cz, side);
   }
   return true;
@@ -1178,6 +1181,17 @@ function handleComputerBuildMode(delta) {
 function _nearestSide(lx, lz) {
   return Math.abs(lx) > Math.abs(lz) ? (lx > 0 ? 'E' : 'W') : (lz > 0 ? 'S' : 'N');
 }
+
+// Mobile/large-button path (BUILD dock's COMPUTER sub-menu): act on the chunk
+// under the player, mirroring window.doConstructAction for tracks.
+window.doComputerAction = () => {
+  if (!hud._computerBuildMode || player.isInCombat || _actionCooldown > 0) return;
+  if (env.currentZone !== 'landingSite') return;
+  const px = player.position.x, pz = player.position.z;
+  const [cx, cz] = worldToChunk(px, pz);
+  const [wx, wz] = chunkToWorld(cx, cz);
+  _doComputerAction(cx, cz, _nearestSide(px - wx, pz - wz));
+};
 
 function _doComputerAction(cx, cz, side) {
   const mode = hud._computerBuildMode;
@@ -1830,16 +1844,17 @@ function gameLoop(now) {
   // ── Interaction priority chain ──────────────────────────────────────────────
   let showingHint = false;
 
-  // Construction mode — overrides all other E interactions when panel is open
+  // Computer build mode (Generation Engine) — takes precedence while armed,
+  // even with the BUILD dock open (its COMPUTER sub-menu arms these modes)
   if (!showingHint && !player.isInCombat) {
-    if (handleConstructMode(delta)) showingHint = true;
-  }
-
-  // Computer build mode (Generation Engine) — same override tier
-  if (!showingHint && !player.isInCombat) {
-    if (handleComputerBuildMode(delta)) showingHint = true;
+    if (handleComputerBuildMode(delta)) { showingHint = true; env.hideConstructCursor(); }
   } else {
     env.hideChunkCursor();
+  }
+
+  // Construction mode (speed tracks) — when the computer isn't armed
+  if (!showingHint && !player.isInCombat) {
+    if (handleConstructMode(delta)) showingHint = true;
   }
 
   // Extended gather (tree clear / rock drill) — takes priority over portals
@@ -2028,6 +2043,17 @@ sceneManager.renderer.setAnimationLoop(gameLoop);
     // rebuild via onAfterSwitch; both calls no-op on an unfounded plan).
     env.buildComputerShell(computerSystem);
     refreshComputerDoor();
+    // First-time discoverability: nothing else in the game points at the CORE
+    // tab, so an unfounded machine gets one nudge per profile.
+    if (!computerSystem.hasFounded() && !localStorage.getItem('pp_core_hint_shown')) {
+      localStorage.setItem('pp_core_hint_shown', '1');
+      setTimeout(() => hud.showAchievementToast({
+        icon: '🖥',
+        label: 'THE COMPUTER',
+        desc: 'Press BUILD and choose THE COMPUTER to lay its first foundation.',
+        reward: 0,
+      }), 2500);
+    }
     if (env._glb) uploadGlbBuffers(sceneManager.renderer, env._glb);
     sceneManager.queueTexturePreload(env._glb || {});
     warmShaderCache(sceneManager.renderer, sceneManager.camera);
