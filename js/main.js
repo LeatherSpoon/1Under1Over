@@ -890,7 +890,11 @@ const SPECIALTY_TOOL_NAMES = {
   cryoPick:     'Cryo-Pick',
 };
 
-function handleExtendedGather(delta) {
+// `suppress` (build mode armed and owning the frame): an in-flight gather's
+// timer still advances above, but no NEW gather may start and no gather hint
+// may clobber the build hint — the [E] the build cursor consumes must not
+// double-fire into a tree/rock gather.
+function handleExtendedGather(delta, suppress = false) {
   if (player.isInCombat) return false;
   if (player.isGathering) {
     // Clear stale interaction targets so hints don't linger
@@ -962,6 +966,9 @@ function handleExtendedGather(delta) {
     }
     return true; // consuming interaction
   }
+
+  // Build mode owns the hint and [E] from here down (timer above still ran).
+  if (suppress) { _nearestTree = null; _nearestRock = null; return false; }
 
   // Trees — always interactable; cutter clears permanently, otherwise harvests timber
   const hasCutter = inventorySystem.hasTool('terrainCutter');
@@ -1845,9 +1852,15 @@ function gameLoop(now) {
   let showingHint = false;
 
   // Computer build mode (Generation Engine) — takes precedence while armed,
-  // even with the BUILD dock open (its COMPUTER sub-menu arms these modes)
+  // even with the BUILD dock open (its COMPUTER sub-menu arms these modes).
+  // While it owns the frame, extended gather below runs suppressed: its timer
+  // still ticks but its hint and [E] are muted (one press must never place a
+  // chunk AND start a gather).
+  let buildOwnsFrame = false;
   if (!showingHint && !player.isInCombat) {
-    if (handleComputerBuildMode(delta)) { showingHint = true; env.hideConstructCursor(); }
+    if (handleComputerBuildMode(delta)) {
+      showingHint = true; buildOwnsFrame = true; env.hideConstructCursor();
+    }
   } else {
     env.hideChunkCursor();
   }
@@ -1858,9 +1871,10 @@ function gameLoop(now) {
   }
 
   // Extended gather (tree clear / rock drill) — takes priority over portals
-  // Always call handleExtendedGather so the gather timer advances when active.
+  // Always call handleExtendedGather so the gather timer advances when active
+  // (suppressed while the build cursor owns the frame — see above).
   if (!player.isInCombat) {
-    if (handleExtendedGather(delta) || _gatherType) {
+    if (handleExtendedGather(delta, buildOwnsFrame) || _gatherType) {
       showingHint = true;
     }
   }

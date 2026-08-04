@@ -46,8 +46,11 @@ export function isChunkCellValid(cx, cz, liveCircles = []) {
   for (const c of [...LANDING_KEEPOUT, ...EXTRA]) if (circleHitsSquare(c, wx, wz)) return false;
   // Circles flagged `computer: true` are the building's own shell — they sit ON
   // the boundary of every adjacent candidate chunk and must not veto growth.
+  // Circles flagged `clearable` are small decorative flora (trees, boulders —
+  // tagged at their push sites in Environment.js): placement doesn't veto on
+  // them, it REMOVES them (Environment.clearGroundCoverIn on shell rebuild).
   // Flag-skip instead of pre-filtering keeps the per-frame add-mode check
   // allocation-free (phone perf budget).
-  for (const c of liveCircles) if (!c.computer && circleHitsSquare(c, wx, wz)) return false;
+  for (const c of liveCircles) if (!c.computer && !c.clearable && circleHitsSquare(c, wx, wz)) return false;
   return true;
 }

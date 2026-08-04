@@ -478,10 +478,11 @@ export class Environment {
 
     const entry = {
       group: treeGroup, x, z, alive: true,
-      collision: { x, z, r: 0.55 },
+      collision: { x, z, r: 0.55, clearable: true },  // same rule as _addTree
       _harvestReady: true, _harvestTimer: 0,
       _variantR: Math.random(), _sizeR: Math.random(), _modeled: false,
     };
+    entry.collision.tree = entry;
     this._buildTreeVisual(entry);
     this._collisionCircles.push(entry.collision);
     this._trees.push(entry);
@@ -578,7 +579,13 @@ export class Environment {
       if (groundCover) m.userData.isGroundCover = true;
       this.group.add(m);
       if (r !== undefined) {
-        this._collisionCircles.push(y ? { x, z, r, y } : { x, z, r });
+        const circle = y ? { x, z, r, y } : { x, z, r };
+        // Small decorative props (r ≤ 0.9: trees, boulders, crates, rocks) are
+        // clearable by Generation Engine chunk placement — the validity mask
+        // skips them (siteMask.js) and clearGroundCoverIn removes mesh+circle.
+        // Bigger props (cave mouths etc.) and y-banded circles keep vetoing.
+        if (!y && r > 0 && r <= 0.9) { circle.clearable = true; circle.mesh = m; }
+        this._collisionCircles.push(circle);
       }
     }
   }
@@ -904,9 +911,13 @@ export class Environment {
   }
 
   /** Remove collisionless scatter (grass/flowers/bushes) whose position falls
-   *  inside the plan's chunks — trees and collision-bearing props instead veto
-   *  placement via the validity mask. */
-  clearGroundCoverIn(plan, { worldToChunk, chunkKey }) {
+   *  inside the plan's chunks, plus `clearable` small flora WITH collision
+   *  (circles tagged at their push sites: forest trees in _addTree/plantTree,
+   *  small ZoneAssets props in _placeGLBProps). Gameplay blockers — resource
+   *  nodes, drillable rocks (env._rocks), NPCs, portals, stations — are never
+   *  tagged and always veto via the validity mask instead. Idempotent: cleared
+   *  circles are spliced out, so a rebuild is a no-op. */
+  clearGroundCoverIn(plan, { worldToChunk, chunkKey, chunkToWorld, CHUNK }) {
     const doomed = [];
     this.group.traverse(o => {
       if (!o.userData?.isGroundCover) return;
@@ -915,6 +926,32 @@ export class Environment {
       if (plan.has(chunkKey(cx, cz))) doomed.push(o);
     });
     for (const o of doomed) o.parent?.remove(o);
+    // Clearable circles go by square-intersection with the same padded metric
+    // the validity mask uses (HALF = CHUNK/2 + margin), so any circle that
+    // stopped vetoing placement is also removed — nothing survives to clip
+    // the new walls or leave floating collision at the boundary.
+    const HALF = CHUNK / 2 + 0.5;
+    const squares = [...plan].map(k => {
+      const [cx, cz] = k.split(',').map(Number);
+      return chunkToWorld(cx, cz);
+    });
+    const hits = (c) => squares.some(([wx, wz]) => {
+      const dx = Math.max(Math.abs(c.x - wx) - HALF, 0);
+      const dz = Math.max(Math.abs(c.z - wz) - HALF, 0);
+      return Math.hypot(dx, dz) < c.r;
+    });
+    for (let i = this._collisionCircles.length - 1; i >= 0; i--) {
+      const c = this._collisionCircles[i];
+      if (!c.clearable || !hits(c)) continue;
+      this._collisionCircles.splice(i, 1);
+      if (c.tree) {              // forest tree entry (env._trees)
+        c.tree.alive = false;    // findNearestTree skips dead trees
+        c.tree.group.visible = false;
+      } else if (c.mesh) {       // ZoneAssets decorative prop
+        c.mesh.parent?.remove(c.mesh);
+      }
+    }
+    this._collisionCacheStatic = -1; // merged-cache key (zone-switch convention)
   }
 
   /**
@@ -1360,12 +1397,16 @@ export class Environment {
     treeGroup.position.set(x, 0, z);
     // Exactly three draws on every path so the seeded forest layout is
     // identical whether or not the tree GLBs have finished loading yet.
+    // `clearable` + the tree back-ref: placing a Generation Engine chunk over
+    // a decorative small tree removes it (clearGroundCoverIn) instead of the
+    // tree vetoing the whole 6×6 chunk (siteMask.js skips clearable circles).
     const entry = {
       group: treeGroup, x, z, alive: true,
-      collision: { x, z, r: 0.55 },
+      collision: { x, z, r: 0.55, clearable: true },
       _harvestReady: true, _harvestTimer: 0,
       _variantR: rand(), _sizeR: rand(), _modeled: false,
     };
+    entry.collision.tree = entry;
     treeGroup.rotation.y = rand() * Math.PI * 2;
     this._buildTreeVisual(entry);
     this.group.add(treeGroup);
