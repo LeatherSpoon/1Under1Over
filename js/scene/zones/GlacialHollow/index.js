@@ -163,6 +163,18 @@ export function build(env) {
   // ZONE_ASSETS narrows it onto the trigger and seals the back. The warm glow
   // is the tell that something lives below the ice.
   env._addCaveEntrance(0, 19, 'meltwaterRift', 'Meltwater Rift');
+
+  // ── The residents ─────────────────────────────────────────────────────────
+  // The Rimeseer — a crystalline ice-being — stands with the glowing crystal
+  // cluster at (-13,4); the Bonecarver, a musk-ox-folk hermit, works beside
+  // the mammoth skull. Both clear of the Rimefather's post at (-2,14), the
+  // spawn corridor and the rift passage.
+  env._addNpc('npcRimeseer', -11.2, 5.6, { rotY: -2.30, r: 0.5,
+    name: 'The Rimeseer',
+    greeting: 'Even ice dreams, friend. Slowly.' });
+  env._addNpc('npcBonecarver', 2.1, 6.4, { rotY: -0.92, r: 0.5,
+    name: 'The Bonecarver',
+    greeting: 'Old bones make the best company. They never interrupt.' });
   const spillMat = new THREE.MeshBasicMaterial({ color: 0xffb054, transparent: true, opacity: 0.28 });
   const spill = new THREE.Mesh(new THREE.CircleGeometry(1.9, 18), spillMat);
   spill.rotation.x = -Math.PI / 2;

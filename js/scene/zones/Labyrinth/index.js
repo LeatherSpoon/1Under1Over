@@ -51,8 +51,10 @@ export function build(env) {
   // The Warden — an old tortoise-folk keeper — greets arrivals beside the
   // gate; the Delver, a mouse-folk explorer, has made camp at the fountain
   // court and is clearly never finding the way out on his own.
-  env._addNpc('npcWarden', -4, 24, { rotY: 1.1, r: 0.5 });
-  env._addNpc('npcDelver', -22.5, -17, { rotY: -2.45, r: 0.4 });
+  env._addNpc('npcWarden', -4, 24, { rotY: 1.1, r: 0.5,
+    name: 'The Warden', greeting: 'The maze remembers every footstep. Mind yours.' });
+  env._addNpc('npcDelver', -22.5, -17, { rotY: -2.45, r: 0.4,
+    name: 'The Delver', greeting: "Left, left, then… no. Don't follow my directions." });
 
   // ── Paved processional ────────────────────────────────────────────────────
   // Entry court → plaza, and the plaza's west/east mouths — flagstones on

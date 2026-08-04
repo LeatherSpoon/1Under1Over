@@ -30,6 +30,7 @@ import './systems/mineKitRules.test.js';
 import './systems/mineFloorColor.test.js';
 import './systems/mineDigging.test.js';
 import './systems/combatMechanics.test.js';
+import './systems/playerRig.test.js';
 import './systems/phaseAWiring.test.js';
 import './systems/chapterSystem.test.js';
 import './systems/computerGenerations.test.js';

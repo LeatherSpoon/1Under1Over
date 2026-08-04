@@ -91,8 +91,10 @@ export function build(env) {
   // Survivor camp — the first people the player meets. Both face the campfire
   // at (9.6, 8.4) so they read as talking across it rather than staring past
   // each other; rotY = atan2(dx, dz) turns the model's default +z facing.
-  env._addNpc('npcMara',  11.0, 9.4, { rotY: Math.atan2(-1.4, -1.0) });
-  env._addNpc('npcFinch',  8.2, 7.4, { rotY: Math.atan2(1.4, 1.0) });
+  env._addNpc('npcMara',  11.0, 9.4, { rotY: Math.atan2(-1.4, -1.0),
+    name: 'Mara', greeting: "Camp's holding. Watch yourself out past the treeline." });
+  env._addNpc('npcFinch',  8.2, 7.4, { rotY: Math.atan2(1.4, 1.0),
+    name: 'Finch', greeting: "Quiet skies today. I'll take it." });
 }
 
 // ── Landing pad ──────────────────────────────────────────────────────────────

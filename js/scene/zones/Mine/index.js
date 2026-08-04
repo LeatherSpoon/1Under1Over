@@ -108,6 +108,19 @@ export function build(env) {
   env._addPortal(mp.frozenTundra.x, mp.frozenTundra.z, 'frozenTundra', CONFIG.ENV_UNLOCK.frozenTundra, 'Frozen Tundra');
   env._addPortal(mp.lagoonCoast.x,  mp.lagoonCoast.z,  'lagoonCoast',  CONFIG.ENV_UNLOCK.lagoonCoast,  'Lagoon Coast');
   env._addPortal(mp.atlantis.x,     mp.atlantis.z,     'atlantis',     CONFIG.ENV_UNLOCK.atlantis,     'Atlantis');
+
+  // ── The residents ─────────────────────────────────────────────────────────
+  // Both stand inside fixed ANCHOR rooms (anchors.js), which every delve
+  // re-roll keeps as open floor — never on generated cave cells. Deepvark, a
+  // mole-folk prospector, works the drill cavern (drill anchor cell (9,12) →
+  // world (-9.6,0)); Geode, a pangolin-folk assayer, reads the Breach's gate
+  // gallery from one row north of the gates.
+  env._addNpc('npcDeepvark', -6.4, 3.2, { rotY: -2.36, r: 0.45,
+    name: 'Deepvark',
+    greeting: 'Dig long enough and the rock starts digging back.' });
+  env._addNpc('npcGeode', -4.8, 24, { rotY: 0.79, r: 0.45,
+    name: 'Geode',
+    greeting: "Every stone down here sings. Most folk just don't listen." });
 }
 
 // ── Floors ───────────────────────────────────────────────────────────────────

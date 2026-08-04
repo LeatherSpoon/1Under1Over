@@ -34,6 +34,7 @@ export class CombatSystem {
     this.onWindup = null;   // fn(isCharging) — called for swinger wind-up
     this.onBurstStart = null; // fn() — for burst attacker animation
     this.onPlayerHit = null; // fn({type:'hit'|'dodge', dmg, absorbed}) — damage floater
+    this.onEnemyStrike = null; // fn(dmg) — an enemy hit landed on the player (flinch hook)
     this.onBossDefeated = null; // fn(archetype) — wired to BossSystem in main.js
   }
 
@@ -219,6 +220,7 @@ export class CombatSystem {
   _enemyStrike(baseDamage) {
     const enemy = this.enemy;
     const dmg = this.stats.takeDamage(Math.round(baseDamage * this._rageMult));
+    if (this.onEnemyStrike) this.onEnemyStrike(dmg);
     if (enemy.fpDrainOnHit > 0 && this.stats.currentFP > 0) {
       this.stats.currentFP = Math.max(0, this.stats.currentFP - enemy.fpDrainOnHit);
       this._log(`${enemy.name} siphons your Focus!`);

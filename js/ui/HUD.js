@@ -3380,6 +3380,23 @@ export class HUD {
     }, 4000);
   }
 
+  // ── NPC greeting bark ([E] near a named ambient NPC) ─────────────────────
+  showNpcBark(name, line) {
+    const bark = document.getElementById('npc-bark');
+    if (!bark) return;
+    document.getElementById('npc-bark-name').textContent = name;
+    document.getElementById('npc-bark-line').textContent = line;
+    bark.hidden = false;
+    bark.classList.remove('toast-exit');
+    bark.classList.add('toast-enter');
+    clearTimeout(this._npcBarkTimer);
+    this._npcBarkTimer = setTimeout(() => {
+      bark.classList.remove('toast-enter');
+      bark.classList.add('toast-exit');
+      setTimeout(() => { bark.hidden = true; bark.classList.remove('toast-exit'); }, 400);
+    }, 4000);
+  }
+
   // ── Offline Progress Banner ─────────────────────────────────────────────
   showOfflineBanner(summary) {
     const banner = document.getElementById('offline-banner');

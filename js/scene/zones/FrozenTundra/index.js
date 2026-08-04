@@ -128,6 +128,21 @@ export function build(env) {
   // 2.5-unit interact radius, and 4+ units from it on the blind rear side.
   env._addCaveEntrance(-15, 15.9, 'glacialHollow', 'Glacial Hollow');
 
+  // ── The residents ─────────────────────────────────────────────────────────
+  // Tusker — a burly fur-trapper — camps on the open snow south-west of the
+  // frozen lake ((8,8) r6), facing it; Snowl, an owl-folk stargazer, keeps
+  // the frozen shrine. Both south of the glacier climb, clear of the trodden
+  // path (z 18-20), the portal corridor (0,-18) — and ≥3.8 from every
+  // resource node: the gather hint outranks the talk prompt, so an NPC
+  // parked next to a node can never be spoken to (Tusker shipped 1.6 from
+  // the titanium seam at (4,3) before this was caught live).
+  env._addNpc('npcTusker', 0.5, 1.5, { rotY: 0.86, r: 0.55,
+    name: 'Tusker',
+    greeting: "Cold's honest, at least. Warm your hands before you go." });
+  env._addNpc('npcSnowl', 3.8, 12.9, { rotY: -0.84, r: 0.4,
+    name: 'Snowl',
+    greeting: 'The lights in the sky were here long before any of us.' });
+
   // ── Routes ────────────────────────────────────────────────────────────────
   // PathRibbon worn mode — trodden snow, darker than the field.
   //

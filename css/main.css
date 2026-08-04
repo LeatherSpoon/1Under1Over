@@ -1274,6 +1274,52 @@ body {
   line-height: 1.5;
 }
 
+/* ── NPC greeting bark (bottom center, above the interact hint) ── */
+#npc-bark {
+  position: fixed;
+  bottom: 130px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(14, 10, 2, 0.94);
+  border: 2px solid #ffb84d;
+  border-radius: 10px;
+  padding: 8px 16px;
+  z-index: 100;
+  pointer-events: none;
+  box-shadow: 0 0 18px rgba(255, 184, 77, 0.25);
+  max-width: 320px;
+  text-align: center;
+}
+
+#npc-bark[hidden] { display: none !important; }
+
+#npc-bark.toast-enter { animation: npcBarkIn 0.25s ease-out; }
+#npc-bark.toast-exit  { animation: npcBarkOut 0.4s ease-in forwards; }
+
+@keyframes npcBarkIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes npcBarkOut {
+  from { opacity: 1; transform: translateX(-50%) translateY(0); }
+  to   { opacity: 0; transform: translateX(-50%) translateY(8px); }
+}
+
+#npc-bark-name {
+  font-size: 0.72rem;
+  font-weight: bold;
+  color: #ffb84d;
+  letter-spacing: 0.07em;
+  margin-bottom: 3px;
+}
+
+#npc-bark-line {
+  font-size: 0.78rem;
+  color: #ffe8c4;
+  line-height: 1.45;
+}
+
 /* ── Achievements Panel ────────────────────────────────────────── */
 .ach-row {
   display: flex;

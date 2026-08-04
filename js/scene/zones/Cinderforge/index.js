@@ -53,6 +53,18 @@ export function build(env) {
   env._addNavLandmark(POIS.golem[0], 2.6, POIS.golem[1], 'Forgemaster Plaza');
   env._addNavLandmark(POIS.anvil[0], 1.8, POIS.anvil[1], 'The Great Anvil');
 
+  // ── The residents ─────────────────────────────────────────────────────────
+  // Forge-folk who never left when the casting stopped. The Cindersmith — an
+  // obsidian salamander-folk smith — keeps the Forgemaster plaza; the Stoker,
+  // a soot-freckled newt-folk, feeds the crucible court. Both stand clear of
+  // the paved drags, the lava-pool keep-outs and the creature leashes.
+  env._addNpc('npcCindersmith', 3.0, 2.2, { rotY: -2.20, r: 0.5,
+    name: 'The Cindersmith',
+    greeting: 'Mind the sparks, traveler. This forge cast the World Gates themselves.' });
+  env._addNpc('npcStoker', 23.5, -13.5, { rotY: 2.36, r: 0.4,
+    name: 'The Stoker',
+    greeting: "Coals don't feed themselves! …Well. These ones might." });
+
   // ── Lava pools ────────────────────────────────────────────────────────────
   // Standing melt in the dead-end pockets (the Rift pit recipe: black rim
   // disc over a hot core — MeshBasicMaterial so they read self-lit in the

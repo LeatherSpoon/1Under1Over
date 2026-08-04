@@ -21,6 +21,27 @@ new GLTFLoader().load('./models/Player.glb', gltf => {
 // the clip so feet don't slide at boosted move speeds.
 const RUN_CLIP_SPEED = 3.5;
 
+// Visible gear: meshes bone-parented inside Player.glb (hand.R weapons/tools,
+// forearm.L shield, chest armor + back holsters). Runtime only toggles node
+// visibility — no mount math. Names must match the GLB (playerRig test pins them).
+const GEAR_NODE_NAMES = [
+  'Gear_BladeScrap', 'Gear_BladeBasic', 'Gear_Knuckles', 'Gear_ToolDrill',
+  'Gear_ToolCutter', 'Gear_Shield', 'Gear_ArmorChest',
+  'Gear_BladeScrapB', 'Gear_BladeBasicB', 'Gear_ShieldB',
+];
+// Equipment item label -> gear nodes. Bladed weapons ride the back out of
+// combat and jump to the fist in combat; knuckles are worn on the fist always.
+const GEAR_BY_ITEM = {
+  'Scrap Blade':    { hand: 'Gear_BladeScrap', back: 'Gear_BladeScrapB' },
+  'Basic Blade':    { hand: 'Gear_BladeBasic', back: 'Gear_BladeBasicB' },
+  'Spike Knuckles': { hand: 'Gear_Knuckles', always: true },
+  'Basic Shield':   { hand: 'Gear_Shield', back: 'Gear_ShieldB' },
+};
+// Armor accent tint per equipment tier (provisional defaults — owner lever).
+const TIER_ACCENT = {
+  Basic: 0xf08a2a, Combat: 0xff5533, Good: 0x39d6c8, Rare: 0xb06cff, Epic: 0xffc21c,
+};
+
 export class Player {
   constructor(scene, statsSystem) {
     this.stats = statsSystem;
@@ -60,6 +81,14 @@ export class Player {
     // stands at it — plays the locomotion clip slowly in place (see update()).
     this.trainingPose = false;
 
+    // Task-driven animation state, set per-frame by main.js: 'gather' while a
+    // resource-node gather runs, 'swing' while a tree/rock extended gather
+    // runs. taskTool ('rock'|'tree') picks the held tool during 'swing'.
+    this.taskAnim = null;
+    this.taskTool = null;
+    // EquipmentSystem ref (set once in main.js) — read each frame for gear visuals.
+    this.equipment = null;
+
     this.group = new THREE.Group();
     this._buildMesh();
     scene.add(this.group);
@@ -67,9 +96,14 @@ export class Player {
     // Animation state — populated by _attachModel() once the GLB is in
     this._mixer = null;
     this._actions = null;
-    this._isMoving = false;
+    this._loopName = 'idle';   // persistent loop: idle | run | gather | swing
+    this._oneShot = null;      // transient action (attack/flinch) riding on top
+    this._sparTimer = 0;       // periodic strike while drilling at the sim rig
     this._movedThisFrame = false;
     this._lastSpeed = 0;
+    this._gearNodes = null;
+    this._gearKey = '';
+    this._armorAccents = [];
     if (_playerGLB) this._attachModel();
     else _onPlayerGLB = () => this._attachModel();
   }
@@ -133,24 +167,133 @@ export class Player {
 
     this._mixer = new THREE.AnimationMixer(model);
     const clips = _playerGLB.animations;
-    const idleClip = clips.find(c => /idle/i.test(c.name));
-    const runClip = clips.find(c => /run/i.test(c.name));
+    const mk = (re, once) => {
+      const clip = clips.find(c => re.test(c.name));
+      if (!clip) return null;
+      const a = this._mixer.clipAction(clip);
+      if (once) {
+        a.setLoop(THREE.LoopOnce, 1);
+        a.clampWhenFinished = true; // hold the final pose for the fade-back
+      }
+      return a;
+    };
     this._actions = {
-      idle: idleClip ? this._mixer.clipAction(idleClip) : null,
-      run: runClip ? this._mixer.clipAction(runClip) : null,
+      idle: mk(/idle/i), run: mk(/run/i),
+      gather: mk(/gather/i), swing: mk(/swing/i),
+      attack: mk(/attack/i, true), flinch: mk(/flinch/i, true),
     };
     this._actions.idle?.play();
+    // One-shots hand back to the active loop when they finish (they are
+    // authored to end near the idle stance, so the crossfade is gentle).
+    this._mixer.addEventListener('finished', (e) => {
+      if (e.action !== this._oneShot) return;
+      this._oneShot = null;
+      const loop = this._actions[this._loopName] || this._actions.idle;
+      if (loop) {
+        loop.reset().play();
+        e.action.crossFadeTo(loop, 0.15, false);
+      }
+    });
+    this._collectGear(model);
   }
 
-  // Crossfade between Idle and Run when movement starts/stops.
-  _setMoving(moving) {
-    if (!this._actions?.idle || !this._actions.run) return;
-    if (moving === this._isMoving) return;
-    this._isMoving = moving;
-    const to = moving ? this._actions.run : this._actions.idle;
-    const from = moving ? this._actions.idle : this._actions.run;
+  // Crossfade the persistent loop (idle/run/gather/swing). While a one-shot
+  // plays, only record the target — the 'finished' handler resumes it.
+  _playLoop(name) {
+    if (!this._actions) return;
+    if (!this._actions[name]) name = 'idle';
+    if (name === this._loopName) return;
+    const from = this._actions[this._loopName];
+    this._loopName = name;
+    if (this._oneShot) return;
+    const to = this._actions[name];
+    if (!to) return;
     to.reset().play();
-    from.crossFadeTo(to, 0.18, false);
+    if (from && from !== to) from.crossFadeTo(to, 0.18, false);
+  }
+
+  _playOnce(name) {
+    const a = this._actions?.[name];
+    if (!a) return;
+    const cur = this._oneShot || this._actions[this._loopName];
+    this._oneShot = a;
+    a.reset().play();
+    if (cur && cur !== a) cur.crossFadeTo(a, 0.08, false);
+  }
+
+  /** Combat: the player lands (or whiffs) a hit — swing the equipped weapon. */
+  playStrike() { if (this.isInCombat) this._playOnce('attack'); }
+
+  /** Combat: an enemy hit lands — recoil. */
+  playFlinch() { this._playOnce('flinch'); }
+
+  // Collect the Gear_* nodes: re-shade (materials named *Glow* become unlit,
+  // the rest toon from their authored color), outline, and hide everything —
+  // visibility is state-driven in _updateGear().
+  _collectGear(model) {
+    this._gearNodes = {};
+    this._armorAccents = [];
+    for (const name of GEAR_NODE_NAMES) {
+      const node = model.getObjectByName(name);
+      if (!node) continue;
+      this._gearNodes[name] = node;
+      node.visible = false;
+      // Snapshot BEFORE mutating: addOutline() parents a clone under the mesh,
+      // and a live traverse would visit the clone and outline it recursively.
+      const meshes = [];
+      node.traverse(m => { if (m.isMesh) meshes.push(m); });
+      for (const m of meshes) {
+        const src = m.material;
+        const glow = /glow/i.test(src?.name || '');
+        m.material = glow
+          ? new THREE.MeshBasicMaterial({ color: src.color })
+          : createToonMaterial(src.color.getHex());
+        // Nothing player-owned may write depth before the x-ray ghost
+        // (renderOrder 1) — see the outline/ghost notes in _attachModel.
+        // No outline hulls on gear: the scale-trick displaces radially from
+        // the mesh origin (grip/world point, not the center), which shifted
+        // black shells over the pauldrons. Gear reads by color at game scale.
+        m.renderOrder = 2;
+        if (name === 'Gear_ArmorChest' && !glow && /accent/i.test(src?.name || '')) {
+          this._armorAccents.push(m.material);
+        }
+      }
+    }
+  }
+
+  // Derive which gear nodes show from equipment + combat + task state.
+  // Cheap signature compare — real scene changes only happen on transitions.
+  _updateGear() {
+    if (!this._gearNodes || !this.equipment) return;
+    const slots = this.equipment.slots;
+    const vis = [];
+    let tier = null;
+    const weapon = slots.weapon && GEAR_BY_ITEM[slots.weapon.label];
+    if (weapon) {
+      if (weapon.always) vis.push(weapon.hand);
+      else vis.push(this.isInCombat ? weapon.hand : weapon.back);
+    }
+    const off = slots.offhand && GEAR_BY_ITEM[slots.offhand.label];
+    if (off) vis.push(this.isInCombat ? off.hand : off.back);
+    if (slots.body) {
+      vis.push('Gear_ArmorChest');
+      tier = slots.body.tier;
+    }
+    if (this.taskAnim === 'swing' && !this.isInCombat) {
+      vis.push(this.taskTool === 'tree' ? 'Gear_ToolCutter' : 'Gear_ToolDrill');
+    }
+    const names = vis.filter(Boolean);
+    const key = names.slice().sort().join('|') + ':' + (tier || '');
+    if (key === this._gearKey) return;
+    this._gearKey = key;
+    const on = new Set(names);
+    for (const [name, node] of Object.entries(this._gearNodes)) {
+      node.visible = on.has(name);
+    }
+    if (tier) {
+      const c = TIER_ACCENT[tier] ?? TIER_ACCENT.Basic;
+      for (const m of this._armorAccents) m.color.setHex(c);
+    }
   }
 
   _buildMesh() {
@@ -227,12 +370,35 @@ export class Player {
     // character visibly drills instead of standing frozen.
     const posing = this.trainingPose && !this._movedThisFrame
       && !this.isGathering && !this.isInCombat;
-    this._setMoving(this._movedThisFrame || posing);
-    if (this._movedThisFrame && this._actions?.run) {
-      this._actions.run.timeScale = this._lastSpeed / RUN_CLIP_SPEED;
-    } else if (posing && this._actions?.run) {
-      this._actions.run.timeScale = 0.55;
+    const task = this.isInCombat ? null : this.taskAnim;
+    this._playLoop(
+      this._movedThisFrame ? 'run'
+      : task === 'gather' ? 'gather'
+      : task === 'swing' ? 'swing'
+      : posing ? 'run'
+      : 'idle'
+    );
+    if (this._actions?.run) {
+      this._actions.run.timeScale = this._movedThisFrame
+        ? this._lastSpeed / RUN_CLIP_SPEED
+        : posing ? 0.55 : 1;
     }
+    // Sparring drill: while posing at the sim rig, throw a practice strike
+    // every couple of seconds on top of the slow footwork.
+    if (posing) {
+      this._sparTimer += delta;
+      if (this._sparTimer >= 2.4 && !this._oneShot) {
+        this._sparTimer = 0;
+        this._playOnce('attack');
+      }
+    } else {
+      this._sparTimer = 0;
+    }
+    // Smooth shortest-arc turn toward the pushed direction (was an instant snap).
+    let dy = this._facing - this.group.rotation.y;
+    dy = ((dy % (2 * Math.PI)) + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
+    this.group.rotation.y += dy * Math.min(1, delta * 14);
+    this._updateGear();
     this._mixer?.update(delta);
   }
 
@@ -306,8 +472,7 @@ export class Player {
     if (dx !== 0 || dz !== 0) {
       this._movedThisFrame = true;
       this._lastSpeed = speed;
-      this._facing = Math.atan2(dx, dz);
-      this.group.rotation.y = this._facing;
+      this._facing = Math.atan2(dx, dz); // update() eases rotation toward this
 
       const dist = speed * delta;
       this.position.x += dx * dist;

@@ -329,4 +329,16 @@ export function build(env) {
   // labyrinth-side return gate carries the spawn override that lands the
   // traveller back here, so the pair reads as one doorway.
   env._addPortal(0, 30.5, 'labyrinth', 0, 'The Labyrinth');
+
+  // ── The residents ─────────────────────────────────────────────────────────
+  // Deep-folk who stayed when the city drowned. The Tidecaller — an axolotl-
+  // gilled priest — tends the temple dome; the Salvager, an octopus-folk
+  // collector, picks over the shipwreck. Both outside the ring canal, clear
+  // of the spawn corridor, bridges and creature posts.
+  env._addNpc('npcTidecaller', -8.9, 12.3, { rotY: -0.95, r: 0.45,
+    name: 'The Tidecaller',
+    greeting: 'The tide keeps every promise, given time.' });
+  env._addNpc('npcSalvager', 10.3, -9.6, { rotY: 2.28, r: 0.45,
+    name: 'The Salvager',
+    greeting: 'Every wreck down here still has one good story in it.' });
 }

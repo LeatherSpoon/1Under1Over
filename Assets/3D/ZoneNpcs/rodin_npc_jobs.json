@@ -1,0 +1,86 @@
+{
+  "Npc_Cindersmith": {
+    "uuid": "10efea65-37c9-4599-8809-060b5c33c0e1",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiYWFiOTA0YjgtZWE0NS00ZTExLTkzNWUtNjk0MDA4YWZjZjI1IiwiYmM5MTI0YzctN2NhYi00OWZjLWE1ZWItYWI1MjRjODM0ZWVkIiwiYmEwNzc0YmUtNmVhYi00NzNjLTk5NGMtZTc2NmI2Y2ZmOTFmIiwiNzc1OGNjODItNDY2ZC00MTI3LTgyMTQtNzk5ZGI4MWU4YTMzIiwiZTk4MmM5MWYtYzllZi00YmI3LWExNmUtOGEyNzExYTkxYzRhIiwiNjFmYmI4MDMtZDNjZC00M2QzLWI5NTktNDk3M2QyYzU1Y2FkIl0sImlhdCI6MTc4NTgwNTc4OX0.oesFuvUDUtlUg4O96-mcAg1lJP1YKB44OURf9dNQ1BY",
+    "prompt": "westernized anime style game character, clean confident outlines, flat color with soft gradient shading, strong silhouette read, inspired by Rick and Morty, Avatar: The Last Airbender, and Studio Ghibli. A full-body 3D character: a tall salamander-folk blacksmith, smooth obsidian-black skin with glowing orange magma cracks across the shoulders and forearms, heavy dark leather smith's apron and thick belt. Standing fully upright on two legs, symmetrical pose, arms relaxed at the sides, flat feet on the ground, no held objects, calm simple friendly face, two very large glossy dark eyes, full body, single character, no base, no pedestal.",
+    "status": "downloaded",
+    "file": "rodin_Npc_Cindersmith_raw.glb"
+  },
+  "Npc_Stoker": {
+    "uuid": "d9b96677-eb31-42c5-b827-0e32399f6172",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiYmFiODNiYjMtOTkyZS00NDRjLTg0MDQtN2RhMGM2ODM2MjFkIiwiM2MwYWVjYWMtZDMyZC00NThlLTgyYmEtNThlOWUxNTBmYjQ0IiwiNjNmM2U2OTMtNjczMi00YjQ3LThmMzYtMDcwZWM2MGQ4NzA3IiwiYjYxNGU1YzItOWUyYy00MGEwLWJhYzctMDM0NmMyZmMwNDg1IiwiMmNmMTNhNTItODdlOS00NDUwLThmMGItZWQ0ZmZmNTgyY2M4IiwiYzc1MmQ1OWQtZTRhZi00OWM0LWE3ZDQtODU1OWIxYTc3YjQ4Il0sImlhdCI6MTc4NTgwNTc5Mn0.ktrFs96PAcSpIch2o-WqbEv9PNbfxzWjNSnwUpZOs1U",
+    "prompt": "westernized anime style game character, clean confident outlines, flat color with soft gradient shading, strong silhouette read, inspired by Rick and Morty, Avatar: The Last Airbender, and Studio Ghibli. A full-body 3D character: a short round newt-folk furnace stoker, soot-grey skin with glowing ember-orange freckles, oversized leather work gloves and a thick knitted collar scarf. Standing fully upright on two legs, symmetrical pose, arms relaxed at the sides, flat feet on the ground, no held objects, calm simple friendly face, two very large glossy dark eyes, full body, single character, no base, no pedestal.",
+    "status": "downloaded",
+    "file": "rodin_Npc_Stoker_raw.glb"
+  },
+  "Npc_Tidecaller": {
+    "uuid": "58c92a1a-77d9-4e11-af1b-2333f6b8e349",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMTVkYWE2MTctYjBkNS00OWU3LWFiMTYtYzczZmEyNmUyM2M1IiwiMGUxZTc1OGQtOTY0Yi00ZDY0LTgzODMtNWJjZTBmZDYyZDg3IiwiMGFhNjZhNGEtYWViYS00Y2UxLWI3NzUtYWY5MDI2NGU1Y2ZhIiwiMmMzNTQwYWYtOTk5ZS00ZGI3LTgyYzItZDBlYmU2NWMwOTBjIiwiMGY0MzBmNDktYWVmMy00YmZkLWEzN2EtZTQyZWNkZTFmNDU3IiwiNmJjOTU1YjYtOWQyNi00MmI5LTk0MjUtNTRlMGM2ZmQ5MTFlIl0sImlhdCI6MTc4NTgwNTc5NX0.DaDcLIx-uiwjsBN2i0ELP07-CQcs5EHSLowFXuP3ipk",
+    "prompt": "westernized anime style game character, clean confident outlines, flat color with soft gradient shading, strong silhouette read, inspired by Rick and Morty, Avatar: The Last Airbender, and Studio Ghibli. A full-body 3D character: a slender axolotl-folk tide priest, pale luminous pink-white skin, frilled external gill branches fanned around the head like a soft crown, long kelp-green woven robe with wave patterns. Standing fully upright on two legs, symmetrical pose, arms relaxed at the sides, flat feet on the ground, no held objects, calm simple friendly face, two very large glossy dark eyes, full body, single character, no base, no pedestal.",
+    "status": "downloaded",
+    "file": "rodin_Npc_Tidecaller_raw.glb"
+  },
+  "Npc_Salvager": {
+    "uuid": "ef4580c6-90ff-48ec-a71a-9c7360b4602c",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMjAwNjFmY2MtYWQ3ZC00MWRhLWE3ZTgtODg0OWRmYmRlZWRkIiwiNGI0YmMwNTktNjI1Yi00NjhmLTg5N2ItZDA4YjhkNWVkZGYwIiwiOWM1OGFhOWYtYzQwMC00YjdjLWE1YWMtOWRlMTE2YTg1NzIwIiwiZDYzZjUzYmMtNGJkYy00YjNiLTk3YmYtZGVmZjQ3NzJmNDc5IiwiZjZiY2NhMjktOWFjMi00NjM5LTk0Y2MtOWViMGYxYzExMDNmIiwiM2I2M2Q5YTAtZTRmYi00MjZjLTg2MDQtNDAxZDdmMTY1NTA3Il0sImlhdCI6MTc4NTgwNTc5OH0.MmVL79CW6gf5pPcAhkwnXfhNZN4PnvxQcJ03jphILfw",
+    "prompt": "westernized anime style game character, clean confident outlines, flat color with soft gradient shading, strong silhouette read, inspired by Rick and Morty, Avatar: The Last Airbender, and Studio Ghibli. A full-body 3D character: a stocky octopus-folk salvager, weathered teal skin, short tentacle beard under a round face, rope harness with small net pouches over one shoulder. Standing fully upright on two legs, symmetrical pose, arms relaxed at the sides, flat feet on the ground, no held objects, calm simple friendly face, two very large glossy dark eyes, full body, single character, no base, no pedestal.",
+    "status": "downloaded",
+    "file": "rodin_Npc_Salvager_raw.glb"
+  },
+  "Npc_Tusker": {
+    "uuid": "c2981d75-946e-40a1-b3d2-5ad21b2e2b80",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiMWIzNTZlZjAtNWU1My00Y2M2LWJhMGUtZWM3MDI5NmNmNmVmIiwiYmIyNjhkNjMtMWUxOC00MDIyLTkxYTUtOGFiMzZhYzg5MWUxIiwiZDFmZDQ4MmUtYzE0OS00YWIzLTkwM2MtMzM1NWUxZDEwNjI5IiwiZTM2NzYxNzctMTI3MS00ZTc1LWI0OGUtOTQzMzgwMjA4NWQzIiwiZjk0OWRjZjEtY2FhOS00M2JlLTk2ZTctNzdjZGRmZjMxM2FjIiwiNzJlOWM5NzItYTM2My00ZDZlLTg0NzEtYzRlM2EzZjIwYjFiIl0sImlhdCI6MTc4NTgwNTgwMn0.Aj-kB2keuma9HuHO7Oc1JwPp_UQAyevTFTgsKwY8U24",
+    "prompt": "westernized anime style game character, clean confident outlines, flat color with soft gradient shading, strong silhouette read, inspired by Rick and Morty, Avatar: The Last Airbender, and Studio Ghibli. A full-body 3D character: a burly walrus-folk trapper, warm brown whiskered muzzle with two short ivory tusks, heavy hooded fur parka with a wide leather belt and snow boots. Standing fully upright on two legs, symmetrical pose, arms relaxed at the sides, flat feet on the ground, no held objects, calm simple friendly face, two very large glossy dark eyes, full body, single character, no base, no pedestal.",
+    "status": "downloaded",
+    "file": "rodin_Npc_Tusker_raw.glb"
+  },
+  "Npc_Snowl": {
+    "uuid": "6bb3be1e-7304-4b67-b3aa-fdbcabf634da",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiZjRhMmQxZmQtNTE0Yi00NTgzLTkxY2ItZDlhOGFkOTM5YTM3IiwiYzRjYWYxODMtODJhZC00NmNiLWIxZGItNTBjNWI2MDAzZTdhIiwiNWZhNTQ3ZWItZmU2Ni00N2FjLTkyOTItZTA0MGZkN2ZjZDA5IiwiMWU0Y2EyOGMtMzI1OS00YzViLThjMmItNzk3ZGQ4ZTU2MmUwIiwiNDMyNTkxZjItNWY4ZS00OWVlLTllYmYtZmQ2YmU2ZjU0NjFhIiwiNTNhNzY1ZjEtYzQyNi00ZTEyLTg2MTAtYmUwY2Q3NmQ5ZjZjIl0sImlhdCI6MTc4NTgwNTgwNX0.ntfXM3LecnSJt6aV73iFJPhvniCRRIyvdaJsmN-FotA",
+    "prompt": "westernized anime style game character, clean confident outlines, flat color with soft gradient shading, strong silhouette read, inspired by Rick and Morty, Avatar: The Last Airbender, and Studio Ghibli. A full-body 3D character: a snowy-owl-folk stargazer, round white feathered head with faint grey speckles, deep indigo cloak patterned with tiny stars, small folded wings tucked under the cloak. Standing fully upright on two legs, symmetrical pose, arms relaxed at the sides, flat feet on the ground, no held objects, calm simple friendly face, two very large glossy dark eyes, full body, single character, no base, no pedestal.",
+    "status": "downloaded",
+    "file": "rodin_Npc_Snowl_raw.glb"
+  },
+  "Npc_Rimeseer": {
+    "uuid": "f68748c3-b2c2-48f3-b2ef-9f2c357d158d",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiNDFlYjg0NDgtMTFlOC00NTQ2LTgzOTUtYmZkMTgxNWE5MTUzIiwiOWU0OThlMDgtNWU0OC00NTc2LWIyMWMtZjYzZmNjODdkNTlmIiwiY2U3M2E4MmUtMDhjZi00NWE4LWExZmMtN2EwMmU4NjQ0NmQ1IiwiN2NlZWYzMTktZmMyNy00NjhmLTgwYzItZTE4NmY1ZjM3NjhiIiwiOWMwMDY2YzUtOWEzMS00MTA1LWE4ZTUtYjUwYTA3MjczMjIyIiwiYmI1MzgzZTUtNGYzZS00Yjg3LTgwY2UtM2RlMjU5NGE4NjM2Il0sImlhdCI6MTc4NTgwNTgwOH0.aBZ2qQ6LyNJZ2B6Zs449XcJxn2xzqQrhJCEG5eNoDqo",
+    "prompt": "westernized anime style game character, clean confident outlines, flat color with soft gradient shading, strong silhouette read, inspired by Rick and Morty, Avatar: The Last Airbender, and Studio Ghibli. A full-body 3D character: a crystalline ice-being, translucent pale-blue faceted crystal body, a softly glowing white core in the chest, jagged frost crystal shoulders. Standing fully upright on two legs, symmetrical pose, arms relaxed at the sides, flat feet on the ground, no held objects, calm simple friendly face, two very large glossy dark eyes, full body, single character, no base, no pedestal.",
+    "status": "downloaded",
+    "file": "rodin_Npc_Rimeseer_raw.glb"
+  },
+  "Npc_Bonecarver": {
+    "uuid": "4434028d-f439-46db-803d-5a572691933b",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiOTMyNDM1ZWEtMzQ3ZS00MGU5LWE4MDItY2I1MzI1YmU2NWYwIiwiMzQxZTk0MjEtYjAwMi00NjY4LTg1M2YtNzJkN2JhMDVjOWQwIiwiNWU3Njk5NTMtNGY1ZC00M2JkLWI0YjItZjA3ZmI3ZTM0ZjdhIiwiMzAwNjYxYTMtY2YwZS00MjRhLTkxYTEtNTFkZGZkOWRmNzI3IiwiZDAwNjZlZDItYTdjMi00ZWM4LWE3M2EtZDNlZTU4YTgxMzE4IiwiNTFkYjY3N2ItNmZmYS00NTA5LTkyMmItY2E0OTdmNmY3MzBhIl0sImlhdCI6MTc4NTgwNTgxM30.6MzrTJD_8qX-aMDk-TQroXldkn5h8bPI-hyISb1myfo",
+    "prompt": "westernized anime style game character, clean confident outlines, flat color with soft gradient shading, strong silhouette read, inspired by Rick and Morty, Avatar: The Last Airbender, and Studio Ghibli. A full-body 3D character: a shaggy musk-ox-folk hermit, long dark wool fur coat, two small curved horns, a necklace of carved bone beads. Standing fully upright on two legs, symmetrical pose, arms relaxed at the sides, flat feet on the ground, no held objects, calm simple friendly face, two very large glossy dark eyes, full body, single character, no base, no pedestal.",
+    "status": "downloaded",
+    "file": "rodin_Npc_Bonecarver_raw.glb"
+  },
+  "Npc_Mothtender": {
+    "uuid": "f66ce398-b91d-4c29-a222-94dc1317e304",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiNTljMzM4ZTYtYTg3OS00OGMyLWJlMjktODljMmQyMjY3MjdjIiwiNjdlODcxMjktYmFjMC00OTViLWJhMDEtNjc4NjJlODk1MzAxIiwiNjg5ODU5NTUtY2U4NC00ZDg4LTliNzQtYjQ3NWE3YmY3ZWM5IiwiMmUxZjBiNjktNzMzYi00OTA2LThjM2YtNGY2ZGFlMmZkNDVjIiwiMmRiMDVkYTQtZmY2Mi00NjY5LWIxNDgtMGFhNGI1MjUxMGFkIiwiNTJlMTNmMTQtOWE2OS00ZTNmLTlhNzYtZjc4Zjk2M2I2NWZmIl0sImlhdCI6MTc4NTgwNTgyMH0._IdvZWO3iau3wqIOEWQIUCTnFFoA4t45SFmiWbpiuF0",
+    "prompt": "westernized anime style game character, clean confident outlines, flat color with soft gradient shading, strong silhouette read, inspired by Rick and Morty, Avatar: The Last Airbender, and Studio Ghibli. A full-body 3D character: a gentle moth-folk lantern keeper, dusty cream and amber fur, two large feathered antennae, wings folded flat down the back like a long patterned cloak. Standing fully upright on two legs, symmetrical pose, arms relaxed at the sides, flat feet on the ground, no held objects, calm simple friendly face, two very large glossy dark eyes, full body, single character, no base, no pedestal.",
+    "status": "downloaded",
+    "file": "rodin_Npc_Mothtender_raw.glb"
+  },
+  "Npc_Glimmer": {
+    "uuid": "2fcc3b11-1e44-4893-b309-cd1d58dee402",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiNWE4MDBhZWUtMWIzMi00ZjlkLTk3NmEtODQ5YzQ2OTBjZDMxIiwiYTQ0NzUzNGQtYjdiNi00ZjBkLWJlZmYtMmUyMDUyNDM2MGQzIiwiYmZlMDdlYjktZTc1Yy00NzVjLWJmN2EtYzA1YWE3ZTFkNDdmIiwiZDQwYjZlMjAtOTNhYi00MmI1LTg0YzMtZTE0YmE1MzE4NDBlIiwiMjEwNmNiNTItMDUzZS00NTAwLTljZTUtZTMxZDhhOTUxMTI2IiwiNDM0ZmU3YTQtODk1Yy00MTg4LWJkMWItNTVhODY3NWQ4NmFkIl0sImlhdCI6MTc4NTgwNTgyNH0.LepeEimj0fZ3Wc-XJRKnv6ZKZ8qhvx6MLDP4h1nVeAs",
+    "prompt": "westernized anime style game character, clean confident outlines, flat color with soft gradient shading, strong silhouette read, inspired by Rick and Morty, Avatar: The Last Airbender, and Studio Ghibli. A full-body 3D character: a small round firefly-folk lamplighter, dark teal shell, a softly glowing warm amber belly like a paper lantern, two tiny antennae. Standing fully upright on two legs, symmetrical pose, arms relaxed at the sides, flat feet on the ground, no held objects, calm simple friendly face, two very large glossy dark eyes, full body, single character, no base, no pedestal.",
+    "status": "downloaded",
+    "file": "rodin_Npc_Glimmer_raw.glb"
+  },
+  "Npc_Deepvark": {
+    "uuid": "5d4eb519-0c6e-4572-b030-afc897b76eea",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiNmRiN2QxMjItNTFhNi00YzFlLWEzYjctYzdiODQyOTZmZDFkIiwiMTdkYzEyMGQtMzIzOS00YzNhLTk2NjktMzM4NjJjNTg4OWVhIiwiYWNhMjhjZmQtMjE2MS00YjJjLWE0NDgtNDlmNjUyMTNmYTFjIiwiOWRiYTYzMzEtOWM0MS00YWUyLWE5NjYtZjhlNGUzNmYzOWQwIiwiOGNlOTRhODAtMTVlNC00OGY1LThmMDQtNzJjMTY0MzU2OWU5IiwiZmRlYjQ0ODYtMGQwZS00OTE4LTgzZTMtZTRlM2MzOWE0NGJmIl0sImlhdCI6MTc4NTgwNTgyN30.VNs1hQdxYAx4rxYvF0hhjLU7mXxxPWd8vd6kvb3nG9s",
+    "prompt": "westernized anime style game character, clean confident outlines, flat color with soft gradient shading, strong silhouette read, inspired by Rick and Morty, Avatar: The Last Airbender, and Studio Ghibli. A full-body 3D character: a mole-folk prospector, soft grey velvet fur, a leather mining helmet with a small glowing headlamp, sturdy work overalls, large gentle digging claws resting at the sides. Standing fully upright on two legs, symmetrical pose, arms relaxed at the sides, flat feet on the ground, no held objects, calm simple friendly face, two very large glossy dark eyes, full body, single character, no base, no pedestal.",
+    "status": "downloaded",
+    "file": "rodin_Npc_Deepvark_raw.glb"
+  },
+  "Npc_Geode": {
+    "uuid": "5c2a6747-7da2-4518-ada8-bd6a10bd5920",
+    "subscription_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoxLCJqb2JJZHMiOlsiODVhYjYxYWItMTMzNC00N2FlLTk5YWItNjI5M2FhMzlkYWY1IiwiMGQ5MWZiYTQtZmVkZC00MGFmLWFlZjYtNTMyYWMzNGQ3MTU0IiwiN2FjNmUzZjktZTc4YS00NWFmLWFlNDMtNWY0NzI3MGZiZTkxIiwiMDIxNWZiMTQtYTg0Yi00ODNmLTkxOGUtODllYWQ1NTg4ZDFiIiwiNjZlNzQ0ZGQtNGIwZi00MjVjLThlY2QtNzdkMWE2ZWZjODFhIiwiMDEyZjZmMGYtOWE3MS00ZmNlLTljYWMtYTE5NGUwYTgxMmNjIl0sImlhdCI6MTc4NTgwNTgzMn0.6rRaUFxO0_5ak56pvNbDidof9Nol7TyJDO3tIFZdcrY",
+    "prompt": "westernized anime style game character, clean confident outlines, flat color with soft gradient shading, strong silhouette read, inspired by Rick and Morty, Avatar: The Last Airbender, and Studio Ghibli. A full-body 3D character: a pangolin-folk crystal assayer, overlapping stone-grey scale plates studded with glowing purple crystal clusters along the back and shoulders. Standing fully upright on two legs, symmetrical pose, arms relaxed at the sides, flat feet on the ground, no held objects, calm simple friendly face, two very large glossy dark eyes, full body, single character, no base, no pedestal.",
+    "status": "downloaded",
+    "file": "rodin_Npc_Geode_raw.glb"
+  }
+}

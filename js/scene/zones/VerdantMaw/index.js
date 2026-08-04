@@ -259,9 +259,23 @@ export function build(env) {
   // their door, turned toward the path into the hamlet. (Sprig's seed-drone
   // ring is part of the Npc_Sprig model itself.) Warm doorstep lanterns keep
   // the hamlet reading as home against the cool biolume night.
-  env._addNpc('npcSylva', -11.4, 9.0,  { rotY: 2.3 });          // Elder Sylva
-  env._addNpc('npcBram',  -6.4,  12.3, { rotY: 2.6 });          // Grovekeeper Bram
-  env._addNpc('npcSprig', -15.3, 13.0, { rotY: 2.0, r: 0.35 }); // Sprig
+  env._addNpc('npcSylva', -11.4, 9.0,  { rotY: 2.3,
+    name: 'Elder Sylva', greeting: 'The Maw provides, if you tend it kindly.' });
+  env._addNpc('npcBram',  -6.4,  12.3, { rotY: 2.6,
+    name: 'Grovekeeper Bram', greeting: 'Roots hold this grove together. Mind where you tread.' });
+  env._addNpc('npcSprig', -15.3, 13.0, { rotY: 2.0, r: 0.35,
+    name: 'Sprig', greeting: 'Did you see the spores glow? They glow for YOU!' });
+
+  // ── Emberglade residents (far north, z −105…−140) ────────────────────────
+  // The Mothtender keeps the Lantern Tree from outside the ember web's outer
+  // ring (r 10.5 around (0,−127)); Glimmer, a firefly-folk lamplighter,
+  // greets arrivals just inside the gateway arch, east of the walk-in trail.
+  env._addNpc('npcMothtender', 5.2, -138.2, { rotY: -0.43, r: 0.45,
+    name: 'The Mothtender',
+    greeting: 'The lanterns burn kinder than fire. Stay a while.' });
+  env._addNpc('npcGlimmer', 3.4, -107.5, { rotY: -0.92, r: 0.35,
+    name: 'Glimmer',
+    greeting: 'I light the little paths! Someone has to.' });
   for (const [lx, lz] of [[-10.6, 9.8], [-7.45, 11.6], [-13.0, 13.0]]) {
     const lamp = new THREE.PointLight(0xffb765, 2.2, 7, 1);
     lamp.position.set(lx, 2.1, lz);

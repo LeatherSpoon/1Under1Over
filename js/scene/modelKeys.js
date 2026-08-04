@@ -86,4 +86,9 @@ export const MODEL_KEYS = Object.freeze([
 
   // Transitional-phase flora (Raya/Kumandra palette, northern bands)
   'jungleBambooGrove', 'jungleGoldTree',
+
+  // Zone-resident NPC batch — two per formerly-empty environment
+  'npcCindersmith', 'npcStoker', 'npcTidecaller', 'npcSalvager',
+  'npcTusker', 'npcSnowl', 'npcRimeseer', 'npcBonecarver',
+  'npcMothtender', 'npcGlimmer', 'npcDeepvark', 'npcGeode',
 ]);

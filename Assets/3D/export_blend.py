@@ -17,7 +17,9 @@
 # the .blend is the source of truth — export with this, don't re-generate.
 import bpy, os, sys
 
-OUT_DIR = r'D:\1Under1OverToo\models'
+# Repo-relative (this file lives in <repo>/Assets/3D/) — a hardcoded absolute
+# path went stale once already when the repo folder moved.
+OUT_DIR = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'models'))
 
 def main():
     sc = bpy.context.scene

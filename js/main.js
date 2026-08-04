@@ -298,6 +298,18 @@ const combatUI = new CombatUI(
   combatSystem, statsSystem, entityManager, player, inventorySystem, ppSystem, sceneManager
 );
 
+// Combat animation hooks — CombatUI just wired onPlayerHit for damage floaters;
+// chain the weapon-swing on top. Enemy hits landing drive the flinch.
+const _uiPlayerHit = combatSystem.onPlayerHit;
+combatSystem.onPlayerHit = (hit) => {
+  if (_uiPlayerHit) _uiPlayerHit(hit);
+  player.playStrike();
+};
+combatSystem.onEnemyStrike = () => player.playFlinch();
+// Visible equipment (back-holstered blade/shield, armor, in-combat hand swap)
+// reads the live slots each frame inside player.update().
+player.equipment = equipmentSystem;
+
 // Augmentations — apply stat bonuses on purchase
 augSystem.onPurchase = (id) => {
   if (id === 'reinforcedFrame')   statsSystem.addAugBonus('hp',      50);
@@ -1788,6 +1800,10 @@ function gameLoop(now) {
     player.trainingPose = !!(combatSim.enabled && simRig &&
       Math.hypot(player.position.x - simRig.x, player.position.z - simRig.z) < 3.0);
   }
+  // Task animations — node gathers play the crouched collect loop; tree/rock
+  // extended gathers play the tool swing (taskTool picks drill vs cutter).
+  player.taskAnim = player.isGathering ? 'gather' : (_gatherType ? 'swing' : null);
+  player.taskTool = _gatherType === 'rock' ? 'rock' : (_gatherType ? 'tree' : null);
   minigame.update(delta);
   mathematician.update(delta);
   expedition.update(delta);
@@ -1972,6 +1988,25 @@ function gameLoop(now) {
           hud.showInteractHint(`Locked: ${portal.label} — defeat ${gateBoss ? gateBoss.label : 'the previous chapter boss'}${stepCost ? ` (or spend ${stepCost.toLocaleString()} steps)` : ''}`);
         }
         break;
+      }
+    }
+  }
+
+  // Ambient NPC greeting — lowest-priority hint: combat, gathering, build
+  // mode and portals all claim the hint first (each sets showingHint above).
+  if (!player.isInCombat && !player.isGathering && !_gatherType && !showingHint) {
+    let nearestNpc = null, nearestNpcD = Infinity;
+    for (const n of env.getNpcs()) {
+      if (!n.name) continue;
+      const d = player.position.distanceTo(n.group.position);
+      if (d < 2.2 && d < nearestNpcD) { nearestNpc = n; nearestNpcD = d; }
+    }
+    if (nearestNpc) {
+      showingHint = true;
+      hud.showInteractHint(`[E/ACT] Talk to ${nearestNpc.name}`);
+      if ((keysDown.has('KeyE') || touchInput.actionPressed) && _actionCooldown <= 0) {
+        hud.showNpcBark(nearestNpc.name, nearestNpc.greeting || '…');
+        _actionCooldown = 0.8;
       }
     }
   }
